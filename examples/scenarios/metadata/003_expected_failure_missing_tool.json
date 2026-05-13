@@ -1,0 +1,1 @@
+{"name":"metadata_expected_failure_missing_tool","tags":["metadata","expected-failure"],"expected":"fail","steps":[{"id":"missing","tool":"mc.missing_tool","args":{}}]}

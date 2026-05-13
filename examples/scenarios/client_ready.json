@@ -1,0 +1,1 @@
+{"name":"client_ready","steps":[{"id":"state","tool":"mc.get_client_state","args":{}}]}

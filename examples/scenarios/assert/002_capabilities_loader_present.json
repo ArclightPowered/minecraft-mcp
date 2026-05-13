@@ -1,0 +1,1 @@
+{"name":"assert_capabilities_loader_present","tags":["assert","capabilities"],"steps":[{"id":"caps","tool":"mc.debug.capabilities","args":{},"expect":{"result.loader":{"contains":""},"result.minecraftVersion":"1.21.1"}}]}

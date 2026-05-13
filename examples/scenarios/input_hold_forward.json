@@ -1,0 +1,1 @@
+{"name":"input_hold_forward","steps":[{"id":"hold_forward","tool":"mc.key_hold","args":{"key":"W","ticks":2}},{"id":"state","tool":"mc.get_client_state","args":{}}]}

@@ -1,0 +1,51 @@
+plugins {
+    id 'net.neoforged.gradle.userdev'
+}
+
+base {
+    archivesName = "${rootProject.property('mod_id')}-neoforge"
+}
+
+configurations {
+    commonJava { canBeResolved = true; canBeConsumed = false }
+    commonResources { canBeResolved = true; canBeConsumed = false }
+}
+
+dependencies {
+    implementation "net.neoforged:neoforge:${rootProject.property('neoforge_version')}"
+    commonJava project(path: ':common', configuration: 'commonJava')
+    commonResources project(path: ':common', configuration: 'commonResources')
+    implementation project(':common')
+}
+
+runs {
+    client {
+        modSource project.sourceSets.main
+        systemProperty 'minecraftMcp.port', System.getProperty('minecraftMcp.port', '0')
+        systemProperty 'minecraftMcp.batchExit', System.getProperty('minecraftMcp.batchExit', 'false')
+        systemProperty 'minecraftMcp.scenarioDir', System.getProperty('minecraftMcp.scenarioDir', '')
+    }
+}
+
+tasks.named('compileJava', JavaCompile) {
+    dependsOn configurations.commonJava
+    source configurations.commonJava
+}
+
+processResources {
+    dependsOn configurations.commonResources
+    from(configurations.commonResources)
+    inputs.property 'version', project.version
+    inputs.property 'minecraft_version', rootProject.property('minecraft_version')
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand version: project.version,
+                minecraft_version: rootProject.property('minecraft_version'),
+                neoforge_version_range: rootProject.property('neoforge_version_range'),
+                neoforge_loader_version_range: rootProject.property('neoforge_loader_version_range'),
+                mod_id: rootProject.property('mod_id'),
+                mod_name: rootProject.property('mod_name'),
+                mod_description: rootProject.property('mod_description'),
+                mod_author: rootProject.property('mod_author'),
+                mod_license: rootProject.property('mod_license')
+    }
+}

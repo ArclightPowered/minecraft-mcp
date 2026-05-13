@@ -1,0 +1,1 @@
+{"name":"metadata_neoforge_only","tags":["metadata"],"requires":{"loaders":["neoforge"]},"steps":[{"id":"caps","tool":"mc.debug.capabilities","args":{}}]}

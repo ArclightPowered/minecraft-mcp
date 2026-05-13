@@ -1,0 +1,1 @@
+{"name":"input_key_hold_forward","tags":["input","keyboard","movement"],"steps":[{"id":"hold_forward","tool":"mc.key_hold","args":{"key":"W","ticks":2},"expect":{"result.status":"held","result.key":"W","result.ticks":2}},{"id":"state","tool":"mc.get_client_state","args":{},"expect":{"result.running":true}}]}

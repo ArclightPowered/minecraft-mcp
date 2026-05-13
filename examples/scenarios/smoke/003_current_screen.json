@@ -1,0 +1,1 @@
+{"name":"smoke_current_screen","tags":["smoke","ui"],"steps":[{"id":"screen","tool":"mc.get_current_screen","args":{},"expect":{"result.screen":{"contains":"Screen"}}}]}

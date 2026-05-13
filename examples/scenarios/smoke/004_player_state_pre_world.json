@@ -1,0 +1,1 @@
+{"name":"smoke_player_state_pre_world","tags":["smoke","player"],"steps":[{"id":"player","tool":"mc.get_player_state","args":{},"expect":{"result.running":true,"result.inWorld":false,"result.playerName":null}}]}

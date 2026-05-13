@@ -1,0 +1,1 @@
+{"name":"assert_client_state_running","tags":["assert","smoke"],"steps":[{"id":"state","tool":"mc.get_client_state","args":{},"expect":{"result.running":true,"result.inWorld":false}}]}

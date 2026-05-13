@@ -1,0 +1,1 @@
+{"name":"world_snapshot","tags":["world","full-client"],"steps":[{"id":"world","tool":"mc.get_world_snapshot","args":{},"expect":{"result.inWorld":true,"result.dimension":{"contains":"minecraft:"}}}]}

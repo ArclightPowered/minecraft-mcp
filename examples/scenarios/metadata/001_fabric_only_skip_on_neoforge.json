@@ -1,0 +1,1 @@
+{"name":"metadata_fabric_only","tags":["metadata"],"requires":{"loaders":["fabric"]},"steps":[{"id":"caps","tool":"mc.debug.capabilities","args":{}}]}

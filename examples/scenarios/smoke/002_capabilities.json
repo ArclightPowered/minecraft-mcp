@@ -1,0 +1,1 @@
+{"name":"smoke_capabilities","tags":["smoke","capabilities"],"steps":[{"id":"caps","tool":"mc.debug.capabilities","args":{},"expect":{"result.minecraftVersion":"1.21.1","result.clientThreadScheduling":true}}]}

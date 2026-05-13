@@ -1,0 +1,7 @@
+{
+  "minecraft-mcp": {
+    "transport": "http-jsonrpc",
+    "discovery": ".minecraft/mcp/server.json",
+    "authorization": "Bearer <authToken from discovery file>"
+  }
+}

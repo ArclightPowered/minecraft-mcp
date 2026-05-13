@@ -1,0 +1,71 @@
+# Scenarios
+
+Scenarios are JSON files containing a name, optional metadata, and ordered steps. The runner scans scenario directories recursively, so scenarios may be grouped under `smoke/`, `input/`, `assert/`, and `metadata/`.
+
+Minimal example:
+
+```json
+{
+  "name": "client_ready",
+  "tags": ["smoke", "client"],
+  "steps": [
+    {
+      "id": "state",
+      "tool": "mc.get_client_state",
+      "args": {},
+      "expect": {
+        "result.running": true
+      }
+    }
+  ]
+}
+```
+
+Step-level `expect` supports dot-path equality and a small `contains` matcher:
+
+```json
+{
+  "expect": {
+    "result.running": true,
+    "result.screen": {"contains": "Screen"}
+  }
+}
+```
+
+Supported scenario metadata:
+
+```json
+{
+  "tags": ["input", "smoke"],
+  "requires": {
+    "loaders": ["fabric", "neoforge"]
+  },
+  "expected": "pass"
+}
+```
+
+- `tags`: used by `includeTags` / `excludeTags` in `mc.scenario.run_batch`.
+- `requires.loaders`: skips scenarios that do not match the active loader.
+- `expected: "fail"`: expected failures are reported as `expected_failed` and do not increase `failed`.
+
+Run all scenarios through MCP:
+
+```json
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"mc.scenario.run_batch","arguments":{"directory":"/absolute/path/to/examples/scenarios"}}}
+```
+
+Run only input scenarios:
+
+```json
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"mc.scenario.run_batch","arguments":{"directory":"/absolute/path/to/examples/scenarios","includeTags":["input"]}}}
+```
+
+Current scenario groups:
+
+- `smoke/`: client readiness, capabilities, current screen, pre-world player state.
+- `input/`: key press / key hold coverage.
+- `assert/`: examples using `expect` assertions.
+- `metadata/`: loader requirements, tags, and expected-failure behavior.
+- `world/`: full-client scenarios that create/join a singleplayer test world, inspect player/world/inventory/block state, exercise input in-world, and leave back to title.
+
+World scenarios require a real client run and are intended for `includeTags:["world"]` or `includeTags:["full-client"]`. They are not part of quick smoke-only validation.

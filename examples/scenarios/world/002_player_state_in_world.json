@@ -1,0 +1,1 @@
+{"name":"world_player_state_in_world","tags":["world","full-client"],"steps":[{"id":"state","tool":"mc.get_player_state","args":{},"expect":{"result.running":true,"result.inWorld":true}}]}
