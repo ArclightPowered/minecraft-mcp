@@ -25,6 +25,12 @@ runs {
         systemProperty 'minecraftMcp.batchExit', System.getProperty('minecraftMcp.batchExit', 'false')
         systemProperty 'minecraftMcp.scenarioDir', System.getProperty('minecraftMcp.scenarioDir', '')
     }
+    server {
+        modSource project.sourceSets.main
+        systemProperty 'minecraftMcp.port', System.getProperty('minecraftMcp.port', '0')
+        systemProperty 'minecraftMcp.batchExit', System.getProperty('minecraftMcp.batchExit', 'false')
+        systemProperty 'minecraftMcp.scenarioDir', System.getProperty('minecraftMcp.scenarioDir', '')
+    }
 }
 
 tasks.named('compileJava', JavaCompile) {

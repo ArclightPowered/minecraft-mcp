@@ -1,11 +1,13 @@
 package io.izzel.minecraftmcp;
 
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
+import io.izzel.minecraftmcp.bridge.MinecraftServerBridge;
 import io.izzel.minecraftmcp.config.MinecraftMcpConfig;
 import io.izzel.minecraftmcp.mcp.*;
 import io.izzel.minecraftmcp.scenario.ScenarioEngine;
 import io.izzel.minecraftmcp.scenario.ScenarioRunOptions;
 import io.izzel.minecraftmcp.tools.BuiltinTools;
+import io.izzel.minecraftmcp.tools.BuiltinServerTools;
 
 public final class MinecraftMcpBootstrap {
     private MinecraftMcpBootstrap() {}
@@ -29,6 +31,15 @@ public final class MinecraftMcpBootstrap {
                 }
             }, "minecraft-mcp-scenario-batch").start();
         }
+        return server;
+    }
+
+    public static LocalHttpMcpServer start(MinecraftServerBridge bridge) throws Exception {
+        MinecraftMcpConfig config = MinecraftMcpConfig.load();
+        ToolRegistry registry = new ToolRegistry();
+        BuiltinServerTools.register(registry, bridge);
+        LocalHttpMcpServer server = new LocalHttpMcpServer(config, new JsonRpcHandler(registry));
+        server.start(bridge.gameDirectory(), bridge.loader(), bridge.minecraftVersion());
         return server;
     }
 }

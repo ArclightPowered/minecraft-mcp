@@ -1,0 +1,1 @@
+{"name":"client_chat_send_command_alias","tags":["world","chat","client-tools","command-chat"],"requires":{"loaders":["fabric","neoforge"]},"steps":[{"id":"chat_command","tool":"mc.chat.send","args":{"message":"/say minecraft-mcp command chat"},"expect":{"result.status":"sent","result.kind":"command"}}]}

@@ -1,5 +1,7 @@
 package io.izzel.minecraftmcp.scenario;
 
+import io.izzel.minecraftmcp.util.PathReader;
+
 import java.util.*;
 
 public final class ScenarioAssertion {
@@ -27,19 +29,8 @@ public final class ScenarioAssertion {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public static Object readPath(Object root, String path) {
-        Object current = root;
-        for (String part : path.split("\\.")) {
-            if (current instanceof Map<?, ?> map) {
-                current = map.get(part);
-            } else if (current instanceof List<?> list) {
-                current = list.get(Integer.parseInt(part));
-            } else {
-                return null;
-            }
-        }
-        return current;
+        return PathReader.read(root, path);
     }
 
     private static void assertEquals(String path, Object expected, Object actual) {

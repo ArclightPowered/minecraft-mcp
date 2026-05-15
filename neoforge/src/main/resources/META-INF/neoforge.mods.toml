@@ -14,11 +14,11 @@ modId="neoforge"
 type="required"
 versionRange="${neoforge_version_range}"
 ordering="NONE"
-side="CLIENT"
+side="BOTH"
 
 [[dependencies.${mod_id}]]
 modId="minecraft"
 type="required"
 versionRange="[${minecraft_version}]"
 ordering="NONE"
-side="CLIENT"
+side="BOTH"

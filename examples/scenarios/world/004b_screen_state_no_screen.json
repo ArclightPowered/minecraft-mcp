@@ -1,0 +1,1 @@
+{"name":"client_screen_state_snapshot","tags":["world","screen","client-tools"],"requires":{"loaders":["fabric","neoforge"]},"steps":[{"id":"screen","tool":"mc.get_screen_state","args":{}}]}
