@@ -7,8 +7,10 @@ import io.izzel.minecraftmcp.condition.ConditionParser;
 
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
+import net.minecraft.world.phys.Vec3;
 
 public interface MinecraftClientBridge {
     String loader();
@@ -98,6 +100,9 @@ public interface MinecraftClientBridge {
     }
     default Map<String, Object> blockAt(int x, int y, int z) {
         throw new UnsupportedOperationException("Block query is not implemented by " + loader());
+    }
+    default Map<String, Object> moveWaypoints(List<Vec3> waypoints, boolean loop, int maxLoops, double tolerance, long timeoutMs, boolean sprint, boolean controlView) {
+        throw new UnsupportedOperationException("Waypoint movement is not implemented by " + loader());
     }
     default boolean waitUntil(String condition, long timeoutMs) {
         String normalized = condition == null ? "" : condition.trim();

@@ -6,7 +6,10 @@ import io.izzel.minecraftmcp.scenario.ScenarioEngine;
 import io.izzel.minecraftmcp.scenario.ScenarioRunOptions;
 
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+import net.minecraft.world.phys.Vec3;
 
 public final class BuiltinTools {
     private BuiltinTools() {}
@@ -41,6 +44,7 @@ public final class BuiltinTools {
         registry.register(simple("mc.get_inventory", "Get player inventory snapshot", args -> bridge.submit(bridge::inventorySnapshot).get(10, TimeUnit.SECONDS)));
         registry.register(simple("mc.hotbar.select", "Select a hotbar slot by zero-based index", args -> { int slot = ((Number) args.getOrDefault("slot", args.getOrDefault("index", 0))).intValue(); return bridge.submit(() -> bridge.selectHotbarSlot(slot)).get(10, TimeUnit.SECONDS); }));
         registry.register(simple("mc.get_block_at", "Get block state at coordinates", args -> { int x = ((Number) args.getOrDefault("x", 0)).intValue(); int y = ((Number) args.getOrDefault("y", 0)).intValue(); int z = ((Number) args.getOrDefault("z", 0)).intValue(); return bridge.submit(() -> bridge.blockAt(x, y, z)).get(10, TimeUnit.SECONDS); }));
+        registry.register(simple("mc.move.waypoints", "Move the client player through one or more waypoints", args -> { List<Vec3> waypoints = parseWaypoints(args.get("waypoints")); boolean loop = Boolean.parseBoolean(String.valueOf(args.getOrDefault("loop", false))); int maxLoops = ((Number) args.getOrDefault("maxLoops", loop ? 0 : 1)).intValue(); double tolerance = ((Number) args.getOrDefault("tolerance", 0.75)).doubleValue(); long timeoutMs = ((Number) args.getOrDefault("timeoutMs", 30000)).longValue(); boolean sprint = Boolean.parseBoolean(String.valueOf(args.getOrDefault("sprint", false))); boolean controlView = Boolean.parseBoolean(String.valueOf(args.getOrDefault("controlView", true))); return bridge.moveWaypoints(waypoints, loop, maxLoops, tolerance, timeoutMs, sprint, controlView); }));
     }
     private static void addTags(Object value, boolean include, ScenarioRunOptions.Builder options) {
         if (value instanceof Iterable<?> iterable) {
@@ -50,6 +54,29 @@ public final class BuiltinTools {
         } else if (value instanceof String tag && !tag.isBlank()) {
             if (include) options.includeTags(tag); else options.excludeTags(tag);
         }
+    }
+    private static List<Vec3> parseWaypoints(Object value) {
+        if (!(value instanceof Iterable<?> iterable)) throw new IllegalArgumentException("waypoints must be an array");
+        List<Vec3> result = new ArrayList<>();
+        for (Object item : iterable) result.add(parseWaypoint(item));
+        if (result.isEmpty()) throw new IllegalArgumentException("waypoints must not be empty");
+        return result;
+    }
+    private static Vec3 parseWaypoint(Object item) {
+        if (item instanceof Map<?, ?> map) {
+            double x = number(map.get("x"), "waypoint.x");
+            double y = number(map.get("y"), "waypoint.y");
+            double z = number(map.get("z"), "waypoint.z");
+            return new Vec3(x, y, z);
+        }
+        if (item instanceof List<?> list && list.size() >= 3) {
+            return new Vec3(number(list.get(0), "waypoint[0]"), number(list.get(1), "waypoint[1]"), number(list.get(2), "waypoint[2]"));
+        }
+        throw new IllegalArgumentException("waypoint must be {x,y,z} or [x,y,z]");
+    }
+    private static double number(Object value, String name) {
+        if (!(value instanceof Number number)) throw new IllegalArgumentException(name + " must be a number");
+        return number.doubleValue();
     }
     private static McpTool simple(String name, String desc, ToolBody body) {
         return new McpTool() {

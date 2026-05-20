@@ -18,7 +18,8 @@ import net.minecraft.client.Minecraft;
 
 import java.nio.file.Path;
 import java.util.Map;
-
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.gui.screens.DisconnectedScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -33,6 +34,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameRules;
@@ -296,6 +298,38 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             if (mc.level == null) return Map.of("inWorld", false, "x", x, "y", y, "z", z);
             BlockState state = mc.level.getBlockState(new net.minecraft.core.BlockPos(x, y, z));
             return Map.of("inWorld", true, "x", x, "y", y, "z", z, "block", net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString());
+        }
+        public Map<String, Object> moveWaypoints(List<Vec3> waypoints, boolean loop, int maxLoops, double tolerance, long timeoutMs, boolean sprint, boolean controlView) {
+            if (waypoints == null || waypoints.isEmpty()) throw new IllegalArgumentException("waypoints must not be empty");
+            long deadline = System.currentTimeMillis() + Math.max(0, timeoutMs);
+            double speed = sprint ? 0.28D : 0.16D;
+            int loops = 0;
+            int visited = 0;
+            while (System.currentTimeMillis() <= deadline) {
+                for (Vec3 target : waypoints) {
+                    while (System.currentTimeMillis() <= deadline) {
+                        Vec3 pos = submit(() -> mc.player == null ? null : mc.player.position()).join();
+                        if (pos == null) return Map.of("status", "no_player", "visited", visited, "loops", loops);
+                        Vec3 delta = target.subtract(pos);
+                        double distance = delta.length();
+                        if (distance <= tolerance) { visited++; break; }
+                        Vec3 step = delta.normalize().scale(Math.min(speed, distance));
+                        execute(() -> {
+                            if (mc.player != null) {
+                                if (controlView) {
+                                    mc.player.setYRot((float) Math.toDegrees(Math.atan2(-step.x, step.z)));
+                                    mc.player.setXRot((float) Math.toDegrees(-Math.atan2(step.y, Math.sqrt(step.x * step.x + step.z * step.z))));
+                                }
+                                mc.player.move(MoverType.PLAYER, step);
+                            }
+                        });
+                        try { Thread.sleep(50); } catch (InterruptedException e) { Thread.currentThread().interrupt(); return Map.of("status", "interrupted", "visited", visited, "loops", loops); }
+                    }
+                }
+                loops++;
+                if (!loop || (maxLoops > 0 && loops >= maxLoops)) return Map.of("status", "completed", "waypoints", waypoints.size(), "visited", visited, "loops", loops, "sprint", sprint, "controlView", controlView);
+            }
+            return Map.of("status", "timeout", "waypoints", waypoints.size(), "visited", visited, "loops", loops, "timeoutMs", timeoutMs, "controlView", controlView);
         }
 
         public ClientSnapshot snapshot() {
