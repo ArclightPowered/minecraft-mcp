@@ -19,13 +19,14 @@ Arguments:
   "direction": "both",
   "classContains": "",
   "nameContains": "",
+  "parseBundlePackets": true,
   "filters": {
     "name_a": "direction == 'serverbound' && contains(packetSimpleName, 'Swing')"
   }
 }
 ```
 
-`direction` may be `both`, `serverbound`, or `clientbound`.
+`direction` may be `both`, `serverbound`, or `clientbound`. `parseBundlePackets` defaults to `true`; when enabled, vanilla `BundlePacket` instances are expanded and their `subPackets()` are recorded/filtered individually. Set it to `false` to record the bundle wrapper itself.
 
 ### `mc.packet.recording.stop`
 

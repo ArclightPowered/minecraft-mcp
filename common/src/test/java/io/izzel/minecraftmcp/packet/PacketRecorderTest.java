@@ -1,5 +1,9 @@
 package io.izzel.minecraftmcp.packet;
 
+import net.minecraft.network.PacketListener;
+import net.minecraft.network.protocol.BundlePacket;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.PacketType;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -84,5 +88,69 @@ class PacketRecorderTest {
         assertThrows(IllegalArgumentException.class, () -> PacketFilter.from(Map.of(
                 "filters", Map.of("legacy", Map.of("direction", "serverbound"))
         )));
+    }
+
+    @Test
+    void parsesBundlePacketsByDefaultAndCanDisableIt() {
+        PacketRecorder recorder = new PacketRecorder();
+        recorder.start(PacketFilter.from(Map.of(
+                "filters", Map.of("inner_swing", "contains(packetSimpleName, 'Swing')")
+        )), 10, true);
+
+        recorder.record(PacketDirection.CLIENTBOUND, new FakeBundle(new FakeSwingPacket(), new FakeKeepAlivePacket()));
+
+        Map<String, Object> parsed = recorder.status().toMap();
+        assertEquals(2, parsed.get("count"));
+        Map<?, ?> parsedFilter = assertInstanceOf(Map.class, parsed.get("filter"));
+        assertEquals(Map.of("count", 1), parsedFilter.get("inner_swing"));
+
+        recorder.start(PacketFilter.from(Map.of(
+                "parseBundlePackets", false,
+                "filters", Map.of("inner_swing", "contains(packetSimpleName, 'Swing')")
+        )), 10, true);
+        recorder.record(PacketDirection.CLIENTBOUND, new FakeBundle(new FakeSwingPacket(), new FakeKeepAlivePacket()));
+
+        Map<String, Object> notParsed = recorder.status().toMap();
+        assertEquals(1, notParsed.get("count"));
+        Map<?, ?> notParsedFilter = assertInstanceOf(Map.class, notParsed.get("filter"));
+        assertEquals(Map.of("count", 0), notParsedFilter.get("inner_swing"));
+    }
+
+    static final class FakeBundle extends BundlePacket<PacketListener> {
+        @SafeVarargs
+        FakeBundle(Packet<? super PacketListener>... packets) {
+            super(List.of(packets));
+        }
+
+        @Override
+        public PacketType<? extends BundlePacket<PacketListener>> type() {
+            return null;
+        }
+
+        @Override
+        public void handle(PacketListener listener) {
+        }
+    }
+
+    static final class FakeSwingPacket implements Packet<PacketListener> {
+        @Override
+        public PacketType<? extends Packet<PacketListener>> type() {
+            return null;
+        }
+
+        @Override
+        public void handle(PacketListener listener) {
+        }
+    }
+
+    static final class FakeKeepAlivePacket implements Packet<PacketListener> {
+        @Override
+        public PacketType<? extends Packet<PacketListener>> type() {
+            return null;
+        }
+
+        @Override
+        public void handle(PacketListener listener) {
+        }
     }
 }

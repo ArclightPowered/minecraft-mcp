@@ -1,5 +1,7 @@
 package io.izzel.minecraftmcp.packet;
 
+import net.minecraft.network.protocol.BundlePacket;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -66,6 +68,16 @@ public final class PacketRecorder {
 
     public void record(PacketDirection direction, Object packet) {
         if (packet == null) return;
+        PacketFilter filter;
+        synchronized (this) {
+            filter = this.recordingFilter;
+        }
+        if (filter.parseBundlePackets() && packet instanceof BundlePacket<?> bundlePacket) {
+            for (Object subPacket : bundlePacket.subPackets()) {
+                record(direction, subPacket);
+            }
+            return;
+        }
         record(direction, packet.getClass().getName(), Map.of("toString", String.valueOf(packet)));
     }
 

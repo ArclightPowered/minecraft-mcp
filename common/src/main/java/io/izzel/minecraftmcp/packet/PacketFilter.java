@@ -11,10 +11,11 @@ public record PacketFilter(
         int limit,
         boolean reverse,
         boolean clearAfterDump,
+        boolean parseBundlePackets,
         Map<String, PacketNamedFilter> namedFilters
 ) {
     public static PacketFilter empty() {
-        return new PacketFilter(null, "", "", 0, 100, false, false, Map.of());
+        return new PacketFilter(null, "", "", 0, 100, false, false, true, Map.of());
     }
 
     public static PacketFilter from(Map<String, Object> args) {
@@ -28,8 +29,9 @@ public record PacketFilter(
         if (limit > 1000) limit = 1000;
         boolean reverse = Boolean.parseBoolean(String.valueOf(args.getOrDefault("reverse", false)));
         boolean clearAfterDump = Boolean.parseBoolean(String.valueOf(args.getOrDefault("clearAfterDump", false)));
+        boolean parseBundlePackets = Boolean.parseBoolean(String.valueOf(args.getOrDefault("parseBundlePackets", true)));
         Map<String, PacketNamedFilter> namedFilters = parseNamedFilters(args.get("filters"));
-        return new PacketFilter(direction, classContains, nameContains, sinceSequence, limit, reverse, clearAfterDump, namedFilters);
+        return new PacketFilter(direction, classContains, nameContains, sinceSequence, limit, reverse, clearAfterDump, parseBundlePackets, namedFilters);
     }
 
     public boolean matches(RecordedPacket packet) {
