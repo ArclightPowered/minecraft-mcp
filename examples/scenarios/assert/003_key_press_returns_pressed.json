@@ -1,1 +1,1 @@
-{"name":"assert_key_press_returns_pressed","tags":["assert","input"],"steps":[{"id":"press","tool":"mc.key_press","args":{"key":"E"},"expect":{"result.status":"pressed","result.key":"E"}}]}
+{"name":"assert_key_press_returns_pressed","tags":["assert","input"],"steps":[{"id":"press","tool":"mc.keyboard.press","args":{"key":"E"},"expect":{"result.status":"pressed","result.key":"E"}}]}

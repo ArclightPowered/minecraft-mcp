@@ -1,1 +1,1 @@
-{"name":"smoke_client_ready","tags":["smoke","client"],"steps":[{"id":"state","tool":"mc.get_client_state","args":{},"expect":{"result.running":true}}]}
+{"name":"smoke_client_ready","tags":["smoke","client"],"steps":[{"id":"state","tool":"mc.client.state","args":{},"expect":{"result.running":true}}]}

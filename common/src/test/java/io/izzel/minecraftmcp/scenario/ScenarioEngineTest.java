@@ -16,11 +16,11 @@ class ScenarioEngineTest {
     void runsBatchAndReportsPassedScenario() throws Exception {
         Path dir = Files.createTempDirectory("minecraft-mcp-scenarios");
         Files.writeString(dir.resolve("client_ready.json"), """
-                {"name":"client_ready","steps":[{"id":"state","tool":"mc.get_client_state","args":{}}]}
+                {"name":"client_ready","steps":[{"id":"state","tool":"mc.client.state","args":{}}]}
                 """);
         ToolRegistry registry = new ToolRegistry();
         registry.register(new McpTool() {
-            public String name() { return "mc.get_client_state"; }
+            public String name() { return "mc.client.state"; }
             public String description() { return "state"; }
             public Map<String, Object> inputSchema() { return Map.of("type", "object"); }
             public Object call(Map<String, Object> arguments) { return Map.of("running", true); }

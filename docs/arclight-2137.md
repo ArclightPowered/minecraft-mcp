@@ -14,7 +14,7 @@ Issue: https://github.com/IzzelAliz/Arclight/issues/2137
 - create and join a test world;
 - send normal client swing packets via `mc.player.swing`;
 - observe world/player state;
-- observe passenger/vehicle state via `mc.get_vehicle_state`.
+- observe passenger/vehicle state via `mc.vehicle.state`.
 
 `mc.player.swing` intentionally calls the vanilla client `LocalPlayer#swing(...)` path,
 which sends `ServerboundSwingPacket` to the server. On Arclight this reaches
@@ -30,7 +30,7 @@ issue stack trace.
   vanilla boat and mount the player. This requires a connected server or local world
   where the player is allowed to run `/summon` and `/ride`; exclude
   `requires-command-permission` for baseline client-only batches, or include it for
-  local test worlds created by `mc.world.create_test_world`, which enable cheats by
+  local test worlds created by `mc.world.join`, which enable cheats by
   default.
 - `013_mounted_swing_packet_baseline.json`: while mounted, send a swing packet and
   verify the player remains a passenger. Requires `012` to have succeeded.
@@ -95,7 +95,7 @@ Expected current-bug behavior on affected Arclight builds:
 
 - server log prints the Sable abnormal AABB abort stack;
 - the player may be ejected from the Sable vehicle seat;
-- `mc.get_vehicle_state` changes from `isPassenger=true` to `isPassenger=false`, or
+- `mc.vehicle.state` changes from `isPassenger=true` to `isPassenger=false`, or
   the player otherwise leaves the controlled seat unexpectedly.
 
 Expected fixed behavior:

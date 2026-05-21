@@ -93,4 +93,4 @@ packet.clientbound.count > 0
 packet.filter.name_a.count > 0
 ```
 
-Use `mc.wait_until` for packet assertions because packet timing is asynchronous.
+Use `mc.condition.wait` for packet assertions because packet timing is asynchronous.

@@ -1,6 +1,6 @@
 # Scenario condition expression syntax
 
-`mc.wait_until` conditions use a small boolean expression language.
+`mc.condition.wait` conditions use a small boolean expression language.
 
 ## Context object
 

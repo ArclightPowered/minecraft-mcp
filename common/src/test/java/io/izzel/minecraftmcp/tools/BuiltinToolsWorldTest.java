@@ -21,20 +21,20 @@ class BuiltinToolsWorldTest {
         ToolRegistry registry = new ToolRegistry();
         BuiltinTools.register(registry, bridge, new ScenarioEngine(registry));
 
-        Object create = registry.call("mc.world.create_test_world", Map.of("name", "mcp_world"));
-        Object wait = registry.call("mc.wait_until", Map.of("condition", "client.inWorld == true", "timeoutMs", 100));
-        Object snapshot = registry.call("mc.get_world_snapshot", Map.of());
-        Object inventory = registry.call("mc.get_inventory", Map.of());
+        Object join = registry.call("mc.world.join", Map.of("name", "mcp_world", "seed", 123));
+        Object wait = registry.call("mc.condition.wait", Map.of("condition", "client.inWorld == true", "timeoutMs", 100));
+        Object snapshot = registry.call("mc.world.snapshot", Map.of());
+        Object inventory = registry.call("mc.inventory.state", Map.of());
         Object select = registry.call("mc.hotbar.select", Map.of("slot", 3));
         Object chat = registry.call("mc.chat.send", Map.of("message", "hello"));
-        Object screenState = registry.call("mc.get_screen_state", Map.of());
-        Object typeText = registry.call("mc.screen.type_text", Map.of("text", "abc", "submit", true));
-        Object click = registry.call("mc.screen.click_at", Map.of("x", 10, "y", 20, "button", 0));
-        Object clickWidget = registry.call("mc.screen.click_widget", Map.of("id", "widget-1", "button", 0));
-        Object disconnect = registry.call("mc.server.get_disconnect_state", Map.of());
-        Object interact = registry.call("mc.interact.block", Map.of("x", 1, "y", 2, "z", 3, "face", "up"));
-        Object block = registry.call("mc.get_block_at", Map.of("x", 1, "y", 2, "z", 3));
-        Object move = registry.call("mc.move.waypoints", Map.of(
+        Object screenState = registry.call("mc.screen.state", Map.of());
+        Object typeText = registry.call("mc.screen.text.type", Map.of("text", "abc", "submit", true));
+        Object click = registry.call("mc.screen.click.at", Map.of("x", 10, "y", 20, "button", 0));
+        Object clickWidget = registry.call("mc.screen.widget.click", Map.of("id", "widget-1", "button", 0));
+        Object disconnect = registry.call("mc.server.disconnect.state", Map.of());
+        Object interact = registry.call("mc.block.interact", Map.of("x", 1, "y", 2, "z", 3, "face", "up"));
+        Object block = registry.call("mc.block.state", Map.of("x", 1, "y", 2, "z", 3));
+        Object move = registry.call("mc.movement.waypoints", Map.of(
                 "waypoints", List.of(Map.of("x", 1, "y", 64, "z", 2), Map.of("x", 3, "y", 64, "z", 4)),
                 "loop", true,
                 "maxLoops", 2,
@@ -43,10 +43,10 @@ class BuiltinToolsWorldTest {
                 "sprint", true,
                 "controlView", false
         ));
-        Object leave = registry.call("mc.world.leave_to_title", Map.of());
+        Object leave = registry.call("mc.world.leave", Map.of());
 
         assertEquals("mcp_world", bridge.createdWorldName);
-        assertEquals(Map.of("status", "created", "name", "mcp_world"), create);
+        assertEquals(Map.of("status", "joining", "created", true, "name", "mcp_world"), join);
         assertEquals(Map.of("condition", "client.inWorld == true", "matched", true), wait);
         assertTrue(((Map<?, ?>) snapshot).containsKey("dimension"));
         assertEquals(9, ((List<?>) ((Map<?, ?>) inventory).get("hotbar")).size());

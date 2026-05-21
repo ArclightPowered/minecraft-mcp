@@ -11,7 +11,7 @@
       }
     },
     {
-      "tool": "mc.wait_ticks",
+      "tool": "mc.ticks.wait",
       "args": {
         "ticks": 5
       }

@@ -24,7 +24,7 @@ class ServerMcpProxyTest {
         java.util.concurrent.atomic.AtomicReference<Object> result = new java.util.concurrent.atomic.AtomicReference<>();
         Thread thread = new Thread(() -> {
             try {
-                result.set(client.call("mc.server.get_state", Map.of(), payload ->
+                result.set(client.call("mc.server.state", Map.of(), payload ->
                         server.receive(payload, clientResponse::set), 1000));
             } catch (Exception e) {
                 throw new RuntimeException(e);

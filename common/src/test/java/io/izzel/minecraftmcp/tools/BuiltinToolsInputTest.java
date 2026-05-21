@@ -20,7 +20,7 @@ class BuiltinToolsInputTest {
         ToolRegistry registry = new ToolRegistry();
         BuiltinTools.register(registry, bridge, new ScenarioEngine(registry));
 
-        Object result = registry.call("mc.key_press", Map.of("key", "E"));
+        Object result = registry.call("mc.keyboard.press", Map.of("key", "E"));
 
         assertEquals(Map.of("status", "pressed", "key", "E"), result);
         assertEquals(List.of("press:E"), bridge.events);
@@ -32,7 +32,7 @@ class BuiltinToolsInputTest {
         ToolRegistry registry = new ToolRegistry();
         BuiltinTools.register(registry, bridge, new ScenarioEngine(registry));
 
-        Object result = registry.call("mc.key_hold", Map.of("key", "W", "ticks", 2));
+        Object result = registry.call("mc.keyboard.hold", Map.of("key", "W", "ticks", 2));
 
         assertEquals(Map.of("status", "held", "key", "W", "ticks", 2L), result);
         assertEquals(List.of("down:W", "wait:2", "up:W"), bridge.events);

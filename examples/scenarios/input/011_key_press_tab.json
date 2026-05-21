@@ -1,1 +1,1 @@
-{"name":"input_key_press_tab","tags":["input","keyboard"],"steps":[{"id":"press_tab","tool":"mc.key_press","args":{"key":"TAB"},"expect":{"result.status":"pressed","result.key":"TAB"}},{"id":"wait","tool":"mc.wait_ticks","args":{"ticks":1},"expect":{"result.waitedTicks":1}}]}
+{"name":"input_key_press_tab","tags":["input","keyboard"],"steps":[{"id":"press_tab","tool":"mc.keyboard.press","args":{"key":"TAB"},"expect":{"result.status":"pressed","result.key":"TAB"}},{"id":"wait","tool":"mc.ticks.wait","args":{"ticks":1},"expect":{"result.waitedTicks":1}}]}

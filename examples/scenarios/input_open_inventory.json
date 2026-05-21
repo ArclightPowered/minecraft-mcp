@@ -1,1 +1,1 @@
-{"name":"input_open_inventory","steps":[{"id":"press_inventory","tool":"mc.key_press","args":{"key":"E"}},{"id":"wait","tool":"mc.wait_ticks","args":{"ticks":2}},{"id":"screen","tool":"mc.get_current_screen","args":{}}]}
+{"name":"input_open_inventory","steps":[{"id":"press_inventory","tool":"mc.keyboard.press","args":{"key":"E"}},{"id":"wait","tool":"mc.ticks.wait","args":{"ticks":2}},{"id":"screen","tool":"mc.screen.current","args":{}}]}

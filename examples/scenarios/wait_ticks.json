@@ -1,1 +1,1 @@
-{"name":"wait_ticks","steps":[{"id":"wait","tool":"mc.wait_ticks","args":{"ticks":1}}]}
+{"name":"wait_ticks","steps":[{"id":"wait","tool":"mc.ticks.wait","args":{"ticks":1}}]}

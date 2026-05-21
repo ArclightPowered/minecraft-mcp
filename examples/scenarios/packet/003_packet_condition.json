@@ -11,7 +11,7 @@
       }
     },
     {
-      "tool": "mc.wait_until",
+      "tool": "mc.condition.wait",
       "args": {
         "condition": "packet.recording == true",
         "timeoutMs": 1000

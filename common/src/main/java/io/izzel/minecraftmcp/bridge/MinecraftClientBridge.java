@@ -6,6 +6,8 @@ import io.izzel.minecraftmcp.condition.ConditionExpression;
 import io.izzel.minecraftmcp.condition.ConditionParser;
 import io.izzel.minecraftmcp.packet.PacketFilter;
 import io.izzel.minecraftmcp.packet.PacketRecorder;
+import io.izzel.minecraftmcp.schematic.SchematicPathResolver;
+import io.izzel.minecraftmcp.schematic.SpongeSchematicV3;
 
 import java.nio.file.Path;
 import java.util.Map;
@@ -83,6 +85,15 @@ public interface MinecraftClientBridge {
     default Map<String, Object> interactBlock(int x, int y, int z, String face, String hand) {
         throw new UnsupportedOperationException("Block interaction is not implemented by " + loader());
     }
+    default boolean joinWorld(String name, Map<String, Object> options) {
+        boolean exists = java.nio.file.Files.isDirectory(gameDirectory().resolve("saves").resolve(name));
+        execute(() -> {
+            if (exists) openWorld(name);
+            else createTestWorld(name, options);
+        });
+        return !exists;
+    }
+
     default void createTestWorld(String name, Map<String, Object> options) {
         throw new UnsupportedOperationException("World creation is not implemented by " + loader());
     }
@@ -106,6 +117,35 @@ public interface MinecraftClientBridge {
     }
     default Map<String, Object> moveWaypoints(List<Vec3> waypoints, boolean loop, int maxLoops, double tolerance, long timeoutMs, boolean sprint, boolean controlView) {
         throw new UnsupportedOperationException("Waypoint movement is not implemented by " + loader());
+    }
+    default Map<String, Object> exportSchematic(Map<String, Object> args) {
+        throw new UnsupportedOperationException("Schematic export is not implemented by " + loader());
+    }
+    default Map<String, Object> schematicInfo(Map<String, Object> args) {
+        try {
+            Path path = SchematicPathResolver.resolve(gameDirectory(), String.valueOf(args.getOrDefault("path", "")));
+            var info = SpongeSchematicV3.info(path);
+            java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
+            result.put("status", info.status());
+            result.put("path", info.path());
+            result.put("format", info.format());
+            result.put("version", info.version());
+            result.put("dataVersion", info.dataVersion());
+            result.put("width", info.width());
+            result.put("height", info.height());
+            result.put("length", info.length());
+            result.put("volume", info.volume());
+            result.put("paletteSize", info.paletteSize());
+            result.put("hasBlockEntities", info.hasBlockEntities());
+            result.put("hasEntities", info.hasEntities());
+            result.put("metadata", info.metadata());
+            return result;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Failed to read Sponge v3 schematic info: " + e.getMessage(), e);
+        }
+    }
+    default Map<String, Object> pasteSchematic(Map<String, Object> args) {
+        throw new UnsupportedOperationException("Schematic paste is not implemented by " + loader());
     }
     default Map<String, Object> startPacketRecording(Map<String, Object> args) {
         int maxPackets = ((Number) args.getOrDefault("maxPackets", 1000)).intValue();

@@ -11,7 +11,7 @@ Minimal example:
   "steps": [
     {
       "id": "state",
-      "tool": "mc.get_client_state",
+      "tool": "mc.client.state",
       "args": {},
       "expect": {
         "result.running": true
@@ -44,20 +44,20 @@ Supported scenario metadata:
 }
 ```
 
-- `tags`: used by `includeTags` / `excludeTags` in `mc.scenario.run_batch`.
+- `tags`: used by `includeTags` / `excludeTags` in `mc.scenario.batch.run`.
 - `requires.loaders`: skips scenarios that do not match the active loader.
 - `expected: "fail"`: expected failures are reported as `expected_failed` and do not increase `failed`.
 
 Run all scenarios through MCP:
 
 ```json
-{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"mc.scenario.run_batch","arguments":{"directory":"/absolute/path/to/examples/scenarios"}}}
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"mc.scenario.batch.run","arguments":{"directory":"/absolute/path/to/examples/scenarios"}}}
 ```
 
 Run only input scenarios:
 
 ```json
-{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"mc.scenario.run_batch","arguments":{"directory":"/absolute/path/to/examples/scenarios","includeTags":["input"]}}}
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"mc.scenario.batch.run","arguments":{"directory":"/absolute/path/to/examples/scenarios","includeTags":["input"]}}}
 ```
 
 Current scenario groups:

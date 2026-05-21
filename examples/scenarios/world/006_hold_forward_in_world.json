@@ -1,1 +1,1 @@
-{"name":"world_hold_forward_in_world","tags":["world","input","full-client"],"steps":[{"id":"hold","tool":"mc.key_hold","args":{"key":"W","ticks":5},"expect":{"result.status":"held","result.key":"W"}},{"id":"state","tool":"mc.get_client_state","args":{},"expect":{"result.inWorld":true}}]}
+{"name":"world_hold_forward_in_world","tags":["world","input","full-client"],"steps":[{"id":"hold","tool":"mc.keyboard.hold","args":{"key":"W","ticks":5},"expect":{"result.status":"held","result.key":"W"}},{"id":"state","tool":"mc.client.state","args":{},"expect":{"result.inWorld":true}}]}

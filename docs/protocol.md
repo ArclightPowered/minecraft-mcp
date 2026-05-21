@@ -10,11 +10,11 @@ Supported methods:
 
 Implemented tools:
 
-- `mc.get_client_state`
-- `mc.get_player_state`
-- `mc.get_current_screen`
-- `mc.wait_ticks`
-- `mc.key_press` (MVP placeholder returning unsupported status)
+- `mc.client.state`
+- `mc.player.state`
+- `mc.screen.current`
+- `mc.ticks.wait`
+- `mc.keyboard.press` (MVP placeholder returning unsupported status)
 - `mc.debug.capabilities`
-- `mc.scenario.run_batch`
+- `mc.scenario.batch.run`
 - `mc.scenario.report`

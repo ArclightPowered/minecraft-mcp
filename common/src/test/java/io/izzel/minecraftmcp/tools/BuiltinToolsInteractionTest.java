@@ -32,7 +32,7 @@ class BuiltinToolsInteractionTest {
         ToolRegistry registry = new ToolRegistry();
         BuiltinTools.register(registry, bridge, new ScenarioEngine(registry));
 
-        Object result = registry.call("mc.get_vehicle_state", Map.of());
+        Object result = registry.call("mc.vehicle.state", Map.of());
 
         assertEquals(Map.of(
             "inWorld", true,

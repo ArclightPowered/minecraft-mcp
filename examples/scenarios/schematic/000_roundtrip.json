@@ -1,0 +1,121 @@
+{
+  "name": "schematic info/paste fixture and export air region",
+  "steps": [
+    {
+      "id": "join_world",
+      "tool": "mc.world.join",
+      "args": {
+        "name": "minecraft_mcp_schematic_test",
+        "seed": 12345,
+        "allowCommands": true
+      },
+      "expect": {
+        "result.status": "joining"
+      }
+    },
+    {
+      "id": "wait_world",
+      "tool": "mc.condition.wait",
+      "args": {
+        "condition": "client.inWorld == true",
+        "timeoutMs": 120000,
+        "intervalTicks": 10
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "fixture_info",
+      "tool": "mc.schematic.info",
+      "args": {
+        "path": "fixture.schem"
+      },
+      "expect": {
+        "result.status": "ok",
+        "result.format": "sponge-v3",
+        "result.version": 3,
+        "result.width": 2,
+        "result.height": 1,
+        "result.length": 1,
+        "result.volume": 2,
+        "result.paletteSize": 2
+      }
+    },
+    {
+      "id": "paste_fixture",
+      "tool": "mc.schematic.paste",
+      "args": {
+        "path": "fixture.schem",
+        "origin": { "x": 3, "y": 80, "z": 0 },
+        "maxBlocks": 16
+      },
+      "expect": {
+        "result.status": "pasted",
+        "result.placedBlocks": 2,
+        "result.width": 2
+      }
+    },
+    {
+      "id": "verify_stone",
+      "tool": "mc.block.state",
+      "args": {
+        "x": 3,
+        "y": 80,
+        "z": 0
+      },
+      "expect": {
+        "result.inWorld": true,
+        "result.block": "minecraft:stone"
+      }
+    },
+    {
+      "id": "verify_log",
+      "tool": "mc.block.state",
+      "args": {
+        "x": 4,
+        "y": 80,
+        "z": 0
+      },
+      "expect": {
+        "result.inWorld": true,
+        "result.block": "minecraft:oak_log"
+      }
+    },
+    {
+      "id": "export_region",
+      "tool": "mc.schematic.export",
+      "args": {
+        "from": { "x": 3, "y": 80, "z": 0 },
+        "to": { "x": 4, "y": 80, "z": 0 },
+        "path": "roundtrip.schem",
+        "maxBlocks": 16,
+        "metadata": { "name": "roundtrip" }
+      },
+      "expect": {
+        "result.status": "exported",
+        "result.format": "sponge-v3",
+        "result.width": 2,
+        "result.height": 1,
+        "result.length": 1,
+        "result.volume": 2
+      }
+    },
+    {
+      "id": "roundtrip_info",
+      "tool": "mc.schematic.info",
+      "args": {
+        "path": "roundtrip.schem"
+      },
+      "expect": {
+        "result.status": "ok",
+        "result.format": "sponge-v3",
+        "result.version": 3,
+        "result.width": 2,
+        "result.height": 1,
+        "result.length": 1,
+        "result.volume": 2
+      }
+    }
+  ]
+}

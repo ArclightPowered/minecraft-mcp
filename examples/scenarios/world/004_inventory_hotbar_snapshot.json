@@ -1,1 +1,1 @@
-{"name":"world_inventory_hotbar_snapshot","tags":["world","inventory","full-client"],"steps":[{"id":"inventory","tool":"mc.get_inventory","args":{},"expect":{"result.inWorld":true}}]}
+{"name":"world_inventory_hotbar_snapshot","tags":["world","inventory","full-client"],"steps":[{"id":"inventory","tool":"mc.inventory.state","args":{},"expect":{"result.inWorld":true}}]}

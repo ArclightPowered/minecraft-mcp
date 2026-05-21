@@ -17,10 +17,10 @@ class BuiltinServerToolsTest {
         ToolRegistry registry = new ToolRegistry();
         BuiltinServerTools.register(registry, bridge);
 
-        Object state = registry.call("mc.server.get_state", Map.of());
+        Object state = registry.call("mc.server.state", Map.of());
         Object capabilities = registry.call("mc.server.debug.capabilities", Map.of());
         Object command = registry.call("mc.server.command.run", Map.of("command", "list"));
-        Object wait = registry.call("mc.server.wait_ticks", Map.of("ticks", 2));
+        Object wait = registry.call("mc.server.ticks.wait", Map.of("ticks", 2));
 
         assertEquals(Map.of("running", true, "players", 1, "motd", "Test Server"), state);
         assertEquals(Map.of("loader", "test-server", "minecraftVersion", "1.21.1", "dedicatedServer", true, "serverThreadScheduling", true), capabilities);
@@ -28,7 +28,7 @@ class BuiltinServerToolsTest {
         assertEquals(Map.of("status", "sent", "command", "list"), command);
         assertEquals(Map.of("waitedTicks", 2L), wait);
         assertThrows(IllegalArgumentException.class, () -> registry.call("mc.debug.capabilities", Map.of()));
-        assertThrows(IllegalArgumentException.class, () -> registry.call("mc.wait_ticks", Map.of("ticks", 1)));
+        assertThrows(IllegalArgumentException.class, () -> registry.call("mc.ticks.wait", Map.of("ticks", 1)));
         assertThrows(IllegalArgumentException.class, () -> registry.call("mc.get_server_state", Map.of()));
     }
 

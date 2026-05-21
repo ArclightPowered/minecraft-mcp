@@ -6,6 +6,7 @@ import io.izzel.minecraftmcp.mcp.LocalHttpMcpServer;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import io.izzel.minecraftmcp.serverlink.ServerMcpPluginMessageHandler;
 import io.izzel.minecraftmcp.serverlink.ServerMcpProxy;
+import io.izzel.minecraftmcp.schematic.ServerSchematicTools;
 import io.izzel.minecraftmcp.tools.BuiltinServerTools;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -71,6 +72,8 @@ public final class FabricMinecraftMcpServerEntrypoint implements DedicatedServer
             server.getCommands().performPrefixedCommand(server.createCommandSourceStack(), normalized);
             return Map.of("status", "executed", "command", command);
         }
+        public Map<String, Object> exportSchematic(Map<String, Object> args) { return ServerSchematicTools.exportSchematic(server.overworld(), gameDirectory(), args); }
+        public Map<String, Object> pasteSchematic(Map<String, Object> args) { return ServerSchematicTools.pasteSchematic(server.overworld(), gameDirectory(), args); }
         public void shutdownServer() { server.halt(false); }
     }
 }

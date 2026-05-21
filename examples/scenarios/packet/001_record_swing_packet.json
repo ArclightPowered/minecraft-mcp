@@ -23,7 +23,7 @@
       }
     },
     {
-      "tool": "mc.wait_until",
+      "tool": "mc.condition.wait",
       "args": {
         "condition": "packet.filter.name_a.count > 0",
         "timeoutMs": 5000

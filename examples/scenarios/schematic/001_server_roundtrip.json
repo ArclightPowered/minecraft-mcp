@@ -1,0 +1,126 @@
+{
+  "name": "server schematic info/paste/export via server.call",
+  "tags": ["server_schematic"],
+  "steps": [
+    {
+      "id": "join_world",
+      "tool": "mc.world.join",
+      "args": {
+        "name": "minecraft_mcp_schematic_test",
+        "seed": 12345,
+        "allowCommands": true
+      },
+      "expect": {
+        "result.status": "joining"
+      }
+    },
+    {
+      "id": "wait_world",
+      "tool": "mc.condition.wait",
+      "args": {
+        "condition": "client.inWorld == true",
+        "timeoutMs": 120000,
+        "intervalTicks": 10
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "server_available",
+      "tool": "mc.server.call",
+      "args": {
+        "tool": "mc.server.state",
+        "arguments": {},
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.running": true
+      }
+    },
+    {
+      "id": "fixture_info",
+      "tool": "mc.server.call",
+      "args": {
+        "tool": "mc.schematic.info",
+        "arguments": { "path": "fixture.schem" },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "ok",
+        "result.format": "sponge-v3",
+        "result.version": 3,
+        "result.width": 2,
+        "result.height": 1,
+        "result.length": 1,
+        "result.volume": 2,
+        "result.paletteSize": 2
+      }
+    },
+    {
+      "id": "paste_fixture",
+      "tool": "mc.server.call",
+      "args": {
+        "tool": "mc.schematic.paste",
+        "arguments": {
+          "path": "fixture.schem",
+          "origin": { "x": 3, "y": 80, "z": 0 },
+          "maxBlocks": 16,
+          "blockEntities": true,
+          "entities": true,
+          "biomes": true
+        },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "pasted",
+        "result.placedBlocks": 2,
+        "result.width": 2
+      }
+    },
+    {
+      "id": "export_region",
+      "tool": "mc.server.call",
+      "args": {
+        "tool": "mc.schematic.export",
+        "arguments": {
+          "from": { "x": 3, "y": 80, "z": 0 },
+          "to": { "x": 4, "y": 80, "z": 0 },
+          "path": "roundtrip-server.schem",
+          "maxBlocks": 16,
+          "metadata": { "name": "roundtrip-server" },
+          "entities": true
+        },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "exported",
+        "result.format": "sponge-v3",
+        "result.width": 2,
+        "result.height": 1,
+        "result.length": 1,
+        "result.volume": 2,
+        "result.biomes": 1
+      }
+    },
+    {
+      "id": "roundtrip_info",
+      "tool": "mc.server.call",
+      "args": {
+        "tool": "mc.schematic.info",
+        "arguments": { "path": "roundtrip-server.schem" },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "ok",
+        "result.format": "sponge-v3",
+        "result.version": 3,
+        "result.width": 2,
+        "result.height": 1,
+        "result.length": 1,
+        "result.volume": 2,
+        "result.hasBiomes": true
+      }
+    }
+  ]
+}
