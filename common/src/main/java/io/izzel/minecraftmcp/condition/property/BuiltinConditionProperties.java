@@ -27,5 +27,8 @@ public final class BuiltinConditionProperties implements ConditionPropertyProvid
         registry.registerContextProperty("inventory", ctx ->
                 ctx.cached("inventory", () -> ctx.bridge().submit(ctx.bridge()::inventorySnapshot).get(5, TimeUnit.SECONDS))
         );
+        registry.registerContextProperty("packet", ctx ->
+                ctx.cached("packet", () -> ctx.bridge().packetRecordingStatus())
+        );
     }
 }

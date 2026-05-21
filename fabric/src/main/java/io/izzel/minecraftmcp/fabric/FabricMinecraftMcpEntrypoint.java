@@ -9,6 +9,7 @@ import io.izzel.minecraftmcp.serverlink.ServerMcpProxy;
 import io.izzel.minecraftmcp.tools.BuiltinServerTools;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import io.izzel.minecraftmcp.input.KeyAliases;
+import io.izzel.minecraftmcp.packet.PacketRecorderChannelInstaller;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.fabricmc.api.ClientModInitializer;
@@ -299,6 +300,23 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             BlockState state = mc.level.getBlockState(new net.minecraft.core.BlockPos(x, y, z));
             return Map.of("inWorld", true, "x", x, "y", y, "z", z, "block", net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString());
         }
+        @Override
+        public Map<String, Object> startPacketRecording(Map<String, Object> args) {
+            Map<String, Object> result = MinecraftClientBridge.super.startPacketRecording(args);
+            Map<String, Object> hook = mc.getConnection() == null ? Map.of("packetHandler", "not_connected") : PacketRecorderChannelInstaller.install(mc.getConnection().getConnection(), PACKET_RECORDER);
+            java.util.Map<String, Object> merged = new java.util.LinkedHashMap<>(result);
+            merged.putAll(hook);
+            return merged;
+        }
+        @Override
+        public Map<String, Object> stopPacketRecording() {
+            Map<String, Object> result = MinecraftClientBridge.super.stopPacketRecording();
+            Map<String, Object> hook = mc.getConnection() == null ? Map.of("packetHandler", "not_connected") : PacketRecorderChannelInstaller.remove(mc.getConnection().getConnection());
+            java.util.Map<String, Object> merged = new java.util.LinkedHashMap<>(result);
+            merged.putAll(hook);
+            return merged;
+        }
+        @Override
         public Map<String, Object> moveWaypoints(List<Vec3> waypoints, boolean loop, int maxLoops, double tolerance, long timeoutMs, boolean sprint, boolean controlView) {
             if (waypoints == null || waypoints.isEmpty()) throw new IllegalArgumentException("waypoints must not be empty");
             long deadline = System.currentTimeMillis() + Math.max(0, timeoutMs);

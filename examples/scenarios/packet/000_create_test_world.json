@@ -1,0 +1,33 @@
+{
+  "name": "packet create test world",
+  "tags": ["packet", "world"],
+  "steps": [
+    {
+      "tool": "mc.world.create_test_world",
+      "args": {
+        "name": "minecraft_mcp_packet_world",
+        "seed": 0,
+        "allowCommands": true
+      },
+      "expect": {
+        "result.status": "created"
+      }
+    },
+    {
+      "tool": "mc.wait_ticks",
+      "args": {
+        "ticks": 120
+      }
+    },
+    {
+      "tool": "mc.wait_until",
+      "args": {
+        "condition": "client.inWorld == true",
+        "timeoutMs": 60000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    }
+  ]
+}

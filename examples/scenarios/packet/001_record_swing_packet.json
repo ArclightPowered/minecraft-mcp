@@ -1,0 +1,48 @@
+{
+  "name": "record swing packet",
+  "tags": ["packet", "world"],
+  "steps": [
+    {
+      "tool": "mc.packet.recording.start",
+      "args": {
+        "clear": true,
+        "maxPackets": 200,
+        "direction": "serverbound",
+        "filters": {
+          "name_a": "direction == 'serverbound' && contains(packetSimpleName, 'Swing')"
+        }
+      },
+      "expect": {
+        "result.recording": true
+      }
+    },
+    {
+      "tool": "mc.player.swing",
+      "args": {
+        "hand": "main_hand"
+      }
+    },
+    {
+      "tool": "mc.wait_until",
+      "args": {
+        "condition": "packet.filter.name_a.count > 0",
+        "timeoutMs": 5000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "tool": "mc.packet.dump",
+      "args": {
+        "direction": "serverbound",
+        "nameContains": "Swing",
+        "limit": 20
+      }
+    },
+    {
+      "tool": "mc.packet.recording.stop",
+      "args": {}
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "name": "packet dump filter",
+  "tags": ["packet", "world"],
+  "steps": [
+    {
+      "tool": "mc.packet.recording.start",
+      "args": {
+        "clear": true,
+        "maxPackets": 300,
+        "direction": "both"
+      }
+    },
+    {
+      "tool": "mc.wait_ticks",
+      "args": {
+        "ticks": 5
+      }
+    },
+    {
+      "tool": "mc.packet.dump",
+      "args": {
+        "direction": "both",
+        "limit": 50,
+        "sinceSequence": 0,
+        "reverse": true
+      }
+    },
+    {
+      "tool": "mc.packet.recording.clear",
+      "args": {},
+      "expect": {
+        "result.status": "cleared"
+      }
+    },
+    {
+      "tool": "mc.packet.recording.status",
+      "args": {},
+      "expect": {
+        "result.count": 0
+      }
+    },
+    {
+      "tool": "mc.packet.recording.stop",
+      "args": {}
+    }
+  ]
+}

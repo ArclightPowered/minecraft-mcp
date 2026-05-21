@@ -1,0 +1,35 @@
+{
+  "name": "packet condition property",
+  "tags": ["packet", "world"],
+  "steps": [
+    {
+      "tool": "mc.packet.recording.start",
+      "args": {
+        "clear": true,
+        "maxPackets": 200,
+        "direction": "both"
+      }
+    },
+    {
+      "tool": "mc.wait_until",
+      "args": {
+        "condition": "packet.recording == true",
+        "timeoutMs": 1000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "tool": "mc.packet.recording.status",
+      "args": {},
+      "expect": {
+        "result.recording": true
+      }
+    },
+    {
+      "tool": "mc.packet.recording.stop",
+      "args": {}
+    }
+  ]
+}

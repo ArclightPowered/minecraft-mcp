@@ -1,0 +1,34 @@
+{
+  "name": "packet recording title smoke",
+  "tags": ["packet", "smoke"],
+  "steps": [
+    {
+      "tool": "mc.packet.recording.start",
+      "args": {
+        "clear": true,
+        "maxPackets": 20,
+        "direction": "both"
+      },
+      "expect": {
+        "result.recording": true
+      }
+    },
+    {
+      "tool": "mc.wait_until",
+      "args": {
+        "condition": "packet.recording == true",
+        "timeoutMs": 1000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "tool": "mc.packet.recording.stop",
+      "args": {},
+      "expect": {
+        "result.recording": false
+      }
+    }
+  ]
+}

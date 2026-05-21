@@ -4,6 +4,8 @@ import io.izzel.minecraftmcp.condition.ConditionContext;
 import io.izzel.minecraftmcp.condition.ConditionEvaluator;
 import io.izzel.minecraftmcp.condition.ConditionExpression;
 import io.izzel.minecraftmcp.condition.ConditionParser;
+import io.izzel.minecraftmcp.packet.PacketFilter;
+import io.izzel.minecraftmcp.packet.PacketRecorder;
 
 import java.nio.file.Path;
 import java.util.Map;
@@ -13,6 +15,7 @@ import java.util.function.Supplier;
 import net.minecraft.world.phys.Vec3;
 
 public interface MinecraftClientBridge {
+    PacketRecorder PACKET_RECORDER = new PacketRecorder();
     String loader();
     String minecraftVersion();
     Path gameDirectory();
@@ -103,6 +106,26 @@ public interface MinecraftClientBridge {
     }
     default Map<String, Object> moveWaypoints(List<Vec3> waypoints, boolean loop, int maxLoops, double tolerance, long timeoutMs, boolean sprint, boolean controlView) {
         throw new UnsupportedOperationException("Waypoint movement is not implemented by " + loader());
+    }
+    default Map<String, Object> startPacketRecording(Map<String, Object> args) {
+        int maxPackets = ((Number) args.getOrDefault("maxPackets", 1000)).intValue();
+        boolean clear = Boolean.parseBoolean(String.valueOf(args.getOrDefault("clear", true)));
+        PACKET_RECORDER.start(PacketFilter.from(args), maxPackets, clear);
+        return Map.of("status", "started", "recording", true, "maxPackets", Math.max(1, maxPackets));
+    }
+    default Map<String, Object> stopPacketRecording() {
+        PACKET_RECORDER.stop();
+        return Map.of("status", "stopped", "recording", false);
+    }
+    default Map<String, Object> clearPacketRecording() {
+        PACKET_RECORDER.clear();
+        return Map.of("status", "cleared");
+    }
+    default Map<String, Object> packetRecordingStatus() {
+        return PACKET_RECORDER.status().toMap();
+    }
+    default Map<String, Object> dumpPackets(Map<String, Object> args) {
+        return PACKET_RECORDER.dump(PacketFilter.from(args)).toMap();
     }
     default boolean waitUntil(String condition, long timeoutMs) {
         String normalized = condition == null ? "" : condition.trim();
