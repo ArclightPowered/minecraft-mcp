@@ -1,1 +1,14 @@
-{"name":"capabilities","steps":[{"id":"caps","tool":"mc.debug.capabilities","args":{}}]}
+{
+  "name": "capabilities",
+  "steps": [
+    {
+      "id": "caps",
+      "tool": "mc.debug.capabilities",
+      "args": {},
+      "expect": {
+        "result.minecraftVersion": "1.21.1",
+        "result.clientThreadScheduling": true
+      }
+    }
+  ]
+}

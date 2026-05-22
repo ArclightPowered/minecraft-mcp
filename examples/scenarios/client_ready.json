@@ -1,1 +1,14 @@
-{"name":"client_ready","steps":[{"id":"state","tool":"mc.client.state","args":{}}]}
+{
+  "name": "client_ready",
+  "steps": [
+    {
+      "id": "state",
+      "tool": "mc.client.state",
+      "args": {},
+      "expect": {
+        "result.running": true,
+        "result.inWorld": false
+      }
+    }
+  ]
+}

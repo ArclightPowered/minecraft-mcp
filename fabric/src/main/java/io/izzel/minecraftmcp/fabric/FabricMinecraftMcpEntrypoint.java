@@ -81,8 +81,14 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
         public boolean isOnClientThread() { return false; }
         public void execute(Runnable runnable) { mc.execute(runnable); }
         public void pressKey(String key) {
-            setKeyDown(key, true);
-            setKeyDown(key, false);
+            var keyMapping = InputConstants.getKey(KeyAliases.normalize(key));
+            if (mc.screen != null) {
+                mc.screen.keyPressed(keyMapping.getValue(), 0, 0);
+            } else {
+                KeyMapping.set(keyMapping, true);
+                KeyMapping.click(keyMapping);
+                KeyMapping.set(keyMapping, false);
+            }
         }
         public void setKeyDown(String key, boolean down) {
             KeyMapping.set(InputConstants.getKey(KeyAliases.normalize(key)), down);

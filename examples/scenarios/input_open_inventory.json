@@ -1,1 +1,87 @@
-{"name":"input_open_inventory","steps":[{"id":"press_inventory","tool":"mc.keyboard.press","args":{"key":"E"}},{"id":"wait","tool":"mc.ticks.wait","args":{"ticks":2}},{"id":"screen","tool":"mc.screen.current","args":{}}]}
+{
+  "name": "input_open_inventory",
+  "steps": [
+    {
+      "id": "join_world",
+      "tool": "mc.world.join",
+      "args": {
+        "name": "minecraft_mcp_input_test",
+        "seed": 12345,
+        "allowCommands": true
+      },
+      "expect": {
+        "result.status": "joining"
+      }
+    },
+    {
+      "id": "wait_world",
+      "tool": "mc.condition.wait",
+      "args": {
+        "condition": "client.inWorld == true && client.screen == null",
+        "timeoutMs": 120000,
+        "intervalTicks": 10
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "press_inventory",
+      "tool": "mc.keyboard.press",
+      "args": {
+        "key": "E"
+      },
+      "expect": {
+        "result.status": "pressed",
+        "result.key": "E"
+      }
+    },
+    {
+      "id": "wait_open",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 2
+      },
+      "expect": {
+        "result.waitedTicks": 2
+      }
+    },
+    {
+      "id": "screen_open",
+      "tool": "mc.screen.current",
+      "args": {},
+      "expect": {
+        "result.screen": { "contains": "Inventory" }
+      }
+    },
+    {
+      "id": "close_inventory",
+      "tool": "mc.keyboard.press",
+      "args": {
+        "key": "ESC"
+      },
+      "expect": {
+        "result.status": "pressed",
+        "result.key": "ESC"
+      }
+    },
+    {
+      "id": "wait_close",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 2
+      },
+      "expect": {
+        "result.waitedTicks": 2
+      }
+    },
+    {
+      "id": "screen_closed",
+      "tool": "mc.screen.state",
+      "args": {},
+      "expect": {
+        "result.hasScreen": false
+      }
+    }
+  ]
+}
