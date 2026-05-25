@@ -81,6 +81,32 @@ Arguments:
 
 The result includes `nextSinceSequence`, so agents can poll incrementally.
 
+### `mc.packet.wait`
+
+Waits until recorded packets matching the same filter fields used by `mc.packet.dump` reach a required count.
+
+Arguments:
+
+```json
+{
+  "direction": "serverbound",
+  "nameContains": "Swing",
+  "sinceSequence": 0,
+  "count": 1,
+  "timeoutMs": 10000
+}
+```
+
+Result:
+
+```json
+{
+  "matched": true,
+  "count": 1,
+  "required": 1
+}
+```
+
 ## Scenario conditions
 
 Packet state is available through the condition property SPI as `packet`. For assertions about specific packets, define a named filter on `mc.packet.recording.start` and wait on that filter's stable cumulative count. Do not rely on `packet.last` for packet existence checks because any later packet can replace it.

@@ -1,0 +1,28 @@
+{
+  "name": "screenshot capture smoke",
+  "tags": ["screenshot", "smoke", "client"],
+  "steps": [
+    {
+      "id": "wait_playable_world_or_title",
+      "tool": "mc.condition.wait",
+      "args": {
+        "condition": "client.rawInWorld == false || client.inWorld == true",
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "take_screenshot",
+      "tool": "mc.screenshot.take",
+      "args": {
+        "name": "mcp-screenshot-smoke.png"
+      },
+      "expect": {
+        "result.status": "saved",
+        "result.path": "screenshots/mcp-screenshot-smoke.png"
+      }
+    }
+  ]
+}

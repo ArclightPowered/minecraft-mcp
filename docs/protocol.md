@@ -10,11 +10,21 @@ Supported methods:
 
 Implemented tools:
 
+`mc.client.state` returns both `inWorld` and `rawInWorld`. `rawInWorld` means the underlying client level/player exists; `inWorld` means the client is in a playable world state with no loading/GUI screen blocking normal controls.
+
 - `mc.client.state`
 - `mc.player.state`
 - `mc.screen.current`
 - `mc.ticks.wait`
-- `mc.keyboard.press` (MVP placeholder returning unsupported status)
+- `mc.keyboard.press`
+- `mc.keyboard.hold`
+- `mc.screenshot.take`
+- `mc.packet.recording.start`
+- `mc.packet.recording.stop`
+- `mc.packet.recording.clear`
+- `mc.packet.recording.status`
+- `mc.packet.dump`
+- `mc.packet.wait`
 - `mc.debug.capabilities`
 - `mc.scenario.batch.run`
 - `mc.scenario.report`

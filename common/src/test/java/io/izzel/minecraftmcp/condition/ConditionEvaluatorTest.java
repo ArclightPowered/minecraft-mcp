@@ -26,6 +26,31 @@ class ConditionEvaluatorTest {
         assertTrue(eval("missing(screen.children.99.id)", bridge));
     }
 
+    @Test
+    void distinguishesPlayableWorldFromRawWorldDuringLoadingScreens() {
+        MockBridge bridge = new MockBridge() {
+            @Override public ClientSnapshot snapshot() {
+                return new ClientSnapshot(true, false, true, "net.minecraft.client.gui.screens.LevelLoadingScreen", "Dev", 1, 70, 3, 0, 0);
+            }
+        };
+        assertFalse(eval("client.inWorld == true", bridge));
+        assertTrue(eval("client.rawInWorld == true", bridge));
+        assertTrue(eval("client.screen != null", bridge));
+    }
+
+    @Test
+    void waitUntilRetriesTransientRuntimeEvaluationFailures() {
+        MockBridge bridge = new MockBridge() {
+            int attempts;
+            @Override public ClientSnapshot snapshot() {
+                attempts++;
+                if (attempts == 1) throw new RuntimeException("transient loading");
+                return new ClientSnapshot(true, true, null, "Dev", 1, 70, 3, 0, 0);
+            }
+        };
+        assertTrue(bridge.waitUntil("client.inWorld == true", 1000));
+    }
+
     private static boolean eval(String expression, MinecraftClientBridge bridge) {
         return ConditionEvaluator.evaluateBoolean(ConditionParser.parse(expression), new ConditionContext(bridge));
     }

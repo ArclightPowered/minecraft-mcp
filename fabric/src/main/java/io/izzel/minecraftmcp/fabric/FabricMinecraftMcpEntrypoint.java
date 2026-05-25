@@ -95,6 +95,38 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
         }
         public void shutdownClient() { mc.stop(); }
 
+        public Map<String, Object> takeScreenshot(Map<String, Object> args) {
+            String requested = String.valueOf(args.getOrDefault("name", ""));
+            String filename;
+            if (requested.isBlank()) {
+                filename = "mcp-" + java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS").format(java.time.LocalDateTime.now()) + ".png";
+            } else {
+                filename = Path.of(requested).getFileName().toString();
+                if (!filename.endsWith(".png")) filename = filename + ".png";
+            }
+            if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) throw new IllegalArgumentException("invalid screenshot name");
+            Path dir = gameDirectory().resolve("screenshots").normalize();
+            Path target = dir.resolve(filename).normalize();
+            if (!target.startsWith(dir)) throw new IllegalArgumentException("invalid screenshot path");
+            try {
+                java.nio.file.Files.createDirectories(dir);
+                try (com.mojang.blaze3d.platform.NativeImage image = net.minecraft.client.Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
+                    image.writeToFile(target);
+                    return Map.of(
+                            "status", "saved",
+                            "path", gameDirectory().relativize(target).toString().replace('\\', '/'),
+                            "absolutePath", target.toString(),
+                            "width", image.getWidth(),
+                            "height", image.getHeight(),
+                            "bytes", java.nio.file.Files.size(target)
+                    );
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to take screenshot: " + e.getMessage(), e);
+            }
+        }
+
+
         public void swing(String hand) {
             if (mc.player == null) return;
             InteractionHand interactionHand = "off".equalsIgnoreCase(hand) || "offhand".equalsIgnoreCase(hand) ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
@@ -478,8 +510,10 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
 
         public ClientSnapshot snapshot() {
             String screen = mc.screen == null ? null : mc.screen.getClass().getName();
-            if (mc.player == null) return new ClientSnapshot(true, false, screen, null, 0, 0, 0, 0, 0);
-            return new ClientSnapshot(true, mc.level != null, screen, mc.player.getGameProfile().getName(), mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYRot(), mc.player.getXRot());
+            if (mc.player == null) return new ClientSnapshot(true, false, mc.level != null, screen, null, 0, 0, 0, 0, 0);
+            boolean rawInWorld = mc.level != null;
+            boolean playableInWorld = rawInWorld && mc.screen == null;
+            return new ClientSnapshot(true, playableInWorld, rawInWorld, screen, mc.player.getGameProfile().getName(), mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYRot(), mc.player.getXRot());
         }
     }
 }

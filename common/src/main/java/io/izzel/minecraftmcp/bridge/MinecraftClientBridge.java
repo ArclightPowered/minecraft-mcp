@@ -167,6 +167,26 @@ public interface MinecraftClientBridge {
     default Map<String, Object> dumpPackets(Map<String, Object> args) {
         return PACKET_RECORDER.dump(PacketFilter.from(args)).toMap();
     }
+    default Map<String, Object> waitForPackets(Map<String, Object> args) {
+        PacketFilter filter = PacketFilter.from(args);
+        int required = ((Number) args.getOrDefault("count", args.getOrDefault("required", 1))).intValue();
+        if (required < 1) required = 1;
+        long timeoutMs = ((Number) args.getOrDefault("timeoutMs", 30000)).longValue();
+        long deadline = System.currentTimeMillis() + Math.max(0, timeoutMs);
+        int count;
+        do {
+            count = PACKET_RECORDER.dump(filter).total();
+            if (count >= required) {
+                return Map.of("matched", true, "count", count, "required", required);
+            }
+            waitTicks(1);
+        } while (System.currentTimeMillis() < deadline);
+        count = PACKET_RECORDER.dump(filter).total();
+        return Map.of("matched", false, "count", count, "required", required);
+    }
+    default Map<String, Object> takeScreenshot(Map<String, Object> args) {
+        throw new UnsupportedOperationException("Screenshot capture is not implemented by " + loader());
+    }
     default boolean waitUntil(String condition, long timeoutMs) {
         String normalized = condition == null ? "" : condition.trim();
         ConditionExpression expression = ConditionParser.parse(normalized);
@@ -176,7 +196,7 @@ public interface MinecraftClientBridge {
             try {
                 if (ConditionEvaluator.evaluateBoolean(expression, new ConditionContext(this))) return true;
                 lastError = null;
-            } catch (ConditionContext.ConditionEvaluationException e) {
+            } catch (RuntimeException e) {
                 lastError = e;
             }
             waitTicks(1);

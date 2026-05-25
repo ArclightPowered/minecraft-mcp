@@ -23,12 +23,16 @@ class BuiltinToolsPacketTest {
         Object start = registry.call("mc.packet.recording.start", Map.of("clear", true, "maxPackets", 5, "direction", "serverbound"));
         Object status = registry.call("mc.packet.recording.status", Map.of());
         Object dump = registry.call("mc.packet.dump", Map.of("nameContains", "Swing", "limit", 10));
+        Object wait = registry.call("mc.packet.wait", Map.of("nameContains", "Swing", "count", 1, "timeoutMs", 1));
+        Object screenshot = registry.call("mc.screenshot.take", Map.of("name", "unit.png"));
         Object clear = registry.call("mc.packet.recording.clear", Map.of());
         Object stop = registry.call("mc.packet.recording.stop", Map.of());
 
         assertEquals(Map.of("status", "started", "maxPackets", 5), start);
         assertEquals(Map.of("recording", true, "count", 1), status);
         assertEquals(Map.of("returned", 1, "filter", "Swing"), dump);
+        assertEquals(Map.of("matched", true, "count", 1, "required", 1), wait);
+        assertEquals(Map.of("status", "saved", "path", "screenshots/unit.png", "width", 800, "height", 600), screenshot);
         assertEquals(Map.of("status", "cleared"), clear);
         assertEquals(Map.of("status", "stopped"), stop);
         assertEquals("serverbound", bridge.startArgs.get("direction"));
@@ -38,6 +42,7 @@ class BuiltinToolsPacketTest {
     static final class RecordingBridge implements MinecraftClientBridge {
         Map<String, Object> startArgs;
         Map<String, Object> dumpArgs;
+        Map<String, Object> waitArgs;
         public String loader() { return "test"; }
         public String minecraftVersion() { return "1.21.1"; }
         public Path gameDirectory() { return Path.of("."); }
@@ -50,5 +55,7 @@ class BuiltinToolsPacketTest {
         public Map<String, Object> clearPacketRecording() { return Map.of("status", "cleared"); }
         public Map<String, Object> packetRecordingStatus() { return Map.of("recording", true, "count", 1); }
         public Map<String, Object> dumpPackets(Map<String, Object> args) { dumpArgs = args; return Map.of("returned", 1, "filter", args.get("nameContains")); }
+        public Map<String, Object> waitForPackets(Map<String, Object> args) { waitArgs = args; return Map.of("matched", true, "count", 1, "required", ((Number) args.get("count")).intValue()); }
+        public Map<String, Object> takeScreenshot(Map<String, Object> args) { return Map.of("status", "saved", "path", "screenshots/" + args.get("name"), "width", 800, "height", 600); }
     }
 }
