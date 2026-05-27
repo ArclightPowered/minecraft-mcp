@@ -8,6 +8,8 @@ import io.izzel.minecraftmcp.scenario.ScenarioRunOptions;
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import net.minecraft.world.phys.Vec3;
 
@@ -26,6 +28,8 @@ public final class BuiltinTools {
         registry.register(simple("mc.player.swing", "Swing player hand and send the normal client interaction packet", args -> { String hand = String.valueOf(args.getOrDefault("hand", "main")); bridge.submit(() -> { bridge.swing(hand); return null; }).get(10, TimeUnit.SECONDS); return Map.of("status", "swung", "hand", hand); }));
         registry.register(simple("mc.vehicle.state", "Get player vehicle state", args -> bridge.submit(bridge::vehicleState).get(10, TimeUnit.SECONDS)));
         registry.register(simple("mc.command.run", "Send a slash command through the current client connection", args -> { String command = String.valueOf(args.getOrDefault("command", "")); return bridge.submit(() -> bridge.runCommand(command)).get(10, TimeUnit.SECONDS); }));
+        registry.register(simple("mc.command.suggest", "Request vanilla command suggestions and wait for the matching server response", args -> { String command = String.valueOf(args.getOrDefault("command", args.getOrDefault("text", "/"))); long timeoutMs = ((Number) args.getOrDefault("timeoutMs", 30000)).longValue(); return bridge.commandSuggest(command, timeoutMs); }));
+        registry.register(simple("mc.server.sync", "Synchronize with the server using a vanilla command suggestion round-trip", args -> { long timeoutMs = ((Number) args.getOrDefault("timeoutMs", 30000)).longValue(); Map<String,Object> result = bridge.commandSuggest("/", timeoutMs); java.util.Map<String,Object> synced = new java.util.LinkedHashMap<>(result); synced.put("status", "synced"); return synced; }));
         registry.register(simple("mc.server.connect", "Connect the client to a multiplayer server, reconnecting if already connected", args -> { String address = String.valueOf(args.getOrDefault("address", args.getOrDefault("server", ""))); String name = String.valueOf(args.getOrDefault("name", address)); return bridge.submit(() -> bridge.connectServer(address, name)).get(10, TimeUnit.SECONDS); }));
         registry.register(simple("mc.server.call", "Proxy a server-side MCP tool through the connected server plugin channel", args -> { String tool = String.valueOf(args.getOrDefault("tool", "")); Object rawArguments = args.get("arguments"); Map<String,Object> toolArgs = rawArguments instanceof Map<?,?> map ? (Map<String,Object>) map : Map.of(); long timeoutMs = ((Number) args.getOrDefault("timeoutMs", 30000)).longValue(); return bridge.serverMcpCall(tool, toolArgs, timeoutMs); }));
         registry.register(simple("mc.chat.send", "Send a normal chat message through the current client connection", args -> { String message = String.valueOf(args.getOrDefault("message", args.getOrDefault("text", ""))); return bridge.submit(() -> bridge.sendChat(message)).get(10, TimeUnit.SECONDS); }));
@@ -41,6 +45,14 @@ public final class BuiltinTools {
         registry.register(simple("mc.condition.wait", "Wait until a client condition is true", args -> { String condition = String.valueOf(args.getOrDefault("condition", "client.inWorld == true")); long timeoutMs = ((Number) args.getOrDefault("timeoutMs", 30000)).longValue(); boolean matched = bridge.waitUntil(condition, timeoutMs); return Map.of("condition", condition, "matched", matched); }));
         registry.register(simple("mc.world.snapshot", "Get current world snapshot", args -> bridge.submit(bridge::worldSnapshot).get(10, TimeUnit.SECONDS)));
         registry.register(simple("mc.inventory.state", "Get player inventory snapshot", args -> bridge.submit(bridge::inventorySnapshot).get(10, TimeUnit.SECONDS)));
+        registry.register(simple("mc.inventory.find", "Find item stacks in the player inventory", args -> { Map<String,Object> checked = requireInventoryItem(args); return bridge.submit(() -> bridge.findInventoryItem(checked)).get(10, TimeUnit.SECONDS); }));
+        registry.register(simple("mc.inventory.count", "Count matching items in the player inventory", args -> { Map<String,Object> checked = requireInventoryItem(args); return bridge.submit(() -> bridge.countInventoryItem(checked)).get(10, TimeUnit.SECONDS); }));
+        registry.register(simple("mc.inventory.selected", "Get the selected hotbar item", args -> bridge.submit(bridge::selectedInventoryItem).get(10, TimeUnit.SECONDS)));
+        registry.register(simple("mc.container.state", "Get current player container/menu state", args -> bridge.submit(bridge::containerState).get(10, TimeUnit.SECONDS)));
+        registry.register(simple("mc.container.click", "Click a container slot using the normal client interaction path", args -> { int slot = slot(args); int button = ((Number) args.getOrDefault("button", 0)).intValue(); String clickType = clickType(args.getOrDefault("clickType", "PICKUP")); return bridge.submit(() -> bridge.clickContainer(slot, button, clickType)).get(10, TimeUnit.SECONDS); }));
+        registry.register(simple("mc.container.quick_move", "Shift-click / quick-move a container slot", args -> { int slot = slot(args); return bridge.submit(() -> bridge.clickContainer(slot, 0, "QUICK_MOVE")).get(10, TimeUnit.SECONDS); }));
+        registry.register(simple("mc.container.drop", "Drop one or all items from a container slot", args -> { int slot = slot(args); boolean all = Boolean.parseBoolean(String.valueOf(args.getOrDefault("all", false))); return bridge.submit(() -> bridge.clickContainer(slot, all ? 1 : 0, "THROW")).get(10, TimeUnit.SECONDS); }));
+        registry.register(simple("mc.container.close", "Close the currently open container/menu", args -> bridge.submit(bridge::closeContainer).get(10, TimeUnit.SECONDS)));
         registry.register(simple("mc.hotbar.select", "Select a hotbar slot by zero-based index", args -> { int slot = ((Number) args.getOrDefault("slot", args.getOrDefault("index", 0))).intValue(); return bridge.submit(() -> bridge.selectHotbarSlot(slot)).get(10, TimeUnit.SECONDS); }));
         registry.register(simple("mc.block.state", "Get block state at coordinates", args -> { int x = ((Number) args.getOrDefault("x", 0)).intValue(); int y = ((Number) args.getOrDefault("y", 0)).intValue(); int z = ((Number) args.getOrDefault("z", 0)).intValue(); return bridge.submit(() -> bridge.blockAt(x, y, z)).get(10, TimeUnit.SECONDS); }));
         registry.register(simple("mc.packet.recording.start", "Start client packet recording", bridge::startPacketRecording));
@@ -83,6 +95,25 @@ public final class BuiltinTools {
     private static double number(Object value, String name) {
         if (!(value instanceof Number number)) throw new IllegalArgumentException(name + " must be a number");
         return number.doubleValue();
+    }
+    private static int slot(Map<String,Object> args) {
+        Object value = args.get("slot");
+        if (!(value instanceof Number number)) throw new IllegalArgumentException("slot must be a non-negative number");
+        int slot = number.intValue();
+        if (slot < 0) throw new IllegalArgumentException("slot must be non-negative");
+        return slot;
+    }
+    private static String clickType(Object value) {
+        String type = String.valueOf(value == null ? "PICKUP" : value).trim().toUpperCase(Locale.ROOT);
+        if (!Set.of("PICKUP", "QUICK_MOVE", "THROW").contains(type)) {
+            throw new IllegalArgumentException("Unsupported clickType: " + value);
+        }
+        return type;
+    }
+    private static Map<String,Object> requireInventoryItem(Map<String,Object> args) {
+        Object value = args.get("item");
+        if (value == null || String.valueOf(value).isBlank()) throw new IllegalArgumentException("item is required");
+        return args;
     }
     private static McpTool simple(String name, String desc, ToolBody body) {
         return new McpTool() {

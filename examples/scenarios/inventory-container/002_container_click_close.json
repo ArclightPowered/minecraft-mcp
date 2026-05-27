@@ -1,0 +1,162 @@
+{
+  "name": "container click pickup and close",
+  "tags": [
+    "inventory",
+    "container",
+    "input",
+    "world"
+  ],
+  "steps": [
+    {
+      "id": "join_world",
+      "tool": "mc.world.join",
+      "args": {
+        "name": "minecraft_mcp_inventory_container_click",
+        "seed": 13579,
+        "preset": "flat"
+      },
+      "expect": {
+        "result.status": "joining"
+      }
+    },
+    {
+      "id": "wait_world_attached",
+      "tool": "mc.condition.wait",
+      "args": {
+        "condition": "client.rawInWorld == true",
+        "timeoutMs": 300000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "wait_world_playable",
+      "tool": "mc.condition.wait",
+      "args": {
+        "condition": "client.inWorld == true && client.screen == null",
+        "timeoutMs": 300000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "give_diamond",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/give @s minecraft:diamond 1"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_give_diamond",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "set_survival",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/gamemode survival"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_set_survival",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_inventory_sync",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "open_inventory",
+      "tool": "mc.keyboard.press",
+      "args": {
+        "key": "E"
+      },
+      "expect": {
+        "result.status": "pressed",
+        "result.key": "E"
+      }
+    },
+    {
+      "id": "wait_open",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 2
+      },
+      "expect": {
+        "result.waitedTicks": 2
+      }
+    },
+    {
+      "id": "click_hotbar_slot_0",
+      "tool": "mc.container.click",
+      "args": {
+        "slot": 36,
+        "button": 0,
+        "clickType": "PICKUP"
+      },
+      "expect": {
+        "result.status": "clicked",
+        "result.slot": 36,
+        "result.clickType": "PICKUP"
+      }
+    },
+    {
+      "id": "carried_diamond",
+      "tool": "mc.container.state",
+      "expect": {
+        "result.hasContainer": true,
+        "result.carried.item": "minecraft:diamond",
+        "result.carried.count": 1
+      }
+    },
+    {
+      "id": "put_back",
+      "tool": "mc.container.click",
+      "args": {
+        "slot": 36,
+        "button": 0,
+        "clickType": "PICKUP"
+      },
+      "expect": {
+        "result.status": "clicked",
+        "result.slot": 36,
+        "result.clickType": "PICKUP"
+      }
+    },
+    {
+      "id": "close_container",
+      "tool": "mc.container.close",
+      "expect": {
+        "result.status": "closed"
+      }
+    }
+  ]
+}

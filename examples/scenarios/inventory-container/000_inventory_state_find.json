@@ -1,0 +1,112 @@
+{
+  "name": "inventory state find and count",
+  "tags": [
+    "inventory",
+    "container",
+    "world"
+  ],
+  "steps": [
+    {
+      "id": "join_world",
+      "tool": "mc.world.join",
+      "args": {
+        "name": "minecraft_mcp_inventory_container",
+        "seed": 24680,
+        "preset": "flat"
+      },
+      "expect": {
+        "result.status": "joining"
+      }
+    },
+    {
+      "id": "wait_world_attached",
+      "tool": "mc.condition.wait",
+      "args": {
+        "condition": "client.rawInWorld == true",
+        "timeoutMs": 300000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "wait_world_playable",
+      "tool": "mc.condition.wait",
+      "args": {
+        "condition": "client.inWorld == true && client.screen == null",
+        "timeoutMs": 300000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "give_diamond",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/give @s minecraft:diamond 3"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_give_diamond",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_inventory_sync",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "inventory_state",
+      "tool": "mc.inventory.state",
+      "expect": {
+        "result.inWorld": true,
+        "result.selected": 0
+      }
+    },
+    {
+      "id": "find_diamond",
+      "tool": "mc.inventory.find",
+      "args": {
+        "item": "minecraft:diamond",
+        "limit": 5
+      },
+      "expect": {
+        "result.found": true,
+        "result.totalCount": 3
+      }
+    },
+    {
+      "id": "count_diamond",
+      "tool": "mc.inventory.count",
+      "args": {
+        "item": "minecraft:diamond"
+      },
+      "expect": {
+        "result.count": 3
+      }
+    },
+    {
+      "id": "selected_item",
+      "tool": "mc.inventory.selected",
+      "expect": {
+        "result.inWorld": true
+      }
+    }
+  ]
+}

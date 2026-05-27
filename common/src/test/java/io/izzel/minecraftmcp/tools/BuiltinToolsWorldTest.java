@@ -21,7 +21,7 @@ class BuiltinToolsWorldTest {
         ToolRegistry registry = new ToolRegistry();
         BuiltinTools.register(registry, bridge, new ScenarioEngine(registry));
 
-        Object join = registry.call("mc.world.join", Map.of("name", "mcp_world", "seed", 123));
+        Object join = registry.call("mc.world.join", Map.of("name", "mcp_world", "seed", 123, "preset", "flat"));
         Object wait = registry.call("mc.condition.wait", Map.of("condition", "client.inWorld == true", "timeoutMs", 100));
         Object snapshot = registry.call("mc.world.snapshot", Map.of());
         Object inventory = registry.call("mc.inventory.state", Map.of());
@@ -46,6 +46,8 @@ class BuiltinToolsWorldTest {
         Object leave = registry.call("mc.world.leave", Map.of());
 
         assertEquals("mcp_world", bridge.createdWorldName);
+        assertEquals("flat", bridge.createdWorldOptions.get("preset"));
+        assertEquals(123, bridge.createdWorldOptions.get("seed"));
         assertEquals(Map.of("status", "joining", "created", true, "name", "mcp_world"), join);
         assertEquals(Map.of("condition", "client.inWorld == true", "matched", true), wait);
         assertTrue(((Map<?, ?>) snapshot).containsKey("dimension"));
@@ -74,6 +76,7 @@ class BuiltinToolsWorldTest {
 
     static final class RecordingBridge implements MinecraftClientBridge {
         String createdWorldName;
+        Map<String, Object> createdWorldOptions;
         boolean inWorld;
         boolean leftWorld;
         int selectedSlot;
@@ -104,6 +107,7 @@ class BuiltinToolsWorldTest {
         }
         public void createTestWorld(String name, Map<String, Object> options) {
             createdWorldName = name;
+            createdWorldOptions = options;
             inWorld = true;
         }
         public void leaveWorldToTitle() {

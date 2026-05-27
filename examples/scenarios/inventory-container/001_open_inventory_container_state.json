@@ -1,0 +1,99 @@
+{
+  "name": "open inventory container state",
+  "tags": [
+    "inventory",
+    "container",
+    "input",
+    "world"
+  ],
+  "steps": [
+    {
+      "id": "join_world",
+      "tool": "mc.world.join",
+      "args": {
+        "name": "minecraft_mcp_inventory_container",
+        "seed": 24680,
+        "preset": "flat"
+      },
+      "expect": {
+        "result.status": "joining"
+      }
+    },
+    {
+      "id": "wait_world_attached",
+      "tool": "mc.condition.wait",
+      "args": {
+        "condition": "client.rawInWorld == true",
+        "timeoutMs": 300000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "wait_world_playable",
+      "tool": "mc.condition.wait",
+      "args": {
+        "condition": "client.inWorld == true && client.screen == null",
+        "timeoutMs": 300000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "open_inventory",
+      "tool": "mc.keyboard.press",
+      "args": {
+        "key": "E"
+      },
+      "expect": {
+        "result.status": "pressed",
+        "result.key": "E"
+      }
+    },
+    {
+      "id": "wait_open",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 2
+      },
+      "expect": {
+        "result.waitedTicks": 2
+      }
+    },
+    {
+      "id": "container_state",
+      "tool": "mc.container.state",
+      "expect": {
+        "result.inWorld": true,
+        "result.hasContainer": true,
+        "result.hasScreen": true
+      }
+    },
+    {
+      "id": "close_container",
+      "tool": "mc.container.close",
+      "expect": {
+        "result.status": "closed"
+      }
+    },
+    {
+      "id": "wait_close",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 2
+      },
+      "expect": {
+        "result.waitedTicks": 2
+      }
+    },
+    {
+      "id": "screen_closed",
+      "tool": "mc.screen.state",
+      "expect": {
+        "result.hasScreen": false
+      }
+    }
+  ]
+}

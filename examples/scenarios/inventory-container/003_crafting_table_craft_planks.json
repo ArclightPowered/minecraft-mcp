@@ -1,0 +1,362 @@
+{
+  "name": "crafting table craft planks via container clicks",
+  "tags": [
+    "inventory",
+    "container",
+    "crafting",
+    "world"
+  ],
+  "steps": [
+    {
+      "id": "join_world",
+      "tool": "mc.world.join",
+      "args": {
+        "name": "minecraft_mcp_inventory_crafting_table",
+        "seed": 31101,
+        "preset": "flat"
+      },
+      "expect": {
+        "result.status": "joining"
+      }
+    },
+    {
+      "id": "wait_world_attached",
+      "tool": "mc.condition.wait",
+      "args": {
+        "condition": "client.rawInWorld == true",
+        "timeoutMs": 300000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "wait_world_playable",
+      "tool": "mc.condition.wait",
+      "args": {
+        "condition": "client.inWorld == true && client.screen == null",
+        "timeoutMs": 300000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "wait_after_world_ready",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 40
+      },
+      "expect": {
+        "result.waitedTicks": 40
+      }
+    },
+    {
+      "id": "place_floor",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/setblock 0 64 0 minecraft:stone"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_place_floor",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_place_floor",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "place_crafting_table",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/setblock 1 65 0 minecraft:crafting_table"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_place_crafting_table",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_place_crafting_table",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "crafting_table_placed",
+      "tool": "mc.block.state",
+      "args": {
+        "x": 1,
+        "y": 65,
+        "z": 0
+      },
+      "expect": {
+        "result.block": "minecraft:crafting_table"
+      }
+    },
+    {
+      "id": "prepare_area",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/tp @s 0 65 0"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_prepare_area",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_prepare_area",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "clear_inventory",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/clear @s"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_clear_inventory",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_clear_inventory",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "give_log",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/give @s minecraft:oak_log 1"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_give_log",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_give_log",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "set_survival",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/gamemode survival"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_set_survival",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_set_survival",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "open_crafting_table",
+      "tool": "mc.block.interact",
+      "args": {
+        "x": 1,
+        "y": 65,
+        "z": 0,
+        "face": "up",
+        "hand": "main"
+      },
+      "expect": {
+        "result.status": "interacted",
+        "result.consumesAction": true
+      }
+    },
+    {
+      "id": "wait_open",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 2
+      },
+      "expect": {
+        "result.waitedTicks": 2
+      }
+    },
+    {
+      "id": "crafting_menu_open",
+      "tool": "mc.container.state",
+      "expect": {
+        "result.hasContainer": true,
+        "result.hasScreen": true,
+        "result.screen": {
+          "contains": "CraftingScreen"
+        }
+      }
+    },
+    {
+      "id": "pick_log_from_hotbar",
+      "tool": "mc.container.click",
+      "args": {
+        "slot": 37,
+        "button": 0,
+        "clickType": "PICKUP"
+      },
+      "expect": {
+        "result.status": "clicked",
+        "result.slot": 37
+      }
+    },
+    {
+      "id": "place_log_in_grid",
+      "tool": "mc.container.click",
+      "args": {
+        "slot": 1,
+        "button": 0,
+        "clickType": "PICKUP"
+      },
+      "expect": {
+        "result.status": "clicked",
+        "result.slot": 1
+      }
+    },
+    {
+      "id": "wait_recipe_update",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "recipe_output_ready",
+      "tool": "mc.container.state",
+      "expect": {
+        "result.slots.0.item": "minecraft:oak_planks",
+        "result.slots.0.count": 4
+      }
+    },
+    {
+      "id": "quick_move_result",
+      "tool": "mc.container.quick_move",
+      "args": {
+        "slot": 0
+      },
+      "expect": {
+        "result.status": "clicked",
+        "result.clickType": "QUICK_MOVE"
+      }
+    },
+    {
+      "id": "find_planks",
+      "tool": "mc.inventory.find",
+      "args": {
+        "item": "minecraft:oak_planks"
+      },
+      "expect": {
+        "result.found": true,
+        "result.totalCount": 4
+      }
+    },
+    {
+      "id": "close_container",
+      "tool": "mc.container.close",
+      "expect": {
+        "result.status": "closed"
+      }
+    }
+  ]
+}

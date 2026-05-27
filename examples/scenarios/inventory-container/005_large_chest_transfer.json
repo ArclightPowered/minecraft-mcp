@@ -1,0 +1,424 @@
+{
+  "name": "large chest container state and transfer",
+  "tags": [
+    "inventory",
+    "container",
+    "chest",
+    "world"
+  ],
+  "steps": [
+    {
+      "id": "join_world",
+      "tool": "mc.world.join",
+      "args": {
+        "name": "minecraft_mcp_inventory_large_chest",
+        "seed": 31103,
+        "preset": "flat"
+      },
+      "expect": {
+        "result.status": "joining"
+      }
+    },
+    {
+      "id": "wait_world_attached",
+      "tool": "mc.condition.wait",
+      "args": {
+        "condition": "client.rawInWorld == true",
+        "timeoutMs": 300000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "wait_world_playable",
+      "tool": "mc.condition.wait",
+      "args": {
+        "condition": "client.inWorld == true && client.screen == null",
+        "timeoutMs": 300000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "wait_after_world_ready",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 40
+      },
+      "expect": {
+        "result.waitedTicks": 40
+      }
+    },
+    {
+      "id": "prepare_area",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/tp @s 0 80 0"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_prepare_area",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_prepare_area",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "clear_test_volume",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/fill 0 80 -1 3 83 1 minecraft:air"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_clear_test_volume",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_clear_test_volume",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "place_floor",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/fill 0 79 0 2 79 0 minecraft:stone"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_place_floor",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_place_floor",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "place_large_chest",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/setblock 1 80 0 minecraft:chest[type=right,facing=south]"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_place_large_chest",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_place_large_chest",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "place_large_chest_pair",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/setblock 2 80 0 minecraft:chest[type=left,facing=south]"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_place_large_chest_pair",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_place_large_chest_pair",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "prepare_area_after_blocks",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/tp @s 0 80 0"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_prepare_area_after_blocks",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_prepare_area_after_blocks",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 20
+      },
+      "expect": {
+        "result.waitedTicks": 20
+      }
+    },
+    {
+      "id": "large_chest_left_placed",
+      "tool": "mc.block.state",
+      "args": {
+        "x": 1,
+        "y": 80,
+        "z": 0
+      },
+      "expect": {
+        "result.block": "minecraft:chest"
+      }
+    },
+    {
+      "id": "large_chest_right_placed",
+      "tool": "mc.block.state",
+      "args": {
+        "x": 2,
+        "y": 80,
+        "z": 0
+      },
+      "expect": {
+        "result.block": "minecraft:chest"
+      }
+    },
+    {
+      "id": "seed_chest_item",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/item replace block 1 80 0 container.0 with minecraft:emerald 7"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_seed_chest_item",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_seed_chest_item",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "clear_inventory",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/clear @s"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_clear_inventory",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_clear_inventory",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "set_survival",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/gamemode survival"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_set_survival",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_set_survival",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "open_chest",
+      "tool": "mc.block.interact",
+      "args": {
+        "x": 1,
+        "y": 80,
+        "z": 0,
+        "face": "up",
+        "hand": "main"
+      },
+      "expect": {
+        "result.status": "interacted"
+      }
+    },
+    {
+      "id": "wait_open",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 2
+      },
+      "expect": {
+        "result.waitedTicks": 2
+      }
+    },
+    {
+      "id": "large_chest_open",
+      "tool": "mc.container.state",
+      "expect": {
+        "result.hasContainer": true,
+        "result.screen": {
+          "contains": "ContainerScreen"
+        },
+        "result.slots.0.item": "minecraft:emerald",
+        "result.slots.0.count": 7,
+        "result.slots.53.slot": 53
+      }
+    },
+    {
+      "id": "move_emeralds_to_inventory",
+      "tool": "mc.container.quick_move",
+      "args": {
+        "slot": 0
+      },
+      "expect": {
+        "result.status": "clicked",
+        "result.clickType": "QUICK_MOVE"
+      }
+    },
+    {
+      "id": "find_emeralds",
+      "tool": "mc.inventory.find",
+      "args": {
+        "item": "minecraft:emerald"
+      },
+      "expect": {
+        "result.found": true,
+        "result.totalCount": 7
+      }
+    },
+    {
+      "id": "close_container",
+      "tool": "mc.container.close",
+      "expect": {
+        "result.status": "closed"
+      }
+    }
+  ]
+}

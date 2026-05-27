@@ -10,10 +10,25 @@ Supported methods:
 
 Implemented tools:
 
-`mc.client.state` returns both `inWorld` and `rawInWorld`. `rawInWorld` means the underlying client level/player exists; `inWorld` means the client is in a playable world state with no loading/GUI screen blocking normal controls.
+- `mc.world.join` supports normal world creation by default and accepts `preset`/`generator: "flat"` or `"superflat"` for superflat test worlds.
+
+- `mc.client.state` returns both `inWorld` and `rawInWorld`. `rawInWorld` means the underlying client level/player exists; `inWorld` means the client is in a playable world state with no loading/GUI screen blocking normal controls.
 
 - `mc.client.state`
 - `mc.player.state`
+- `mc.inventory.state`
+- `mc.inventory.find`
+- `mc.inventory.count`
+- `mc.inventory.selected`
+- `mc.container.state`
+- `mc.container.click`
+- `mc.container.quick_move`
+- `mc.container.drop`
+- `mc.container.close`
+- `mc.hotbar.select`
+- `mc.command.run`
+- `mc.command.suggest`
+- `mc.server.sync`
 - `mc.screen.current`
 - `mc.ticks.wait`
 - `mc.keyboard.press`

@@ -9,6 +9,7 @@ import io.izzel.minecraftmcp.serverlink.ServerMcpProxy;
 import io.izzel.minecraftmcp.tools.BuiltinServerTools;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import io.izzel.minecraftmcp.input.KeyAliases;
+import io.izzel.minecraftmcp.packet.CommandSuggestionSync;
 import io.izzel.minecraftmcp.packet.PacketRecorderChannelInstaller;
 import io.izzel.minecraftmcp.schematic.Schematic;
 import io.izzel.minecraftmcp.schematic.SchematicPathResolver;
@@ -33,6 +34,7 @@ import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.InteractionHand;
@@ -191,6 +193,17 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             mc.player.connection.sendChat(text);
             return Map.of("status", "sent", "kind", "chat", "message", text);
         }
+        public Map<String, Object> commandSuggest(String command, long timeoutMs) throws Exception {
+            if (mc.getConnection() == null) {
+                return Map.of("status", "unsupported", "reason", "no client connection", "command", command == null ? "" : command);
+            }
+            String text = (command == null || command.isBlank()) ? "/" : command;
+            int id = CommandSuggestionSync.nextId();
+            long start = System.nanoTime();
+            var packet = CommandSuggestionSync.await(mc.getConnection().getConnection(), id, () -> mc.getConnection().send(new ServerboundCommandSuggestionPacket(id, text)), timeoutMs);
+            long latencyMs = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+            return CommandSuggestionSync.toMap(id, text, packet, latencyMs);
+        }
         public Map<String, Object> screenState() {
             Screen screen = mc.screen;
             if (screen == null) return Map.of("hasScreen", false);
@@ -303,7 +316,14 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             LevelSettings settings = new LevelSettings(levelName, GameType.CREATIVE, false, Difficulty.PEACEFUL, true, new GameRules(), WorldDataConfiguration.DEFAULT);
             long seed = options.get("seed") instanceof Number n ? n.longValue() : 0L;
             WorldOptions worldOptions = new WorldOptions(seed, false, false);
-            mc.createWorldOpenFlows().createFreshLevel(levelName, settings, worldOptions, WorldPresets::createNormalWorldDimensions, mc.screen == null ? new GenericMessageScreen(Component.literal("Minecraft MCP")) : mc.screen);
+            java.util.function.Function<net.minecraft.core.RegistryAccess, net.minecraft.world.level.levelgen.WorldDimensions> dimensions = registryAccess -> {
+                String preset = String.valueOf(options.getOrDefault("preset", options.getOrDefault("generator", "normal"))).trim().toLowerCase(java.util.Locale.ROOT);
+                if (preset.equals("flat") || preset.equals("superflat")) {
+                    return registryAccess.registryOrThrow(net.minecraft.core.registries.Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions();
+                }
+                return WorldPresets.createNormalWorldDimensions(registryAccess);
+            };
+            mc.createWorldOpenFlows().createFreshLevel(levelName, settings, worldOptions, dimensions, mc.screen == null ? new GenericMessageScreen(Component.literal("Minecraft MCP")) : mc.screen);
         }
         public void openWorld(String name) {
             mc.createWorldOpenFlows().openWorld(name, () -> mc.setScreen(null));
@@ -324,11 +344,94 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             );
         }
         public Map<String, Object> inventorySnapshot() {
-            if (mc.player == null) return Map.of("inWorld", false, "hotbar", java.util.List.of());
+            if (mc.player == null) return Map.of("inWorld", false, "hotbar", java.util.List.of(), "main", java.util.List.of(), "armor", java.util.List.of(), "offhand", java.util.List.of(), "slots", java.util.List.of());
             Inventory inventory = mc.player.getInventory();
-            java.util.List<Map<String, Object>> hotbar = new java.util.ArrayList<>();
-            for (int i = 0; i < 9; i++) hotbar.add(stackMap(i, inventory.getItem(i)));
-            return Map.of("inWorld", true, "selected", inventory.selected, "hotbar", hotbar);
+            java.util.List<Map<String, Object>> hotbar = inventorySection(inventory.items, "hotbar", 0, 0, 9);
+            java.util.List<Map<String, Object>> main = inventorySection(inventory.items, "main", 9, 9, inventory.items.size() - 9);
+            java.util.List<Map<String, Object>> armor = inventorySection(inventory.armor, "armor", 36, 0, inventory.armor.size());
+            java.util.List<Map<String, Object>> offhand = inventorySection(inventory.offhand, "offhand", 40, 0, inventory.offhand.size());
+            java.util.List<Map<String, Object>> slots = new java.util.ArrayList<>();
+            slots.addAll(hotbar); slots.addAll(main); slots.addAll(armor); slots.addAll(offhand);
+            java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
+            result.put("inWorld", true);
+            result.put("selected", inventory.selected);
+            result.put("carried", mc.player.containerMenu == null ? stackSummary(ItemStack.EMPTY) : stackSummary(mc.player.containerMenu.getCarried()));
+            result.put("hotbar", hotbar);
+            result.put("main", main);
+            result.put("armor", armor);
+            result.put("offhand", offhand);
+            result.put("slots", slots);
+            return result;
+        }
+        public Map<String, Object> findInventoryItem(Map<String, Object> args) {
+            if (mc.player == null) return Map.of("found", false, "totalCount", 0, "matches", java.util.List.of(), "inWorld", false);
+            String item = String.valueOf(args.get("item"));
+            String section = String.valueOf(args.getOrDefault("section", "all"));
+            int limit = ((Number) args.getOrDefault("limit", 50)).intValue();
+            java.util.List<Map<String, Object>> matches = new java.util.ArrayList<>();
+            int total = 0;
+            for (Map<String, Object> slot : inventorySlots(mc.player.getInventory())) {
+                if (!"all".equalsIgnoreCase(section) && !String.valueOf(slot.get("section")).equalsIgnoreCase(section)) continue;
+                if (item.equals(slot.get("item"))) {
+                    total += ((Number) slot.get("count")).intValue();
+                    if (matches.size() < Math.max(0, limit)) matches.add(slot);
+                }
+            }
+            return Map.of("found", total > 0, "item", item, "totalCount", total, "matches", matches);
+        }
+        public Map<String, Object> countInventoryItem(Map<String, Object> args) {
+            Map<String, Object> found = findInventoryItem(args);
+            return Map.of("item", found.get("item"), "count", found.get("totalCount"));
+        }
+        public Map<String, Object> selectedInventoryItem() {
+            if (mc.player == null) return Map.of("inWorld", false, "selected", -1, "item", "minecraft:air", "count", 0, "empty", true);
+            Inventory inventory = mc.player.getInventory();
+            java.util.Map<String, Object> result = new java.util.LinkedHashMap<>(stackSummary(inventory.getSelected()));
+            result.put("inWorld", true);
+            result.put("selected", inventory.selected);
+            result.put("slot", inventory.selected);
+            return result;
+        }
+        public Map<String, Object> containerState() {
+            if (mc.player == null) return Map.of("inWorld", false, "hasContainer", false, "hasScreen", mc.screen != null);
+            boolean hasContainerScreen = mc.screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>;
+            boolean hasContainer = hasContainerScreen || mc.player.containerMenu != mc.player.inventoryMenu;
+            java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
+            result.put("inWorld", true);
+            result.put("hasContainer", hasContainer);
+            result.put("hasScreen", mc.screen != null);
+            result.put("screen", mc.screen == null ? null : mc.screen.getClass().getName());
+            result.put("title", mc.screen == null ? null : mc.screen.getTitle().getString());
+            if (!hasContainer || mc.player.containerMenu == null) {
+                result.put("reason", "no container screen");
+                result.put("slots", java.util.List.of());
+                return result;
+            }
+            var menu = mc.player.containerMenu;
+            result.put("containerId", menu.containerId);
+            result.put("menuClass", menu.getClass().getName());
+            try { result.put("menuType", net.minecraft.core.registries.BuiltInRegistries.MENU.getKey(menu.getType()).toString()); }
+            catch (Exception e) { result.put("menuType", menu.getClass().getName()); }
+            result.put("carried", stackSummary(menu.getCarried()));
+            java.util.List<Map<String, Object>> slots = new java.util.ArrayList<>();
+            for (int i = 0; i < menu.slots.size(); i++) slots.add(containerSlotMap(i, menu.slots.get(i)));
+            result.put("slots", slots);
+            return result;
+        }
+        public Map<String, Object> clickContainer(int slot, int button, String clickType) {
+            if (mc.player == null) return Map.of("status", "not_in_world", "slot", slot, "button", button, "clickType", clickType);
+            if (mc.gameMode == null) return Map.of("status", "rejected", "reason", "no game mode", "slot", slot, "button", button, "clickType", clickType);
+            var menu = mc.player.containerMenu;
+            if (menu == null) return Map.of("status", "rejected", "reason", "no container", "slot", slot, "button", button, "clickType", clickType);
+            if (slot >= menu.slots.size()) return Map.of("status", "rejected", "reason", "slot out of range", "slot", slot, "button", button, "clickType", clickType, "containerId", menu.containerId);
+            net.minecraft.world.inventory.ClickType type = net.minecraft.world.inventory.ClickType.valueOf(clickType);
+            mc.gameMode.handleInventoryMouseClick(menu.containerId, slot, button, type, mc.player);
+            return Map.of("status", "clicked", "slot", slot, "button", button, "clickType", clickType, "containerId", menu.containerId);
+        }
+        public Map<String, Object> closeContainer() {
+            if (mc.player == null) return Map.of("status", "not_in_world");
+            mc.player.closeContainer();
+            return Map.of("status", "closed");
         }
         public Map<String, Object> selectHotbarSlot(int slot) {
             if (mc.player == null) return Map.of("status", "not_in_world", "slot", slot);
@@ -339,8 +442,54 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             inventory.selected = slot;
             return Map.of("status", "selected", "slot", slot, "item", stackMap(slot, inventory.getItem(slot)));
         }
+        private static java.util.List<Map<String, Object>> inventorySlots(Inventory inventory) {
+            java.util.List<Map<String, Object>> slots = new java.util.ArrayList<>();
+            slots.addAll(inventorySection(inventory.items, "hotbar", 0, 0, 9));
+            slots.addAll(inventorySection(inventory.items, "main", 9, 9, inventory.items.size() - 9));
+            slots.addAll(inventorySection(inventory.armor, "armor", 36, 0, inventory.armor.size()));
+            slots.addAll(inventorySection(inventory.offhand, "offhand", 40, 0, inventory.offhand.size()));
+            return slots;
+        }
+        private static java.util.List<Map<String, Object>> inventorySection(java.util.List<ItemStack> source, String section, int playerInventoryBase, int sourceStart, int length) {
+            java.util.List<Map<String, Object>> list = new java.util.ArrayList<>();
+            for (int i = 0; i < length; i++) list.add(inventorySlotMap(section, i, playerInventoryBase + i, source.get(sourceStart + i)));
+            return list;
+        }
+        private static Map<String, Object> inventorySlotMap(String section, int index, int playerInventoryIndex, ItemStack stack) {
+            java.util.Map<String, Object> map = new java.util.LinkedHashMap<>(stackSummary(stack));
+            map.put("section", section);
+            map.put("index", index);
+            map.put("slot", playerInventoryIndex);
+            map.put("playerInventoryIndex", playerInventoryIndex);
+            return map;
+        }
+        private static Map<String, Object> containerSlotMap(int menuSlot, net.minecraft.world.inventory.Slot slot) {
+            java.util.Map<String, Object> map = new java.util.LinkedHashMap<>(stackSummary(slot.getItem()));
+            map.put("slot", menuSlot);
+            map.put("containerSlot", slot.index);
+            map.put("index", slot.index);
+            map.put("x", slot.x);
+            map.put("y", slot.y);
+            map.put("hasItem", slot.hasItem());
+            map.put("mayPickup", true);
+            map.put("mayPlace", slot.mayPlace(slot.getItem()));
+            map.put("active", slot.isActive());
+            return map;
+        }
         private static Map<String, Object> stackMap(int slot, ItemStack stack) {
-            return Map.of("slot", slot, "item", stack.isEmpty() ? "minecraft:air" : net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString(), "count", stack.getCount());
+            java.util.Map<String, Object> map = new java.util.LinkedHashMap<>(stackSummary(stack));
+            map.put("slot", slot);
+            return map;
+        }
+        private static Map<String, Object> stackSummary(ItemStack stack) {
+            java.util.Map<String, Object> map = new java.util.LinkedHashMap<>();
+            boolean empty = stack == null || stack.isEmpty();
+            map.put("item", empty ? "minecraft:air" : net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
+            map.put("count", empty ? 0 : stack.getCount());
+            map.put("empty", empty);
+            map.put("maxStackSize", empty ? 64 : stack.getMaxStackSize());
+            map.put("displayName", empty ? "Air" : stack.getHoverName().getString());
+            return map;
         }
         public Map<String, Object> blockAt(int x, int y, int z) {
             if (mc.level == null) return Map.of("inWorld", false, "x", x, "y", y, "z", z);

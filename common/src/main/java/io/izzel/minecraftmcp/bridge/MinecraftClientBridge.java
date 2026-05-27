@@ -67,6 +67,9 @@ public interface MinecraftClientBridge {
     default Map<String, Object> sendChat(String message) {
         throw new UnsupportedOperationException("Chat sending is not implemented by " + loader());
     }
+    default Map<String, Object> commandSuggest(String command, long timeoutMs) throws Exception {
+        throw new UnsupportedOperationException("Command suggestions are not implemented by " + loader());
+    }
     default Map<String, Object> screenState() {
         throw new UnsupportedOperationException("Screen state is not implemented by " + loader());
     }
@@ -108,6 +111,24 @@ public interface MinecraftClientBridge {
     }
     default Map<String, Object> inventorySnapshot() {
         throw new UnsupportedOperationException("Inventory snapshot is not implemented by " + loader());
+    }
+    default Map<String, Object> findInventoryItem(Map<String, Object> args) {
+        throw new UnsupportedOperationException("Inventory find is not implemented by " + loader());
+    }
+    default Map<String, Object> countInventoryItem(Map<String, Object> args) {
+        throw new UnsupportedOperationException("Inventory count is not implemented by " + loader());
+    }
+    default Map<String, Object> selectedInventoryItem() {
+        throw new UnsupportedOperationException("Inventory selected item is not implemented by " + loader());
+    }
+    default Map<String, Object> containerState() {
+        throw new UnsupportedOperationException("Container state is not implemented by " + loader());
+    }
+    default Map<String, Object> clickContainer(int slot, int button, String clickType) {
+        throw new UnsupportedOperationException("Container click is not implemented by " + loader());
+    }
+    default Map<String, Object> closeContainer() {
+        throw new UnsupportedOperationException("Container close is not implemented by " + loader());
     }
     default Map<String, Object> selectHotbarSlot(int slot) {
         throw new UnsupportedOperationException("Hotbar selection is not implemented by " + loader());

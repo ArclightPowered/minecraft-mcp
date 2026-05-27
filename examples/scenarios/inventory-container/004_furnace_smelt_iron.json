@@ -1,0 +1,458 @@
+{
+  "name": "furnace smelt iron via container clicks",
+  "tags": [
+    "inventory",
+    "container",
+    "furnace",
+    "world"
+  ],
+  "steps": [
+    {
+      "id": "join_world",
+      "tool": "mc.world.join",
+      "args": {
+        "name": "minecraft_mcp_inventory_furnace",
+        "seed": 31102,
+        "preset": "flat"
+      },
+      "expect": {
+        "result.status": "joining"
+      }
+    },
+    {
+      "id": "wait_world_attached",
+      "tool": "mc.condition.wait",
+      "args": {
+        "condition": "client.rawInWorld == true",
+        "timeoutMs": 300000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "wait_world_playable",
+      "tool": "mc.condition.wait",
+      "args": {
+        "condition": "client.inWorld == true && client.screen == null",
+        "timeoutMs": 300000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "wait_after_world_ready",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 40
+      },
+      "expect": {
+        "result.waitedTicks": 40
+      }
+    },
+    {
+      "id": "prepare_area",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/tp @s 0 65 0"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_prepare_area",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_prepare_area",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "place_floor",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/setblock 0 64 0 minecraft:stone"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_place_floor",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_place_floor",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "place_furnace",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/setblock 1 65 0 minecraft:furnace"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_place_furnace",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_place_furnace",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "prepare_area_after_blocks",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/tp @s 0 65 0"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_prepare_area_after_blocks",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_prepare_area_after_blocks",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 20
+      },
+      "expect": {
+        "result.waitedTicks": 20
+      }
+    },
+    {
+      "id": "furnace_placed",
+      "tool": "mc.block.state",
+      "args": {
+        "x": 1,
+        "y": 65,
+        "z": 0
+      },
+      "expect": {
+        "result.block": "minecraft:furnace"
+      }
+    },
+    {
+      "id": "clear_inventory",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/clear @s"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_clear_inventory",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_clear_inventory",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "give_ore",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/give @s minecraft:raw_iron 1"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_give_ore",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_give_ore",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "give_fuel",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/give @s minecraft:coal 1"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_give_fuel",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_give_fuel",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "set_survival",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/gamemode survival"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_set_survival",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "wait_after_set_survival",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "select_empty_hand",
+      "tool": "mc.hotbar.select",
+      "args": {
+        "slot": 8
+      },
+      "expect": {
+        "result.slot": 8
+      }
+    },
+    {
+      "id": "open_furnace",
+      "tool": "mc.block.interact",
+      "args": {
+        "x": 1,
+        "y": 65,
+        "z": 0,
+        "face": "up",
+        "hand": "main"
+      },
+      "expect": {
+        "result.status": "interacted"
+      }
+    },
+    {
+      "id": "wait_open",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 2
+      },
+      "expect": {
+        "result.waitedTicks": 2
+      }
+    },
+    {
+      "id": "furnace_menu_open",
+      "tool": "mc.container.state",
+      "expect": {
+        "result.hasContainer": true,
+        "result.screen": {
+          "contains": "FurnaceScreen"
+        }
+      }
+    },
+    {
+      "id": "pick_raw_iron",
+      "tool": "mc.container.click",
+      "args": {
+        "slot": 30,
+        "button": 0,
+        "clickType": "PICKUP"
+      },
+      "expect": {
+        "result.status": "clicked",
+        "result.slot": 30
+      }
+    },
+    {
+      "id": "place_raw_iron_input",
+      "tool": "mc.container.click",
+      "args": {
+        "slot": 0,
+        "button": 0,
+        "clickType": "PICKUP"
+      },
+      "expect": {
+        "result.status": "clicked",
+        "result.slot": 0
+      }
+    },
+    {
+      "id": "pick_coal",
+      "tool": "mc.container.click",
+      "args": {
+        "slot": 31,
+        "button": 0,
+        "clickType": "PICKUP"
+      },
+      "expect": {
+        "result.status": "clicked",
+        "result.slot": 31
+      }
+    },
+    {
+      "id": "place_coal_fuel",
+      "tool": "mc.container.click",
+      "args": {
+        "slot": 1,
+        "button": 0,
+        "clickType": "PICKUP"
+      },
+      "expect": {
+        "result.status": "clicked",
+        "result.slot": 1
+      }
+    },
+    {
+      "id": "wait_smelt",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 220
+      },
+      "expect": {
+        "result.waitedTicks": 220
+      }
+    },
+    {
+      "id": "output_ready",
+      "tool": "mc.container.state",
+      "expect": {
+        "result.slots.2.item": "minecraft:iron_ingot",
+        "result.slots.2.count": 1
+      }
+    },
+    {
+      "id": "take_result",
+      "tool": "mc.container.quick_move",
+      "args": {
+        "slot": 2
+      },
+      "expect": {
+        "result.status": "clicked",
+        "result.clickType": "QUICK_MOVE"
+      }
+    },
+    {
+      "id": "find_ingot",
+      "tool": "mc.inventory.find",
+      "args": {
+        "item": "minecraft:iron_ingot"
+      },
+      "expect": {
+        "result.found": true,
+        "result.totalCount": 1
+      }
+    },
+    {
+      "id": "close_container",
+      "tool": "mc.container.close",
+      "expect": {
+        "result.status": "closed"
+      }
+    }
+  ]
+}
