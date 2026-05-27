@@ -134,6 +134,87 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             InteractionHand interactionHand = "off".equalsIgnoreCase(hand) || "offhand".equalsIgnoreCase(hand) ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
             mc.player.swing(interactionHand);
         }
+        public Map<String, Object> look(float yaw, float pitch) {
+            if (mc.player == null) return Map.of("status", "not_in_world");
+            float clampedPitch = Math.max(-90.0F, Math.min(90.0F, pitch));
+            mc.player.setYRot(yaw);
+            mc.player.setXRot(clampedPitch);
+            mc.player.yHeadRot = yaw;
+            mc.player.yBodyRot = yaw;
+            return Map.of("status", "looked", "yaw", yaw, "pitch", clampedPitch);
+        }
+        public Map<String, Object> lookAt(double x, double y, double z) {
+            if (mc.player == null) return Map.of("status", "not_in_world", "x", x, "y", y, "z", z);
+            Vec3 eye = mc.player.getEyePosition();
+            double dx = x - eye.x;
+            double dy = y - eye.y;
+            double dz = z - eye.z;
+            double horizontal = Math.sqrt(dx * dx + dz * dz);
+            float yaw = (float) (Math.toDegrees(Math.atan2(dz, dx)) - 90.0D);
+            float pitch = (float) (-Math.toDegrees(Math.atan2(dy, horizontal)));
+            look(yaw, pitch);
+            return Map.of("status", "looked_at", "x", x, "y", y, "z", z, "yaw", yaw, "pitch", Math.max(-90.0F, Math.min(90.0F, pitch)));
+        }
+        public Map<String, Object> useItem(String hand) {
+            if (mc.player == null || mc.gameMode == null) return Map.of("status", "not_in_world", "hand", hand);
+            InteractionHand interactionHand = "off".equalsIgnoreCase(hand) || "offhand".equalsIgnoreCase(hand) ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
+            var result = mc.gameMode.useItem(mc.player, interactionHand);
+            if (result.consumesAction()) mc.player.swing(interactionHand);
+            return Map.of("status", "used", "hand", interactionHand.name().toLowerCase(java.util.Locale.ROOT), "result", result.toString(), "consumesAction", result.consumesAction());
+        }
+        public Map<String, Object> attackBlock(int x, int y, int z, String face) {
+            if (mc.player == null || mc.level == null || mc.gameMode == null) return Map.of("status", "not_in_world", "x", x, "y", y, "z", z);
+            Direction direction;
+            try { direction = Direction.valueOf((face == null ? "UP" : face.trim().toUpperCase(java.util.Locale.ROOT))); }
+            catch (IllegalArgumentException e) { return Map.of("status", "rejected", "reason", "invalid face", "face", face == null ? "" : face); }
+            BlockPos pos = new BlockPos(x, y, z);
+            boolean started = mc.gameMode.startDestroyBlock(pos, direction);
+            mc.player.swing(InteractionHand.MAIN_HAND);
+            return Map.of("status", "attacked_block", "x", x, "y", y, "z", z, "face", direction.getName(), "started", started);
+        }
+        public Map<String, Object> destroyBlock(int x, int y, int z, String face, long timeoutMs) {
+            Direction direction;
+            try { direction = Direction.valueOf((face == null ? "UP" : face.trim().toUpperCase(java.util.Locale.ROOT))); }
+            catch (IllegalArgumentException e) { return Map.of("status", "rejected", "reason", "invalid face", "face", face == null ? "" : face); }
+            BlockPos pos = new BlockPos(x, y, z);
+            long startedAt = System.currentTimeMillis();
+            long deadline = startedAt + Math.max(0L, timeoutMs);
+            java.util.concurrent.atomic.AtomicInteger attempts = new java.util.concurrent.atomic.AtomicInteger();
+            Map<String, Object> started = submit(() -> {
+                if (mc.player == null || mc.level == null || mc.gameMode == null) return Map.<String, Object>of("status", "not_in_world", "x", x, "y", y, "z", z);
+                BlockState state = mc.level.getBlockState(pos);
+                if (state.isAir()) return Map.<String, Object>of("status", "destroyed", "x", x, "y", y, "z", z, "face", direction.getName(), "attempts", 0, "elapsedMs", 0L);
+                boolean accepted = mc.gameMode.startDestroyBlock(pos, direction);
+                mc.player.swing(InteractionHand.MAIN_HAND);
+                return Map.<String, Object>of("status", accepted ? "destroying" : "rejected", "accepted", accepted, "block", net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString());
+            }).join();
+            if (!"destroying".equals(started.get("status"))) return started;
+            while (System.currentTimeMillis() <= deadline) {
+                Map<String, Object> tick = submit(() -> {
+                    if (mc.player == null || mc.level == null || mc.gameMode == null) return Map.<String, Object>of("status", "not_in_world", "x", x, "y", y, "z", z);
+                    BlockState state = mc.level.getBlockState(pos);
+                    if (state.isAir()) return Map.<String, Object>of("status", "destroyed", "x", x, "y", y, "z", z, "face", direction.getName(), "attempts", attempts.get(), "elapsedMs", System.currentTimeMillis() - startedAt);
+                    boolean continued = mc.gameMode.continueDestroyBlock(pos, direction);
+                    attempts.incrementAndGet();
+                    mc.player.swing(InteractionHand.MAIN_HAND);
+                    return Map.<String, Object>of("status", "destroying", "continued", continued, "block", net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString());
+                }).join();
+                if (!"destroying".equals(tick.get("status"))) return tick;
+                try { Thread.sleep(50L); } catch (InterruptedException e) { Thread.currentThread().interrupt(); return Map.of("status", "interrupted", "x", x, "y", y, "z", z, "face", direction.getName(), "attempts", attempts.get(), "elapsedMs", System.currentTimeMillis() - startedAt); }
+            }
+            submit(() -> { if (mc.gameMode != null) mc.gameMode.stopDestroyBlock(); return null; }).join();
+            return Map.of("status", "timeout", "x", x, "y", y, "z", z, "face", direction.getName(), "timeoutMs", timeoutMs, "attempts", attempts.get(), "elapsedMs", System.currentTimeMillis() - startedAt);
+        }
+        public Map<String, Object> dropSelected(boolean all) {
+            if (mc.player == null) return Map.of("status", "not_in_world", "all", all);
+            boolean dropped = mc.player.drop(all);
+            return Map.of("status", "dropped", "all", all, "dropped", dropped);
+        }
+        public Map<String, Object> jump() {
+            if (mc.player == null) return Map.of("status", "not_in_world");
+            mc.player.jumpFromGround();
+            return Map.of("status", "jumped");
+        }
         public Map<String, Object> vehicleState() {
             if (mc.player == null) return Map.of("inWorld", false, "isPassenger", false);
             Entity vehicle = mc.player.getVehicle();
@@ -624,7 +705,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             return merged;
         }
         @Override
-        public Map<String, Object> moveWaypoints(List<Vec3> waypoints, boolean loop, int maxLoops, double tolerance, long timeoutMs, boolean sprint, boolean controlView) {
+        public Map<String, Object> moveWaypoints(List<Vec3> waypoints, boolean loop, int maxLoops, double tolerance, long timeoutMs, boolean sprint, boolean sneak, boolean controlView) {
             if (waypoints == null || waypoints.isEmpty()) throw new IllegalArgumentException("waypoints must not be empty");
             long deadline = System.currentTimeMillis() + Math.max(0, timeoutMs);
             double speed = sprint ? 0.28D : 0.16D;
@@ -634,13 +715,17 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
                 for (Vec3 target : waypoints) {
                     while (System.currentTimeMillis() <= deadline) {
                         Vec3 pos = submit(() -> mc.player == null ? null : mc.player.position()).join();
-                        if (pos == null) return Map.of("status", "no_player", "visited", visited, "loops", loops);
+                        if (pos == null) return Map.of("status", "no_player", "visited", visited, "loops", loops, "sprint", sprint, "sneak", sneak);
                         Vec3 delta = target.subtract(pos);
                         double distance = delta.length();
                         if (distance <= tolerance) { visited++; break; }
                         Vec3 step = delta.normalize().scale(Math.min(speed, distance));
                         execute(() -> {
                             if (mc.player != null) {
+                                mc.player.setSprinting(sprint);
+                                mc.player.setShiftKeyDown(sneak);
+                                mc.options.keySprint.setDown(sprint);
+                                mc.options.keyShift.setDown(sneak);
                                 if (controlView) {
                                     mc.player.setYRot((float) Math.toDegrees(Math.atan2(-step.x, step.z)));
                                     mc.player.setXRot((float) Math.toDegrees(-Math.atan2(step.y, Math.sqrt(step.x * step.x + step.z * step.z))));
@@ -648,13 +733,13 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
                                 mc.player.move(MoverType.PLAYER, step);
                             }
                         });
-                        try { Thread.sleep(50); } catch (InterruptedException e) { Thread.currentThread().interrupt(); return Map.of("status", "interrupted", "visited", visited, "loops", loops); }
+                        try { Thread.sleep(50); } catch (InterruptedException e) { Thread.currentThread().interrupt(); return Map.of("status", "interrupted", "visited", visited, "loops", loops, "sprint", sprint, "sneak", sneak); }
                     }
                 }
                 loops++;
-                if (!loop || (maxLoops > 0 && loops >= maxLoops)) return Map.of("status", "completed", "waypoints", waypoints.size(), "visited", visited, "loops", loops, "sprint", sprint, "controlView", controlView);
+                if (!loop || (maxLoops > 0 && loops >= maxLoops)) return Map.of("status", "completed", "waypoints", waypoints.size(), "visited", visited, "loops", loops, "sprint", sprint, "sneak", sneak, "controlView", controlView);
             }
-            return Map.of("status", "timeout", "waypoints", waypoints.size(), "visited", visited, "loops", loops, "timeoutMs", timeoutMs, "controlView", controlView);
+            return Map.of("status", "timeout", "waypoints", waypoints.size(), "visited", visited, "loops", loops, "timeoutMs", timeoutMs, "sprint", sprint, "sneak", sneak, "controlView", controlView);
         }
 
         public ClientSnapshot snapshot() {

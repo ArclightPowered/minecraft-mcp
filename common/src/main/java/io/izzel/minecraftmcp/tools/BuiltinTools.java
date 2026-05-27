@@ -26,6 +26,13 @@ public final class BuiltinTools {
         registry.register(simple("mc.keyboard.press", "Press a key by name", args -> { String key = String.valueOf(args.getOrDefault("key", "")); bridge.submit(() -> { bridge.pressKey(key); return null; }).get(10, TimeUnit.SECONDS); return Map.of("status", "pressed", "key", key); }));
         registry.register(simple("mc.keyboard.hold", "Hold a key by name for a number of ticks", args -> { String key = String.valueOf(args.getOrDefault("key", "")); long ticks = ((Number) args.getOrDefault("ticks", 1)).longValue(); bridge.submit(() -> { bridge.setKeyDown(key, true); return null; }).get(10, TimeUnit.SECONDS); bridge.waitTicks(ticks); bridge.submit(() -> { bridge.setKeyDown(key, false); return null; }).get(10, TimeUnit.SECONDS); return Map.of("status", "held", "key", key, "ticks", ticks); }));
         registry.register(simple("mc.player.swing", "Swing player hand and send the normal client interaction packet", args -> { String hand = String.valueOf(args.getOrDefault("hand", "main")); bridge.submit(() -> { bridge.swing(hand); return null; }).get(10, TimeUnit.SECONDS); return Map.of("status", "swung", "hand", hand); }));
+        registry.register(simple("mc.player.look", "Set player yaw and pitch", args -> { float yaw = ((Number) args.getOrDefault("yaw", 0)).floatValue(); float pitch = ((Number) args.getOrDefault("pitch", 0)).floatValue(); return bridge.submit(() -> bridge.look(yaw, pitch)).get(10, TimeUnit.SECONDS); }));
+        registry.register(simple("mc.player.look_at", "Rotate player to look at a world position", args -> { double x = number(args.get("x"), "x"); double y = number(args.get("y"), "y"); double z = number(args.get("z"), "z"); return bridge.submit(() -> bridge.lookAt(x, y, z)).get(10, TimeUnit.SECONDS); }));
+        registry.register(simple("mc.player.use_item", "Use the currently held item with main hand or offhand", args -> { String hand = normalizeHand(args.getOrDefault("hand", "main")); return bridge.submit(() -> bridge.useItem(hand)).get(10, TimeUnit.SECONDS); }));
+        registry.register(simple("mc.player.attack.block", "Attack or start breaking a block through the normal client interaction path", args -> { int x = ((Number) args.getOrDefault("x", 0)).intValue(); int y = ((Number) args.getOrDefault("y", 0)).intValue(); int z = ((Number) args.getOrDefault("z", 0)).intValue(); String face = normalizeFace(args.getOrDefault("face", "up")); return bridge.submit(() -> bridge.attackBlock(x, y, z, face)).get(10, TimeUnit.SECONDS); }));
+        registry.register(simple("mc.player.destroy.block", "Keep breaking a block through the normal client interaction path until it is gone or timeout expires", args -> { int x = ((Number) args.getOrDefault("x", 0)).intValue(); int y = ((Number) args.getOrDefault("y", 0)).intValue(); int z = ((Number) args.getOrDefault("z", 0)).intValue(); String face = normalizeFace(args.getOrDefault("face", "up")); long timeoutMs = ((Number) args.getOrDefault("timeoutMs", 30000)).longValue(); return bridge.destroyBlock(x, y, z, face, timeoutMs); }));
+        registry.register(simple("mc.player.drop", "Drop the selected item stack or a single item", args -> { boolean all = Boolean.parseBoolean(String.valueOf(args.getOrDefault("all", false))); return bridge.submit(() -> bridge.dropSelected(all)).get(10, TimeUnit.SECONDS); }));
+        registry.register(simple("mc.player.jump", "Make the player jump once", args -> bridge.submit(bridge::jump).get(10, TimeUnit.SECONDS)));
         registry.register(simple("mc.vehicle.state", "Get player vehicle state", args -> bridge.submit(bridge::vehicleState).get(10, TimeUnit.SECONDS)));
         registry.register(simple("mc.command.run", "Send a slash command through the current client connection", args -> { String command = String.valueOf(args.getOrDefault("command", "")); return bridge.submit(() -> bridge.runCommand(command)).get(10, TimeUnit.SECONDS); }));
         registry.register(simple("mc.command.suggest", "Request vanilla command suggestions and wait for the matching server response", args -> { String command = String.valueOf(args.getOrDefault("command", args.getOrDefault("text", "/"))); long timeoutMs = ((Number) args.getOrDefault("timeoutMs", 30000)).longValue(); return bridge.commandSuggest(command, timeoutMs); }));
@@ -62,7 +69,7 @@ public final class BuiltinTools {
         registry.register(simple("mc.packet.dump", "Dump recorded packets with optional filters", bridge::dumpPackets));
         registry.register(simple("mc.packet.wait", "Wait until recorded packets matching a filter reach a required count", bridge::waitForPackets));
         registry.register(simple("mc.screenshot.take", "Take a client screenshot and save it under the game directory", args -> bridge.submit(() -> bridge.takeScreenshot(args)).get(30, TimeUnit.SECONDS)));
-        registry.register(simple("mc.movement.waypoints", "Move the client player through one or more waypoints", args -> { List<Vec3> waypoints = parseWaypoints(args.get("waypoints")); boolean loop = Boolean.parseBoolean(String.valueOf(args.getOrDefault("loop", false))); int maxLoops = ((Number) args.getOrDefault("maxLoops", loop ? 0 : 1)).intValue(); double tolerance = ((Number) args.getOrDefault("tolerance", 0.75)).doubleValue(); long timeoutMs = ((Number) args.getOrDefault("timeoutMs", 30000)).longValue(); boolean sprint = Boolean.parseBoolean(String.valueOf(args.getOrDefault("sprint", false))); boolean controlView = Boolean.parseBoolean(String.valueOf(args.getOrDefault("controlView", true))); return bridge.moveWaypoints(waypoints, loop, maxLoops, tolerance, timeoutMs, sprint, controlView); }));
+        registry.register(simple("mc.movement.waypoints", "Move the client player through one or more waypoints", args -> { List<Vec3> waypoints = parseWaypoints(args.get("waypoints")); boolean loop = Boolean.parseBoolean(String.valueOf(args.getOrDefault("loop", false))); int maxLoops = ((Number) args.getOrDefault("maxLoops", loop ? 0 : 1)).intValue(); double tolerance = ((Number) args.getOrDefault("tolerance", 0.75)).doubleValue(); long timeoutMs = ((Number) args.getOrDefault("timeoutMs", 30000)).longValue(); boolean sprint = Boolean.parseBoolean(String.valueOf(args.getOrDefault("sprint", false))); boolean sneak = Boolean.parseBoolean(String.valueOf(args.getOrDefault("sneak", false))); boolean controlView = Boolean.parseBoolean(String.valueOf(args.getOrDefault("controlView", true))); return bridge.moveWaypoints(waypoints, loop, maxLoops, tolerance, timeoutMs, sprint, sneak, controlView); }));
     }
     private static void addTags(Object value, boolean include, ScenarioRunOptions.Builder options) {
         if (value instanceof Iterable<?> iterable) {
@@ -109,6 +116,17 @@ public final class BuiltinTools {
             throw new IllegalArgumentException("Unsupported clickType: " + value);
         }
         return type;
+    }
+    private static String normalizeHand(Object value) {
+        String hand = String.valueOf(value == null ? "main" : value).trim().toLowerCase(Locale.ROOT);
+        if (hand.equals("off") || hand.equals("off_hand")) hand = "offhand";
+        if (!Set.of("main", "mainhand", "offhand").contains(hand)) throw new IllegalArgumentException("Unsupported hand: " + value);
+        return hand.equals("mainhand") ? "main" : hand;
+    }
+    private static String normalizeFace(Object value) {
+        String face = String.valueOf(value == null ? "up" : value).trim().toLowerCase(Locale.ROOT);
+        if (!Set.of("up", "down", "north", "south", "west", "east").contains(face)) throw new IllegalArgumentException("Unsupported face: " + value);
+        return face;
     }
     private static Map<String,Object> requireInventoryItem(Map<String,Object> args) {
         Object value = args.get("item");

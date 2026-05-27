@@ -49,6 +49,27 @@ public interface MinecraftClientBridge {
     default void swing(String hand) {
         throw new UnsupportedOperationException("Swing is not implemented by " + loader());
     }
+    default Map<String, Object> look(float yaw, float pitch) {
+        throw new UnsupportedOperationException("Look is not implemented by " + loader());
+    }
+    default Map<String, Object> lookAt(double x, double y, double z) {
+        throw new UnsupportedOperationException("Look-at is not implemented by " + loader());
+    }
+    default Map<String, Object> useItem(String hand) {
+        throw new UnsupportedOperationException("Use item is not implemented by " + loader());
+    }
+    default Map<String, Object> attackBlock(int x, int y, int z, String face) {
+        throw new UnsupportedOperationException("Block attack is not implemented by " + loader());
+    }
+    default Map<String, Object> destroyBlock(int x, int y, int z, String face, long timeoutMs) {
+        throw new UnsupportedOperationException("Block destroy is not implemented by " + loader());
+    }
+    default Map<String, Object> dropSelected(boolean all) {
+        throw new UnsupportedOperationException("Dropping items is not implemented by " + loader());
+    }
+    default Map<String, Object> jump() {
+        throw new UnsupportedOperationException("Jump is not implemented by " + loader());
+    }
     default Map<String, Object> vehicleState() {
         throw new UnsupportedOperationException("Vehicle state is not implemented by " + loader());
     }
@@ -136,7 +157,7 @@ public interface MinecraftClientBridge {
     default Map<String, Object> blockAt(int x, int y, int z) {
         throw new UnsupportedOperationException("Block query is not implemented by " + loader());
     }
-    default Map<String, Object> moveWaypoints(List<Vec3> waypoints, boolean loop, int maxLoops, double tolerance, long timeoutMs, boolean sprint, boolean controlView) {
+    default Map<String, Object> moveWaypoints(List<Vec3> waypoints, boolean loop, int maxLoops, double tolerance, long timeoutMs, boolean sprint, boolean sneak, boolean controlView) {
         throw new UnsupportedOperationException("Waypoint movement is not implemented by " + loader());
     }
     default Map<String, Object> exportSchematic(Map<String, Object> args) {

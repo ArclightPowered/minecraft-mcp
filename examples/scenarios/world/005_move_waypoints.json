@@ -1,23 +1,37 @@
 {
   "name": "move waypoint loop smoke",
-  "tags": ["world", "movement", "manual"],
+  "tags": [
+    "world",
+    "movement",
+    "manual"
+  ],
   "steps": [
     {
       "tool": "mc.movement.waypoints",
-      "arguments": {
+      "expect": {
+        "result.status": "completed",
+        "result.sneak": false
+      },
+      "args": {
         "waypoints": [
-          { "x": 0.5, "y": 64.0, "z": 0.5 },
-          { "x": 3.5, "y": 64.0, "z": 0.5 }
+          {
+            "x": 0.5,
+            "y": 64.0,
+            "z": 0.5
+          },
+          {
+            "x": 3.5,
+            "y": 64.0,
+            "z": 0.5
+          }
         ],
         "loop": true,
         "maxLoops": 2,
         "tolerance": 0.8,
         "timeoutMs": 30000,
         "sprint": false,
-        "controlView": false
-      },
-      "expect": {
-        "result.status": "completed"
+        "controlView": false,
+        "sneak": false
       }
     }
   ]

@@ -41,6 +41,7 @@ class BuiltinToolsWorldTest {
                 "tolerance", 0.75,
                 "timeoutMs", 1234,
                 "sprint", true,
+                "sneak", true,
                 "controlView", false
         ));
         Object leave = registry.call("mc.world.leave", Map.of());
@@ -62,13 +63,14 @@ class BuiltinToolsWorldTest {
         assertEquals(Map.of("disconnected", false, "message", ""), disconnect);
         assertEquals(Map.of("status", "interacted", "x", 1, "y", 2, "z", 3, "face", "up", "hand", "main"), interact);
         assertEquals("minecraft:stone", ((Map<?, ?>) block).get("block"));
-        assertEquals(Map.of("status", "completed", "waypoints", 2, "loops", 2, "sprint", true, "controlView", false), move);
+        assertEquals(Map.of("status", "completed", "waypoints", 2, "loops", 2, "sprint", true, "sneak", true, "controlView", false), move);
         assertEquals(List.of(new Vec3(1.0, 64.0, 2.0), new Vec3(3.0, 64.0, 4.0)), bridge.moveWaypoints);
         assertTrue(bridge.moveLoop);
         assertEquals(2, bridge.moveMaxLoops);
         assertEquals(0.75, bridge.moveTolerance);
         assertEquals(1234L, bridge.moveTimeoutMs);
         assertTrue(bridge.moveSprint);
+        assertTrue(bridge.moveSneak);
         assertFalse(bridge.moveControlView);
         assertEquals(Map.of("status", "left_to_title"), leave);
         assertTrue(bridge.leftWorld);
@@ -91,6 +93,7 @@ class BuiltinToolsWorldTest {
         double moveTolerance;
         long moveTimeoutMs;
         boolean moveSprint;
+        boolean moveSneak;
         boolean moveControlView;
 
         public String loader() { return "test"; }
@@ -153,15 +156,16 @@ class BuiltinToolsWorldTest {
         public Map<String, Object> blockAt(int x, int y, int z) {
             return Map.of("x", x, "y", y, "z", z, "block", "minecraft:stone");
         }
-        public Map<String, Object> moveWaypoints(List<Vec3> waypoints, boolean loop, int maxLoops, double tolerance, long timeoutMs, boolean sprint, boolean controlView) {
+        public Map<String, Object> moveWaypoints(List<Vec3> waypoints, boolean loop, int maxLoops, double tolerance, long timeoutMs, boolean sprint, boolean sneak, boolean controlView) {
             this.moveWaypoints = waypoints;
             this.moveLoop = loop;
             this.moveMaxLoops = maxLoops;
             this.moveTolerance = tolerance;
             this.moveTimeoutMs = timeoutMs;
             this.moveSprint = sprint;
+            this.moveSneak = sneak;
             this.moveControlView = controlView;
-            return Map.of("status", "completed", "waypoints", waypoints.size(), "loops", maxLoops, "sprint", sprint, "controlView", controlView);
+            return Map.of("status", "completed", "waypoints", waypoints.size(), "loops", maxLoops, "sprint", sprint, "sneak", sneak, "controlView", controlView);
         }
     }
 }

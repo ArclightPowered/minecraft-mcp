@@ -16,6 +16,14 @@ Implemented tools:
 
 - `mc.client.state`
 - `mc.player.state`
+- `mc.player.swing`
+- `mc.player.look`
+- `mc.player.look_at`
+- `mc.player.use_item`
+- `mc.player.attack.block`
+- `mc.player.destroy.block`
+- `mc.player.drop`
+- `mc.player.jump`
 - `mc.inventory.state`
 - `mc.inventory.find`
 - `mc.inventory.count`

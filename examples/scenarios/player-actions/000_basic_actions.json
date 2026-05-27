@@ -1,0 +1,215 @@
+{
+  "name": "player action tools basic runtime",
+  "tags": [
+    "player-actions",
+    "world",
+    "full-client"
+  ],
+  "steps": [
+    {
+      "id": "join_world",
+      "tool": "mc.world.join",
+      "args": {
+        "name": "minecraft_mcp_player_actions",
+        "seed": 424242,
+        "preset": "flat"
+      },
+      "expect": {
+        "result.status": "joining"
+      }
+    },
+    {
+      "id": "wait_world_attached",
+      "tool": "mc.condition.wait",
+      "args": {
+        "condition": "client.rawInWorld == true",
+        "timeoutMs": 300000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "wait_world_playable",
+      "tool": "mc.condition.wait",
+      "args": {
+        "condition": "client.inWorld == true && client.screen == null",
+        "timeoutMs": 300000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "look",
+      "tool": "mc.player.look",
+      "args": {
+        "yaw": 45,
+        "pitch": 10
+      },
+      "expect": {
+        "result.status": "looked",
+        "result.pitch": 10.0
+      }
+    },
+    {
+      "id": "look_at",
+      "tool": "mc.player.look_at",
+      "args": {
+        "x": 1,
+        "y": 65,
+        "z": 1
+      },
+      "expect": {
+        "result.status": "looked_at",
+        "result.x": 1.0
+      }
+    },
+    {
+      "id": "jump",
+      "tool": "mc.player.jump",
+      "args": {},
+      "expect": {
+        "result.status": "jumped"
+      }
+    },
+    {
+      "id": "use_item",
+      "tool": "mc.player.use_item",
+      "args": {
+        "hand": "main"
+      },
+      "expect": {
+        "result.status": "used"
+      }
+    },
+    {
+      "id": "attack_block",
+      "tool": "mc.player.attack.block",
+      "args": {
+        "x": 0,
+        "y": -61,
+        "z": 0,
+        "face": "up"
+      },
+      "expect": {
+        "result.status": "attacked_block"
+      }
+    },
+    {
+      "id": "tp_destroy_area",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/tp @s 0 -59 0"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_tp_destroy",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "creative_for_destroy",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/gamemode creative"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_creative_destroy",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "place_destroy_target",
+      "tool": "mc.chat.send",
+      "args": {
+        "message": "/setblock 0 -59 2 minecraft:stone"
+      },
+      "expect": {
+        "result.status": "sent",
+        "result.kind": "command"
+      }
+    },
+    {
+      "id": "sync_after_place_destroy_target",
+      "tool": "mc.server.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "look_at_destroy_target",
+      "tool": "mc.player.look_at",
+      "args": {
+        "x": 0.5,
+        "y": -58.5,
+        "z": 2.5
+      },
+      "expect": {
+        "result.status": "looked_at"
+      }
+    },
+    {
+      "id": "destroy_block",
+      "tool": "mc.player.destroy.block",
+      "args": {
+        "x": 0,
+        "y": -59,
+        "z": 2,
+        "face": "north",
+        "timeoutMs": 5000
+      },
+      "expect": {
+        "result.status": "destroyed",
+        "result.x": 0,
+        "result.y": -59,
+        "result.z": 2
+      }
+    },
+    {
+      "id": "destroy_target_gone",
+      "tool": "mc.block.state",
+      "args": {
+        "x": 0,
+        "y": -59,
+        "z": 2
+      },
+      "expect": {
+        "result.block": "minecraft:air"
+      }
+    },
+    {
+      "id": "drop",
+      "tool": "mc.player.drop",
+      "args": {
+        "all": false
+      },
+      "expect": {
+        "result.status": "dropped",
+        "result.all": false
+      }
+    }
+  ]
+}
