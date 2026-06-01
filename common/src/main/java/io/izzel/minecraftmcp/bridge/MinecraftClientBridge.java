@@ -8,7 +8,8 @@ import io.izzel.minecraftmcp.packet.PacketFilter;
 import io.izzel.minecraftmcp.packet.PacketRecorder;
 import io.izzel.minecraftmcp.schematic.SchematicPathResolver;
 import io.izzel.minecraftmcp.schematic.SpongeSchematicV3;
-
+import io.izzel.minecraftmcp.mcp.FutureResult;
+import io.izzel.minecraftmcp.serverlink.ServerMcpProxy;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.List;
@@ -33,6 +34,9 @@ public interface MinecraftClientBridge {
         }
         return future;
     }
+    default <T> FutureResult<T> action(Supplier<T> supplier) {
+        return FutureResult.supply(this::execute, this::execute, supplier::get);
+    }
     default void pressKey(String key) {
         throw new UnsupportedOperationException("Key input is not implemented by " + loader());
     }
@@ -49,25 +53,25 @@ public interface MinecraftClientBridge {
     default void swing(String hand) {
         throw new UnsupportedOperationException("Swing is not implemented by " + loader());
     }
-    default Map<String, Object> look(float yaw, float pitch) {
+    default FutureResult<Map<String, Object>> look(float yaw, float pitch) {
         throw new UnsupportedOperationException("Look is not implemented by " + loader());
     }
-    default Map<String, Object> lookAt(double x, double y, double z) {
+    default FutureResult<Map<String, Object>> lookAt(double x, double y, double z) {
         throw new UnsupportedOperationException("Look-at is not implemented by " + loader());
     }
-    default Map<String, Object> useItem(String hand) {
+    default FutureResult<Map<String, Object>> useItem(String hand) {
         throw new UnsupportedOperationException("Use item is not implemented by " + loader());
     }
-    default Map<String, Object> attackBlock(int x, int y, int z, String face) {
+    default FutureResult<Map<String, Object>> attackBlock(int x, int y, int z, String face) {
         throw new UnsupportedOperationException("Block attack is not implemented by " + loader());
     }
-    default Map<String, Object> destroyBlock(int x, int y, int z, String face, long timeoutMs) {
+    default FutureResult<Map<String, Object>> destroyBlock(int x, int y, int z, String face) {
         throw new UnsupportedOperationException("Block destroy is not implemented by " + loader());
     }
-    default Map<String, Object> dropSelected(boolean all) {
+    default FutureResult<Map<String, Object>> dropSelected(boolean all) {
         throw new UnsupportedOperationException("Dropping items is not implemented by " + loader());
     }
-    default Map<String, Object> jump() {
+    default FutureResult<Map<String, Object>> jump() {
         throw new UnsupportedOperationException("Jump is not implemented by " + loader());
     }
     default Map<String, Object> vehicleState() {

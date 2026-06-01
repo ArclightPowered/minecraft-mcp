@@ -3,6 +3,7 @@ package io.izzel.minecraftmcp.fabric;
 import io.izzel.minecraftmcp.MinecraftMcpBootstrap;
 import io.izzel.minecraftmcp.bridge.ClientSnapshot;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
+import io.izzel.minecraftmcp.mcp.FutureResult;
 import io.izzel.minecraftmcp.mcp.LocalHttpMcpServer;
 import io.izzel.minecraftmcp.serverlink.ServerMcpPluginMessageHandler;
 import io.izzel.minecraftmcp.serverlink.ServerMcpProxy;
@@ -134,86 +135,107 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             InteractionHand interactionHand = "off".equalsIgnoreCase(hand) || "offhand".equalsIgnoreCase(hand) ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
             mc.player.swing(interactionHand);
         }
-        public Map<String, Object> look(float yaw, float pitch) {
-            if (mc.player == null) return Map.of("status", "not_in_world");
-            float clampedPitch = Math.max(-90.0F, Math.min(90.0F, pitch));
-            mc.player.setYRot(yaw);
-            mc.player.setXRot(clampedPitch);
-            mc.player.yHeadRot = yaw;
-            mc.player.yBodyRot = yaw;
-            return Map.of("status", "looked", "yaw", yaw, "pitch", clampedPitch);
+        public FutureResult<Map<String, Object>> look(float yaw, float pitch) {
+            return action(() -> {
+                if (mc.player == null) return Map.of("status", "not_in_world");
+                float clampedPitch = Math.max(-90.0F, Math.min(90.0F, pitch));
+                mc.player.setYRot(yaw);
+                mc.player.setXRot(clampedPitch);
+                mc.player.yHeadRot = yaw;
+                mc.player.yBodyRot = yaw;
+                return Map.of("status", "looked", "yaw", yaw, "pitch", clampedPitch);
+            });
         }
-        public Map<String, Object> lookAt(double x, double y, double z) {
-            if (mc.player == null) return Map.of("status", "not_in_world", "x", x, "y", y, "z", z);
-            Vec3 eye = mc.player.getEyePosition();
-            double dx = x - eye.x;
-            double dy = y - eye.y;
-            double dz = z - eye.z;
-            double horizontal = Math.sqrt(dx * dx + dz * dz);
-            float yaw = (float) (Math.toDegrees(Math.atan2(dz, dx)) - 90.0D);
-            float pitch = (float) (-Math.toDegrees(Math.atan2(dy, horizontal)));
-            look(yaw, pitch);
-            return Map.of("status", "looked_at", "x", x, "y", y, "z", z, "yaw", yaw, "pitch", Math.max(-90.0F, Math.min(90.0F, pitch)));
+        public FutureResult<Map<String, Object>> lookAt(double x, double y, double z) {
+            return action(() -> {
+                if (mc.player == null) return Map.of("status", "not_in_world", "x", x, "y", y, "z", z);
+                Vec3 eye = mc.player.getEyePosition();
+                double dx = x - eye.x;
+                double dy = y - eye.y;
+                double dz = z - eye.z;
+                double horizontal = Math.sqrt(dx * dx + dz * dz);
+                float yaw = (float) (Math.toDegrees(Math.atan2(dz, dx)) - 90.0D);
+                float pitch = (float) (-Math.toDegrees(Math.atan2(dy, horizontal)));
+                float clampedPitch = Math.max(-90.0F, Math.min(90.0F, pitch));
+                mc.player.setYRot(yaw);
+                mc.player.setXRot(clampedPitch);
+                mc.player.yHeadRot = yaw;
+                mc.player.yBodyRot = yaw;
+                return Map.of("status", "looked_at", "x", x, "y", y, "z", z, "yaw", yaw, "pitch", clampedPitch);
+            });
         }
-        public Map<String, Object> useItem(String hand) {
-            if (mc.player == null || mc.gameMode == null) return Map.of("status", "not_in_world", "hand", hand);
-            InteractionHand interactionHand = "off".equalsIgnoreCase(hand) || "offhand".equalsIgnoreCase(hand) ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
-            var result = mc.gameMode.useItem(mc.player, interactionHand);
-            if (result.consumesAction()) mc.player.swing(interactionHand);
-            return Map.of("status", "used", "hand", interactionHand.name().toLowerCase(java.util.Locale.ROOT), "result", result.toString(), "consumesAction", result.consumesAction());
+        public FutureResult<Map<String, Object>> useItem(String hand) {
+            return action(() -> {
+                if (mc.player == null || mc.gameMode == null) return Map.of("status", "not_in_world", "hand", hand);
+                InteractionHand interactionHand = "off".equalsIgnoreCase(hand) || "offhand".equalsIgnoreCase(hand) ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
+                var result = mc.gameMode.useItem(mc.player, interactionHand);
+                if (result.consumesAction()) mc.player.swing(interactionHand);
+                return Map.of("status", "used", "hand", interactionHand.name().toLowerCase(java.util.Locale.ROOT), "result", result.toString(), "consumesAction", result.consumesAction());
+            });
         }
-        public Map<String, Object> attackBlock(int x, int y, int z, String face) {
-            if (mc.player == null || mc.level == null || mc.gameMode == null) return Map.of("status", "not_in_world", "x", x, "y", y, "z", z);
-            Direction direction;
-            try { direction = Direction.valueOf((face == null ? "UP" : face.trim().toUpperCase(java.util.Locale.ROOT))); }
-            catch (IllegalArgumentException e) { return Map.of("status", "rejected", "reason", "invalid face", "face", face == null ? "" : face); }
-            BlockPos pos = new BlockPos(x, y, z);
-            boolean started = mc.gameMode.startDestroyBlock(pos, direction);
-            mc.player.swing(InteractionHand.MAIN_HAND);
-            return Map.of("status", "attacked_block", "x", x, "y", y, "z", z, "face", direction.getName(), "started", started);
-        }
-        public Map<String, Object> destroyBlock(int x, int y, int z, String face, long timeoutMs) {
-            Direction direction;
-            try { direction = Direction.valueOf((face == null ? "UP" : face.trim().toUpperCase(java.util.Locale.ROOT))); }
-            catch (IllegalArgumentException e) { return Map.of("status", "rejected", "reason", "invalid face", "face", face == null ? "" : face); }
-            BlockPos pos = new BlockPos(x, y, z);
-            long startedAt = System.currentTimeMillis();
-            long deadline = startedAt + Math.max(0L, timeoutMs);
-            java.util.concurrent.atomic.AtomicInteger attempts = new java.util.concurrent.atomic.AtomicInteger();
-            Map<String, Object> started = submit(() -> {
-                if (mc.player == null || mc.level == null || mc.gameMode == null) return Map.<String, Object>of("status", "not_in_world", "x", x, "y", y, "z", z);
-                BlockState state = mc.level.getBlockState(pos);
-                if (state.isAir()) return Map.<String, Object>of("status", "destroyed", "x", x, "y", y, "z", z, "face", direction.getName(), "attempts", 0, "elapsedMs", 0L);
-                boolean accepted = mc.gameMode.startDestroyBlock(pos, direction);
+        public FutureResult<Map<String, Object>> attackBlock(int x, int y, int z, String face) {
+            return action(() -> {
+                if (mc.player == null || mc.level == null || mc.gameMode == null) return Map.of("status", "not_in_world", "x", x, "y", y, "z", z);
+                Direction direction;
+                try { direction = Direction.valueOf((face == null ? "UP" : face.trim().toUpperCase(java.util.Locale.ROOT))); }
+                catch (IllegalArgumentException e) { return Map.of("status", "rejected", "reason", "invalid face", "face", face == null ? "" : face); }
+                BlockPos pos = new BlockPos(x, y, z);
+                boolean started = mc.gameMode.startDestroyBlock(pos, direction);
                 mc.player.swing(InteractionHand.MAIN_HAND);
-                return Map.<String, Object>of("status", accepted ? "destroying" : "rejected", "accepted", accepted, "block", net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString());
-            }).join();
-            if (!"destroying".equals(started.get("status"))) return started;
-            while (System.currentTimeMillis() <= deadline) {
-                Map<String, Object> tick = submit(() -> {
-                    if (mc.player == null || mc.level == null || mc.gameMode == null) return Map.<String, Object>of("status", "not_in_world", "x", x, "y", y, "z", z);
-                    BlockState state = mc.level.getBlockState(pos);
-                    if (state.isAir()) return Map.<String, Object>of("status", "destroyed", "x", x, "y", y, "z", z, "face", direction.getName(), "attempts", attempts.get(), "elapsedMs", System.currentTimeMillis() - startedAt);
-                    boolean continued = mc.gameMode.continueDestroyBlock(pos, direction);
-                    attempts.incrementAndGet();
-                    mc.player.swing(InteractionHand.MAIN_HAND);
-                    return Map.<String, Object>of("status", "destroying", "continued", continued, "block", net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString());
-                }).join();
-                if (!"destroying".equals(tick.get("status"))) return tick;
-                try { Thread.sleep(50L); } catch (InterruptedException e) { Thread.currentThread().interrupt(); return Map.of("status", "interrupted", "x", x, "y", y, "z", z, "face", direction.getName(), "attempts", attempts.get(), "elapsedMs", System.currentTimeMillis() - startedAt); }
-            }
-            submit(() -> { if (mc.gameMode != null) mc.gameMode.stopDestroyBlock(); return null; }).join();
-            return Map.of("status", "timeout", "x", x, "y", y, "z", z, "face", direction.getName(), "timeoutMs", timeoutMs, "attempts", attempts.get(), "elapsedMs", System.currentTimeMillis() - startedAt);
+                return Map.of("status", "attacked_block", "x", x, "y", y, "z", z, "face", direction.getName(), "started", started);
+            });
         }
-        public Map<String, Object> dropSelected(boolean all) {
-            if (mc.player == null) return Map.of("status", "not_in_world", "all", all);
-            boolean dropped = mc.player.drop(all);
-            return Map.of("status", "dropped", "all", all, "dropped", dropped);
+        public FutureResult<Map<String, Object>> destroyBlock(int x, int y, int z, String face) {
+            FutureResult<Map<String, Object>> result = new FutureResult<>(this::execute);
+            Direction direction;
+            try { direction = Direction.valueOf((face == null ? "UP" : face.trim().toUpperCase(java.util.Locale.ROOT))); }
+            catch (IllegalArgumentException e) { result.complete(Map.of("status", "rejected", "reason", "invalid face", "face", face == null ? "" : face)); return result; }
+            Thread worker = new Thread(() -> {
+                BlockPos pos = new BlockPos(x, y, z);
+                long startedAt = System.currentTimeMillis();
+                java.util.concurrent.atomic.AtomicInteger attempts = new java.util.concurrent.atomic.AtomicInteger();
+                try {
+                    while (!result.isCancelled()) {
+                        Map<String, Object> tick = submit(() -> {
+                            if (mc.player == null || mc.level == null || mc.gameMode == null) return Map.<String, Object>of("status", "not_in_world", "x", x, "y", y, "z", z);
+                            BlockState state = mc.level.getBlockState(pos);
+                            if (state.isAir()) return Map.<String, Object>of("status", "destroyed", "x", x, "y", y, "z", z, "face", direction.getName(), "attempts", attempts.get(), "elapsedMs", System.currentTimeMillis() - startedAt);
+                            if (attempts.get() == 0) mc.gameMode.startDestroyBlock(pos, direction);
+                            boolean continued = mc.gameMode.continueDestroyBlock(pos, direction);
+                            attempts.incrementAndGet();
+                            mc.player.swing(InteractionHand.MAIN_HAND);
+                            return Map.<String, Object>of("status", "destroying", "continued", continued, "block", net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString());
+                        }).join();
+                        if (!"destroying".equals(tick.get("status"))) { result.complete(tick); return; }
+                        try { Thread.sleep(50L); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
+                    }
+                } catch (Throwable throwable) {
+                    result.completeExceptionally(throwable);
+                    return;
+                }
+                submit(() -> { if (mc.gameMode != null) mc.gameMode.stopDestroyBlock(); return null; }).join();
+                if (!result.isCancelled()) result.complete(Map.of("status", "cancelled", "x", x, "y", y, "z", z, "face", direction.getName(), "attempts", attempts.get(), "elapsedMs", System.currentTimeMillis() - startedAt));
+            }, "minecraft-mcp-destroy-block");
+            worker.setDaemon(true);
+            result.toCompletableFuture().whenComplete((value, throwable) -> {
+                if (result.toCompletableFuture().isCancelled()) worker.interrupt();
+            });
+            worker.start();
+            return result;
         }
-        public Map<String, Object> jump() {
-            if (mc.player == null) return Map.of("status", "not_in_world");
-            mc.player.jumpFromGround();
-            return Map.of("status", "jumped");
+        public FutureResult<Map<String, Object>> dropSelected(boolean all) {
+            return action(() -> {
+                if (mc.player == null) return Map.of("status", "not_in_world", "all", all);
+                boolean dropped = mc.player.drop(all);
+                return Map.of("status", "dropped", "all", all, "dropped", dropped);
+            });
+        }
+        public FutureResult<Map<String, Object>> jump() {
+            return action(() -> {
+                if (mc.player == null) return Map.of("status", "not_in_world");
+                mc.player.jumpFromGround();
+                return Map.of("status", "jumped");
+            });
         }
         public Map<String, Object> vehicleState() {
             if (mc.player == null) return Map.of("inWorld", false, "isPassenger", false);

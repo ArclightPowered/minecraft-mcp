@@ -2,6 +2,7 @@ package io.izzel.minecraftmcp.mcp;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeoutException;
 
 public final class ToolRegistry {
     private final Map<String, McpTool> tools = new ConcurrentHashMap<>();
@@ -14,7 +15,24 @@ public final class ToolRegistry {
         }).toList();
     }
     public Object call(String name, Map<String,Object> args) throws Exception {
+        Map<String,Object> safeArgs = args == null ? Map.of() : args;
         McpTool tool = find(name).orElseThrow(() -> new IllegalArgumentException("Unknown tool: " + name));
-        return tool.call(args == null ? Map.of() : args);
+        Object result = tool.call(safeArgs);
+        if (result instanceof FutureResult<?> futureResult) {
+            long timeoutMs = timeoutMs(safeArgs);
+            try {
+                return futureResult.await(timeoutMs);
+            } catch (TimeoutException e) {
+                futureResult.cancel();
+                throw e;
+            }
+        }
+        return result;
+    }
+
+    private static long timeoutMs(Map<String,Object> args) {
+        Object value = args.getOrDefault("timeoutMs", 10000L);
+        if (value instanceof Number number) return Math.max(0L, number.longValue());
+        return Long.parseLong(String.valueOf(value));
     }
 }

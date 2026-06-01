@@ -81,7 +81,7 @@ Starts destroying/attacking the target block through the client game mode path a
 }
 ```
 
-Keeps calling the normal client block destroy path until the target block becomes air or `timeoutMs` expires. Returns `status: "destroyed"` on success or `status: "timeout"` with `attempts` and `elapsedMs` when it does not finish in time.
+Keeps calling the normal client block destroy path until the target block becomes air. The tool returns a `FutureResult`; the registry applies the standard call-level `timeoutMs` and cancels the future when that timeout expires. Returns `status: "destroyed"` on success with `attempts` and `elapsedMs`.
 
 ## `mc.player.drop`
 

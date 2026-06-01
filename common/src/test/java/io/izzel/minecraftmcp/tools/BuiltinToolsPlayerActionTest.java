@@ -2,6 +2,7 @@ package io.izzel.minecraftmcp.tools;
 
 import io.izzel.minecraftmcp.bridge.ClientSnapshot;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
+import io.izzel.minecraftmcp.mcp.FutureResult;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import io.izzel.minecraftmcp.scenario.ScenarioEngine;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,7 @@ class BuiltinToolsPlayerActionTest {
         assertEquals(Map.of("status", "looked_at", "x", 1.0, "y", 65.0, "z", -2.0), registry.call("mc.player.look_at", Map.of("x", 1, "y", 65, "z", -2)));
         assertEquals(Map.of("status", "used", "hand", "offhand"), registry.call("mc.player.use_item", Map.of("hand", "offhand")));
         assertEquals(Map.of("status", "attacked_block", "x", 1, "y", 2, "z", 3, "face", "north"), registry.call("mc.player.attack.block", Map.of("x", 1, "y", 2, "z", 3, "face", "north")));
-        assertEquals(Map.of("status", "destroyed", "x", 4, "y", 5, "z", 6, "face", "east", "timeoutMs", 1234L), registry.call("mc.player.destroy.block", Map.of("x", 4, "y", 5, "z", 6, "face", "east", "timeoutMs", 1234)));
+        assertEquals(Map.of("status", "destroyed", "x", 4, "y", 5, "z", 6, "face", "east"), registry.call("mc.player.destroy.block", Map.of("x", 4, "y", 5, "z", 6, "face", "east", "timeoutMs", 1234)));
         assertEquals(Map.of("status", "dropped", "all", true), registry.call("mc.player.drop", Map.of("all", true)));
         assertEquals(Map.of("status", "jumped"), registry.call("mc.player.jump", Map.of()));
         assertThrows(IllegalArgumentException.class, () -> registry.call("mc.player.sneak", Map.of("down", true)));
@@ -40,7 +41,6 @@ class BuiltinToolsPlayerActionTest {
         assertEquals(2, bridge.attackY);
         assertEquals(3, bridge.attackZ);
         assertEquals("north", bridge.attackFace);
-        assertEquals(1234L, bridge.destroyTimeoutMs);
         assertTrue(bridge.dropAll);
         assertTrue(bridge.jumped);
     }
@@ -56,7 +56,6 @@ class BuiltinToolsPlayerActionTest {
         int attackY;
         int attackZ;
         String attackFace;
-        long destroyTimeoutMs;
         boolean dropAll;
         boolean jumped;
 
@@ -70,12 +69,12 @@ class BuiltinToolsPlayerActionTest {
             catch (Throwable t) { CompletableFuture<T> f = new CompletableFuture<>(); f.completeExceptionally(t); return f; }
         }
         public ClientSnapshot snapshot() { return new ClientSnapshot(true, true, null, "Player", 0, 64, 0, yaw, pitch); }
-        public Map<String, Object> look(float yaw, float pitch) { this.yaw = yaw; this.pitch = pitch; return Map.of("status", "looked", "yaw", yaw, "pitch", pitch); }
-        public Map<String, Object> lookAt(double x, double y, double z) { this.lookAtX = x; this.lookAtY = y; this.lookAtZ = z; return Map.of("status", "looked_at", "x", x, "y", y, "z", z); }
-        public Map<String, Object> useItem(String hand) { this.usedHand = hand; return Map.of("status", "used", "hand", hand); }
-        public Map<String, Object> attackBlock(int x, int y, int z, String face) { this.attackX = x; this.attackY = y; this.attackZ = z; this.attackFace = face; return Map.of("status", "attacked_block", "x", x, "y", y, "z", z, "face", face); }
-        public Map<String, Object> destroyBlock(int x, int y, int z, String face, long timeoutMs) { this.destroyTimeoutMs = timeoutMs; return Map.of("status", "destroyed", "x", x, "y", y, "z", z, "face", face, "timeoutMs", timeoutMs); }
-        public Map<String, Object> dropSelected(boolean all) { this.dropAll = all; return Map.of("status", "dropped", "all", all); }
-        public Map<String, Object> jump() { this.jumped = true; return Map.of("status", "jumped"); }
+        public FutureResult<Map<String, Object>> look(float yaw, float pitch) { return action(() -> { this.yaw = yaw; this.pitch = pitch; return Map.of("status", "looked", "yaw", yaw, "pitch", pitch); }); }
+        public FutureResult<Map<String, Object>> lookAt(double x, double y, double z) { return action(() -> { this.lookAtX = x; this.lookAtY = y; this.lookAtZ = z; return Map.of("status", "looked_at", "x", x, "y", y, "z", z); }); }
+        public FutureResult<Map<String, Object>> useItem(String hand) { return action(() -> { this.usedHand = hand; return Map.of("status", "used", "hand", hand); }); }
+        public FutureResult<Map<String, Object>> attackBlock(int x, int y, int z, String face) { return action(() -> { this.attackX = x; this.attackY = y; this.attackZ = z; this.attackFace = face; return Map.of("status", "attacked_block", "x", x, "y", y, "z", z, "face", face); }); }
+        public FutureResult<Map<String, Object>> destroyBlock(int x, int y, int z, String face) { return action(() -> { return Map.of("status", "destroyed", "x", x, "y", y, "z", z, "face", face); }); }
+        public FutureResult<Map<String, Object>> dropSelected(boolean all) { return action(() -> { this.dropAll = all; return Map.of("status", "dropped", "all", all); }); }
+        public FutureResult<Map<String, Object>> jump() { return action(() -> { this.jumped = true; return Map.of("status", "jumped"); }); }
     }
 }

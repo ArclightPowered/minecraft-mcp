@@ -189,6 +189,16 @@
       }
     },
     {
+      "id": "wait_after_destroy_block",
+      "tool": "mc.ticks.wait",
+      "args": {
+        "ticks": 10
+      },
+      "expect": {
+        "result.waitedTicks": 10
+      }
+    },
+    {
       "id": "destroy_target_gone",
       "tool": "mc.block.state",
       "args": {
