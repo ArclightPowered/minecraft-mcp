@@ -60,7 +60,7 @@ class BuiltinToolsPlayerActionTest {
         boolean jumped;
 
         public String loader() { return "test"; }
-        public String minecraftVersion() { return "1.21.1"; }
+        public String minecraftVersion() { return "test"; }
         public Path gameDirectory() { return Path.of("."); }
         public boolean isOnClientThread() { return true; }
         public void execute(Runnable runnable) { runnable.run(); }

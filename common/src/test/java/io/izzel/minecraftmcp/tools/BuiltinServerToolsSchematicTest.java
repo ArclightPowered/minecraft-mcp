@@ -35,7 +35,7 @@ class BuiltinServerToolsSchematicTest {
         Map<String, Object> exportArgs;
         Map<String, Object> pasteArgs;
         public String loader() { return "test-server"; }
-        public String minecraftVersion() { return "1.21.1"; }
+        public String minecraftVersion() { return "test-server"; }
         public Path gameDirectory() { return Path.of("."); }
         public boolean isOnServerThread() { return true; }
         public void execute(Runnable runnable) { runnable.run(); }

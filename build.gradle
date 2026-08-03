@@ -1,6 +1,6 @@
 plugins {
-    id 'fabric-loom' version '1.10-SNAPSHOT' apply false
-    id 'net.neoforged.gradle.userdev' version '7.0.190' apply false
+    id 'net.fabricmc.fabric-loom' version '1.17.17' apply false
+    id 'net.neoforged.moddev' version '2.0.143' apply false
 }
 
 subprojects {
@@ -13,7 +13,6 @@ subprojects {
         mavenCentral()
         maven { name = 'Fabric'; url = 'https://maven.fabricmc.net' }
         maven { name = 'NeoForge'; url = 'https://maven.neoforged.net/releases' }
-        maven { name = 'Sponge'; url = 'https://repo.spongepowered.org/repository/maven-public' }
     }
 
     java {

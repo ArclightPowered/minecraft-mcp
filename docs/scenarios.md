@@ -21,13 +21,14 @@ Minimal example:
 }
 ```
 
-Step-level `expect` supports dot-path equality and a small `contains` matcher:
+Step-level `expect` supports dot-path equality and small `contains` / `startsWith` matchers:
 
 ```json
 {
   "expect": {
     "result.running": true,
-    "result.screen": {"contains": "Screen"}
+    "result.screen": {"contains": "Screen"},
+    "result.minecraftVersion": {"startsWith": "26.1"}
   }
 }
 ```
@@ -67,5 +68,6 @@ Current scenario groups:
 - `assert/`: examples using `expect` assertions.
 - `metadata/`: loader requirements, tags, and expected-failure behavior.
 - `world/`: full-client scenarios that create/join a singleplayer test world, inspect player/world/inventory/block state, exercise input in-world, and leave back to title.
+- `arclight-2137/`: manual-setup reproduction of [Arclight issue #2137](https://github.com/IzzelAliz/Arclight/issues/2137) against an external server on `127.0.0.1:25565`. The issue was reported on Arclight 1.21.1; the scenarios here use 26.1 entity ids (`minecraft:oak_boat`), so they require an Arclight 26.1 server. To reproduce in the original 1.21.1 environment, use these scenarios from the `main` branch with the 1.21.1 client.
 
 World scenarios require a real client run and are intended for `includeTags:["world"]` or `includeTags:["full-client"]`. They are not part of quick smoke-only validation.

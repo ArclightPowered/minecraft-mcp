@@ -23,7 +23,7 @@ class BuiltinServerToolsTest {
         Object wait = registry.call("mc.server.ticks.wait", Map.of("ticks", 2));
 
         assertEquals(Map.of("running", true, "players", 1, "motd", "Test Server"), state);
-        assertEquals(Map.of("loader", "test-server", "minecraftVersion", "1.21.1", "dedicatedServer", true, "serverThreadScheduling", true), capabilities);
+        assertEquals(Map.of("loader", "test-server", "minecraftVersion", "test-server", "dedicatedServer", true, "serverThreadScheduling", true), capabilities);
         assertEquals("list", bridge.command);
         assertEquals(Map.of("status", "sent", "command", "list"), command);
         assertEquals(Map.of("waitedTicks", 2L), wait);
@@ -35,7 +35,7 @@ class BuiltinServerToolsTest {
     static class RecordingServerBridge implements MinecraftServerBridge {
         String command;
         public String loader() { return "test-server"; }
-        public String minecraftVersion() { return "1.21.1"; }
+        public String minecraftVersion() { return "test-server"; }
         public Path gameDirectory() { return Path.of("."); }
         public boolean isOnServerThread() { return true; }
         public void execute(Runnable runnable) { runnable.run(); }

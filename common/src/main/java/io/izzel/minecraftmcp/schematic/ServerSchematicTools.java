@@ -9,13 +9,17 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.phys.AABB;
 
 import java.nio.file.Path;
@@ -50,16 +54,16 @@ public final class ServerSchematicTools {
             List<String> biomePalette = new ArrayList<>();
             int[] biomeData = new int[volume];
             ListTag blockEntities = new ListTag();
-            var biomeRegistry = level.registryAccess().registryOrThrow(Registries.BIOME);
+            var biomeRegistry = level.registryAccess().lookupOrThrow(Registries.BIOME);
             for (int y = 0; y < height; y++) {
                 for (int z = 0; z < length; z++) {
                     for (int x = 0; x < width; x++) {
                         BlockPos pos = new BlockPos(minX + x, minY + y, minZ + z);
-                        String state = level.getBlockState(pos).toString();
+                        String state = BlockStateParser.serialize(level.getBlockState(pos));
                         int stateIndex = paletteIndex.computeIfAbsent(state, key -> { palette.add(key); return palette.size() - 1; });
                         blockData[x + z * width + y * width * length] = stateIndex;
                         Holder<Biome> biome = level.getBiome(pos);
-                        String biomeId = biome.unwrapKey().map(key -> key.location().toString()).orElseGet(() -> biomeRegistry.getKey(biome.value()).toString());
+                        String biomeId = biome.unwrapKey().map(key -> key.identifier().toString()).orElseGet(() -> biomeRegistry.getKey(biome.value()).toString());
                         int biomeIndex = biomePaletteIndex.computeIfAbsent(biomeId, key -> { biomePalette.add(key); return biomePalette.size() - 1; });
                         biomeData[x + z * width + y * width * length] = biomeIndex;
                         BlockEntity blockEntity = level.getBlockEntity(pos);
@@ -78,15 +82,15 @@ public final class ServerSchematicTools {
             if (includeEntities) {
                 AABB box = new AABB(minX, minY, minZ, maxX + 1.0D, maxY + 1.0D, maxZ + 1.0D);
                 for (Entity entity : level.getEntities((Entity) null, box, e -> !(e instanceof net.minecraft.world.entity.player.Player))) {
-                    CompoundTag tag = new CompoundTag();
-                    if (entity.save(tag)) {
-                        entities.add(tag);
+                    TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, level.registryAccess());
+                    if (entity.save(output)) {
+                        entities.add(output.buildResult());
                     }
                 }
             }
             Map<String, Object> metadata = metadata(args.get("metadata"));
             Schematic schematic = new Schematic(width, height, length, new int[] {minX, minY, minZ}, palette, blockData, biomePalette, biomeData, metadata, blockEntities, entities);
-            SpongeSchematicV3.write(path, schematic, SharedConstants.getCurrentVersion().getDataVersion().getVersion());
+            SpongeSchematicV3.write(path, schematic, SharedConstants.getCurrentVersion().dataVersion().version());
             Map<String, Object> result = baseResult("exported", path, schematic);
             result.put("blockEntities", blockEntities.size());
             result.put("entities", entities.size());
@@ -126,8 +130,8 @@ public final class ServerSchematicTools {
             int blockEntityCount = 0;
             if (pasteBlockEntities) {
                 for (int i = 0; i < schematic.blockEntities().size(); i++) {
-                    CompoundTag tag = schematic.blockEntities().getCompound(i).copy();
-                    int x = tag.getInt("x"), y = tag.getInt("y"), z = tag.getInt("z");
+                    CompoundTag tag = schematic.blockEntities().getCompoundOrEmpty(i).copy();
+                    int x = tag.getIntOr("x", 0), y = tag.getIntOr("y", 0), z = tag.getIntOr("z", 0);
                     BlockPos pos = new BlockPos(originX + x, originY + y, originZ + z);
                     tag.putInt("x", pos.getX()); tag.putInt("y", pos.getY()); tag.putInt("z", pos.getZ());
                     BlockEntity blockEntity = BlockEntity.loadStatic(pos, level.getBlockState(pos), tag, level.registryAccess());
@@ -140,12 +144,12 @@ public final class ServerSchematicTools {
             }
             int biomeCount = 0;
             if (pasteBiomes && !schematic.biomePalette().isEmpty() && schematic.biomeData().length == schematic.volume()) {
-                var biomeRegistry = level.registryAccess().registryOrThrow(Registries.BIOME);
+                var biomeRegistry = level.registryAccess().lookupOrThrow(Registries.BIOME);
                 for (int y = 0; y < schematic.height(); y++) {
                     for (int z = 0; z < schematic.length(); z++) {
                         for (int x = 0; x < schematic.width(); x++) {
                             String biomeId = schematic.biomePalette().get(schematic.biomeData()[schematic.index(x, y, z)]);
-                            Holder<Biome> holder = biomeRegistry.getHolder(ResourceLocation.parse(biomeId)).orElse(null);
+                            Holder<Biome> holder = biomeRegistry.get(Identifier.parse(biomeId)).orElse(null);
                             if (holder != null) {
                                 setBiome(level, originX + x, originY + y, originZ + z, holder);
                                 biomeCount++;
@@ -157,9 +161,9 @@ public final class ServerSchematicTools {
             int entityCount = 0;
             if (pasteEntities) {
                 for (int i = 0; i < schematic.entities().size(); i++) {
-                    CompoundTag tag = schematic.entities().getCompound(i).copy();
-                    EntityType.create(tag, level).ifPresent(entity -> {
-                        entity.moveTo(entity.getX() + originX, entity.getY() + originY, entity.getZ() + originZ, entity.getYRot(), entity.getXRot());
+                    CompoundTag tag = schematic.entities().getCompoundOrEmpty(i).copy();
+                    EntityType.create(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), tag), level, EntitySpawnReason.LOAD).ifPresent(entity -> {
+                        entity.snapTo(entity.getX() + originX, entity.getY() + originY, entity.getZ() + originZ, entity.getYRot(), entity.getXRot());
                         level.addFreshEntity(entity);
                     });
                     entityCount++;
@@ -191,7 +195,7 @@ public final class ServerSchematicTools {
         int baseQy = QuartPos.fromBlock(level.getSectionYFromSectionIndex(sectionIndex) << 4);
         int baseQz = QuartPos.fromSection(sectionZ);
         section.fillBiomesFromNoise((qx, qy, qz, sampler) -> qx == targetQx && qy == targetQy && qz == targetQz ? biome : section.getNoiseBiome(qx - baseQx, qy - baseQy, qz - baseQz), level.getChunkSource().randomState().sampler(), baseQx, baseQy, baseQz);
-        chunk.setUnsaved(true);
+        chunk.markUnsaved();
     }
 
     private static Map<String, Object> baseResult(String status, Path path, Schematic schematic) {

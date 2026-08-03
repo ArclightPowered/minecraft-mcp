@@ -4,7 +4,7 @@ import io.izzel.minecraftmcp.serverlink.ServerMcpChannels;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 record NeoForgeStringPayload(CustomPacketPayload.Type<NeoForgeStringPayload> type, String text) implements CustomPacketPayload {
     static final CustomPacketPayload.Type<NeoForgeStringPayload> REQUEST = new CustomPacketPayload.Type<>(id(ServerMcpChannels.REQUEST));
@@ -15,8 +15,8 @@ record NeoForgeStringPayload(CustomPacketPayload.Type<NeoForgeStringPayload> typ
         return StreamCodec.of((buf, payload) -> buf.writeUtf(payload.text), buf -> new NeoForgeStringPayload(type, buf.readUtf(32767)));
     }
 
-    private static ResourceLocation id(String value) {
+    private static Identifier id(String value) {
         String[] parts = value.split(":", 2);
-        return ResourceLocation.fromNamespaceAndPath(parts[0], parts[1]);
+        return Identifier.fromNamespaceAndPath(parts[0], parts[1]);
     }
 }

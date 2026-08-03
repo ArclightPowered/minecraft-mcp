@@ -25,9 +25,9 @@ public final class FabricMinecraftMcpServerEntrypoint implements DedicatedServer
 
     @Override
     public void onInitializeServer() {
-        PayloadTypeRegistry.playC2S().register(FabricStringPayload.REQUEST, FabricStringPayload.codec(FabricStringPayload.REQUEST));
-        PayloadTypeRegistry.playS2C().register(FabricStringPayload.RESPONSE, FabricStringPayload.codec(FabricStringPayload.RESPONSE));
-        PayloadTypeRegistry.playS2C().register(FabricStringPayload.HELLO, FabricStringPayload.codec(FabricStringPayload.HELLO));
+        PayloadTypeRegistry.serverboundPlay().register(FabricStringPayload.REQUEST, FabricStringPayload.codec(FabricStringPayload.REQUEST));
+        PayloadTypeRegistry.clientboundPlay().register(FabricStringPayload.RESPONSE, FabricStringPayload.codec(FabricStringPayload.RESPONSE));
+        PayloadTypeRegistry.clientboundPlay().register(FabricStringPayload.HELLO, FabricStringPayload.codec(FabricStringPayload.HELLO));
         ServerPlayNetworking.registerGlobalReceiver(FabricStringPayload.REQUEST, (payload, context) -> pluginHandler.receive(payload.text(), response -> ServerPlayNetworking.send(context.player(), new FabricStringPayload(FabricStringPayload.RESPONSE, response))));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> ServerPlayNetworking.send(handler.player, new FabricStringPayload(FabricStringPayload.HELLO, ServerMcpProxy.hello())));
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {

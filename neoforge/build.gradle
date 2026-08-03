@@ -1,5 +1,5 @@
 plugins {
-    id 'net.neoforged.gradle.userdev'
+    id 'net.neoforged.moddev'
 }
 
 base {
@@ -11,26 +11,35 @@ configurations {
     commonResources { canBeResolved = true; canBeConsumed = false }
 }
 
+neoForge {
+    version = rootProject.property('neoforge_version')
+
+    runs {
+        client {
+            client()
+            systemProperty 'minecraftMcp.port', System.getProperty('minecraftMcp.port', '0')
+            systemProperty 'minecraftMcp.batchExit', System.getProperty('minecraftMcp.batchExit', 'false')
+            systemProperty 'minecraftMcp.scenarioDir', System.getProperty('minecraftMcp.scenarioDir', '')
+        }
+        server {
+            server()
+            systemProperty 'minecraftMcp.port', System.getProperty('minecraftMcp.port', '0')
+            systemProperty 'minecraftMcp.batchExit', System.getProperty('minecraftMcp.batchExit', 'false')
+            systemProperty 'minecraftMcp.scenarioDir', System.getProperty('minecraftMcp.scenarioDir', '')
+        }
+    }
+
+    mods {
+        "${rootProject.property('mod_id')}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
 dependencies {
-    implementation "net.neoforged:neoforge:${rootProject.property('neoforge_version')}"
     commonJava project(path: ':common', configuration: 'commonJava')
     commonResources project(path: ':common', configuration: 'commonResources')
     implementation project(':common')
-}
-
-runs {
-    client {
-        modSource project.sourceSets.main
-        systemProperty 'minecraftMcp.port', System.getProperty('minecraftMcp.port', '0')
-        systemProperty 'minecraftMcp.batchExit', System.getProperty('minecraftMcp.batchExit', 'false')
-        systemProperty 'minecraftMcp.scenarioDir', System.getProperty('minecraftMcp.scenarioDir', '')
-    }
-    server {
-        modSource project.sourceSets.main
-        systemProperty 'minecraftMcp.port', System.getProperty('minecraftMcp.port', '0')
-        systemProperty 'minecraftMcp.batchExit', System.getProperty('minecraftMcp.batchExit', 'false')
-        systemProperty 'minecraftMcp.scenarioDir', System.getProperty('minecraftMcp.scenarioDir', '')
-    }
 }
 
 tasks.named('compileJava', JavaCompile) {
@@ -47,7 +56,6 @@ processResources {
         expand version: project.version,
                 minecraft_version: rootProject.property('minecraft_version'),
                 neoforge_version_range: rootProject.property('neoforge_version_range'),
-                neoforge_loader_version_range: rootProject.property('neoforge_loader_version_range'),
                 mod_id: rootProject.property('mod_id'),
                 mod_name: rootProject.property('mod_name'),
                 mod_description: rootProject.property('mod_description'),

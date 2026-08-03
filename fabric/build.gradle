@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom'
+    id 'net.fabricmc.fabric-loom'
 }
 
 base {
@@ -13,9 +13,8 @@ configurations {
 
 dependencies {
     minecraft "com.mojang:minecraft:${rootProject.property('minecraft_version')}"
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${rootProject.property('fabric_loader_version')}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${rootProject.property('fabric_api_version')}"
+    implementation "net.fabricmc:fabric-loader:${rootProject.property('fabric_loader_version')}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${rootProject.property('fabric_api_version')}"
     commonJava project(path: ':common', configuration: 'commonJava')
     commonResources project(path: ':common', configuration: 'commonResources')
     implementation project(':common')
@@ -40,12 +39,5 @@ processResources {
                 mod_description: rootProject.property('mod_description'),
                 mod_author: rootProject.property('mod_author'),
                 mod_license: rootProject.property('mod_license')
-    }
-}
-
-def minecraftMcpModId = project.rootProject.property('mod_id').toString()
-loom {
-    mixin {
-        defaultRefmapName.set("${minecraftMcpModId}.refmap.json")
     }
 }

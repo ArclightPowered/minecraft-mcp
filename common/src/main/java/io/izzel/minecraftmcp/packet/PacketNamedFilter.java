@@ -43,7 +43,7 @@ final class PacketNamedFilter {
 
     private record PacketExpressionBridge(Map<String, Object> globals) implements io.izzel.minecraftmcp.bridge.MinecraftClientBridge {
         public String loader() { return "packet-filter"; }
-        public String minecraftVersion() { return "1.21.1"; }
+        public String minecraftVersion() { return "packet-filter"; }
         public Path gameDirectory() { return Path.of("."); }
         public boolean isOnClientThread() { return true; }
         public void execute(Runnable runnable) { runnable.run(); }
