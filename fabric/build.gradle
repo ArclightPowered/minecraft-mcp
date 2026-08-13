@@ -11,6 +11,21 @@ configurations {
     commonResources { canBeResolved = true; canBeConsumed = false }
 }
 
+loom {
+    runs {
+        // One directory per side: both sides write mcp/server.json, and sharing a run dir means
+        // whichever started last wins and an agent gets the wrong token.
+        client {
+            client()
+            runDir 'run/client'
+        }
+        server {
+            server()
+            runDir 'run/server'
+        }
+    }
+}
+
 dependencies {
     minecraft "com.mojang:minecraft:${rootProject.property('minecraft_version')}"
     implementation "net.fabricmc:fabric-loader:${rootProject.property('fabric_loader_version')}"
