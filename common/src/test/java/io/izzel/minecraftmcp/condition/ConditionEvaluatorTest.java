@@ -39,6 +39,16 @@ class ConditionEvaluatorTest {
     }
 
     @Test
+    void dollarIsTheBuiltinRootAndNullPropagatesThroughAccessChains() {
+        MockBridge bridge = new MockBridge();
+        assertTrue(eval("exists($)", bridge));
+        assertTrue(eval("missing($.nosuchproperty)", bridge));
+        assertTrue(eval("missing($.nosuchproperty.deeper.still)", bridge));
+        assertTrue(eval("missing(world.nosuchfield.deeper)", bridge));
+        assertTrue(eval("missing(nosuchtopname)", bridge));
+    }
+
+    @Test
     void waitUntilRetriesTransientRuntimeEvaluationFailures() {
         MockBridge bridge = new MockBridge() {
             int attempts;

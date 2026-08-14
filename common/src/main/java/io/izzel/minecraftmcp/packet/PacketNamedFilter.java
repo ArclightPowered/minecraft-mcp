@@ -34,21 +34,44 @@ final class PacketNamedFilter {
         globals.put("summary", packet.summary());
         PacketExpressionBridge bridge = new PacketExpressionBridge(globals);
         DefaultConditionPropertyRegistry registry = new DefaultConditionPropertyRegistry();
-        registry.registerGlobal("$", ctx -> globals);
         for (String key : globals.keySet()) {
             registry.registerContextProperty(key, ctx -> globals.get(key));
         }
         return ConditionEvaluator.evaluateBoolean(expression, new ConditionContext(bridge, registry));
     }
 
-    private record PacketExpressionBridge(Map<String, Object> globals) implements io.izzel.minecraftmcp.bridge.MinecraftClientBridge {
-        public String loader() { return "packet-filter"; }
-        public String minecraftVersion() { return "packet-filter"; }
-        public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnClientThread() { return true; }
-        public void execute(Runnable runnable) { runnable.run(); }
-        public <T> CompletableFuture<T> submit(Supplier<T> supplier) { return CompletableFuture.completedFuture(supplier.get()); }
-        public io.izzel.minecraftmcp.bridge.ClientSnapshot snapshot() { return new io.izzel.minecraftmcp.bridge.ClientSnapshot(true, false, null, null, 0, 0, 0, 0, 0); }
-        public Map<String, Object> packetRecordingStatus() { return globals; }
+    private record PacketExpressionBridge(
+        Map<String, Object> globals) implements io.izzel.minecraftmcp.bridge.MinecraftClientBridge {
+        public String loader() {
+            return "packet-filter";
+        }
+
+        public String minecraftVersion() {
+            return "packet-filter";
+        }
+
+        public Path gameDirectory() {
+            return Path.of(".");
+        }
+
+        public boolean isOnClientThread() {
+            return true;
+        }
+
+        public void execute(Runnable runnable) {
+            runnable.run();
+        }
+
+        public <T> CompletableFuture<T> submit(Supplier<T> supplier) {
+            return CompletableFuture.completedFuture(supplier.get());
+        }
+
+        public io.izzel.minecraftmcp.bridge.ClientSnapshot snapshot() {
+            return new io.izzel.minecraftmcp.bridge.ClientSnapshot(true, false, null, null, 0, 0, 0, 0, 0);
+        }
+
+        public Map<String, Object> packetRecordingStatus() {
+            return globals;
+        }
     }
 }

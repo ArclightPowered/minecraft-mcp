@@ -36,6 +36,27 @@ class ConditionPropertyRegistryTest {
     }
 
     @Test
+    void dollarAndShorthandShareOneLoadPerEvaluation() {
+        DefaultConditionPropertyRegistry registry = ConditionPropertyProviders.newDefaultRegistry();
+        AtomicInteger loads = new AtomicInteger();
+        registry.registerContextProperty("custom", ctx -> {
+            loads.incrementAndGet();
+            return Map.of("value", 7);
+        });
+        ConditionContext context = new ConditionContext(new MockBridge(), registry);
+        assertTrue(ConditionEvaluator.evaluateBoolean(
+                ConditionParser.parse("custom.value == 7 && $.custom.value == 7"), context));
+        assertEquals(1, loads.get());
+    }
+
+    @Test
+    void rejectsRegisteringTheBuiltinRoot() {
+        DefaultConditionPropertyRegistry registry = new DefaultConditionPropertyRegistry();
+        assertThrows(IllegalArgumentException.class, () -> registry.registerGlobal("$", ctx -> Map.of()));
+        assertThrows(IllegalArgumentException.class, () -> registry.registerContextProperty("$", ctx -> Map.of()));
+    }
+
+    @Test
     void rejectsDuplicateProperties() {
         DefaultConditionPropertyRegistry registry = ConditionPropertyProviders.newDefaultRegistry();
         registry.registerContextProperty("custom", ctx -> Map.of());

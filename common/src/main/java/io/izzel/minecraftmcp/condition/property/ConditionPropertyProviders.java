@@ -31,20 +31,5 @@ public final class ConditionPropertyProviders {
 
     private static void registerDefaults(DefaultConditionPropertyRegistry registry) {
         new BuiltinConditionProperties().register(registry);
-        registry.registerGlobal("$", ctx -> new LazyPropertyObject(name -> {
-            try {
-                return ctx.cached("$." + name, () ->
-                        registry.findContextProperty(name).map(property -> {
-                            try {
-                                return property.load(ctx);
-                            } catch (Exception e) {
-                                throw new RuntimeException(e);
-                            }
-                        }).orElse(null)
-                );
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }));
     }
 }
