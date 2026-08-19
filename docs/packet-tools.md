@@ -26,6 +26,8 @@ Arguments:
 }
 ```
 
+Each entry in `filters` is a condition expression evaluated against every recorded packet. The available top-level properties are `sequence`, `timeMillis`, `direction`, `packetClass`, `packetSimpleName`, `protocol`, `phase` and `summary`. Expressions are validated when the filter is built (`start`, `dump`, `wait`): a misspelled property or function name, a wrong argument count, or an invalid literal regex fails the tool call immediately, listing everything that is wrong and what is available. An expression that validates but fails on a particular packet's data (say `summary.hp > 3` where `hp` is absent, so `null` reaches `>`) simply does not match that packet; the failure is counted per filter and shown in the recording status.
+
 `direction` may be `both`, `serverbound`, or `clientbound`. `parseBundlePackets` defaults to `true`; when enabled, vanilla `BundlePacket` instances are expanded and their `subPackets()` are recorded/filtered individually. Set it to `false` to record the bundle wrapper itself.
 
 ### `mc.packet.recording.stop`

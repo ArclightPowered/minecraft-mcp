@@ -1,12 +1,53 @@
 package io.izzel.minecraftmcp.packet;
 
+import io.izzel.minecraftmcp.condition.ConditionValidator;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class PacketFilterValidationTest {
+    @Test
+    void unknownPropertyInFilterExpressionFailsWhenTheFilterIsBuilt() {
+        var error = assertThrows(ConditionValidator.ConditionValidationException.class,
+                () -> PacketFilter.from(Map.of("filters", Map.of("bad", "pakcetClass == 'x'"))));
+        assertTrue(error.getMessage().contains("pakcetClass"), error.getMessage());
+        assertTrue(error.getMessage().contains("packetClass"), error.getMessage());
+        assertTrue(error.getMessage().contains("in packet filters"), error.getMessage());
+    }
+
+    @Test
+    void unknownFunctionInFilterExpressionFailsWhenTheFilterIsBuilt() {
+        var error = assertThrows(ConditionValidator.ConditionValidationException.class,
+                () -> PacketFilter.from(Map.of("filters", Map.of("bad", "exsits(packetClass)"))));
+        assertTrue(error.getMessage().contains("exsits"), error.getMessage());
+        assertTrue(error.getMessage().contains("in packet filters"), error.getMessage());
+    }
+
+    @Test
+    void wrongArityInFilterExpressionFailsWhenTheFilterIsBuilt() {
+        var error = assertThrows(ConditionValidator.ConditionValidationException.class,
+                () -> PacketFilter.from(Map.of("filters", Map.of("bad", "matches(packetClass)"))));
+        assertTrue(error.getMessage().contains("matches expects 2 args but got 1"), error.getMessage());
+        assertTrue(error.getMessage().contains("in packet filters"), error.getMessage());
+    }
+
+    @Test
+    void invalidLiteralRegexInFilterExpressionFailsWhenTheFilterIsBuilt() {
+        var error = assertThrows(ConditionValidator.ConditionValidationException.class,
+                () -> PacketFilter.from(Map.of("filters", Map.of("bad", "matches(packetClass, \"[\")"))));
+        assertTrue(error.getMessage().contains("Invalid matches regex"), error.getMessage());
+    }
+
+    @Test
+    void propertyNamesMatchTheRecordedPacketShape() {
+        RecordedPacket packet = new RecordedPacket(1, 2, PacketDirection.CLIENTBOUND,
+                "net.example.TestPacket", "TestPacket", "", "", Map.of());
+        assertEquals(Set.copyOf(PacketNamedFilter.PROPERTY_NAMES), packet.toMap().keySet());
+    }
+
     @Test
     @SuppressWarnings("unchecked")
     void evaluationFailuresCountAsNoMatchAndSurfaceInStatus() {

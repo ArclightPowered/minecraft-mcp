@@ -4,6 +4,8 @@ import io.izzel.minecraftmcp.condition.ConditionContext;
 import io.izzel.minecraftmcp.condition.ConditionEvaluator;
 import io.izzel.minecraftmcp.condition.ConditionExpression;
 import io.izzel.minecraftmcp.condition.ConditionParser;
+import io.izzel.minecraftmcp.condition.ConditionValidator;
+import io.izzel.minecraftmcp.condition.property.ConditionPropertyProviders;
 import io.izzel.minecraftmcp.schematic.SchematicPathResolver;
 import io.izzel.minecraftmcp.schematic.SpongeSchematicV3;
 
@@ -63,6 +65,7 @@ public interface MinecraftBridge {
     default boolean waitUntil(String condition, long timeoutMs, long intervalTicks) {
         String normalized = condition == null ? "" : condition.trim();
         ConditionExpression expression = ConditionParser.parse(normalized);
+        ConditionValidator.validate(expression, ConditionPropertyProviders.registryFor(side()), " on side=" + side());
         long deadline = System.currentTimeMillis() + Math.max(0, timeoutMs);
         long interval = Math.max(1, intervalTicks);
         RuntimeException lastError;

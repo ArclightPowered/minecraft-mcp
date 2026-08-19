@@ -22,7 +22,13 @@ public final class ConditionPropertyProviders {
     }
 
     public static DefaultConditionPropertyRegistry registryFor(String side) {
-        return SERVER_SIDE.equals(side) ? SERVER : CLIENT;
+        if (CLIENT_SIDE.equals(side)) {
+            return CLIENT;
+        }
+        if (SERVER_SIDE.equals(side)) {
+            return SERVER;
+        }
+        throw new IllegalArgumentException("Unknown side: " + side);
     }
 
     public static DefaultConditionPropertyRegistry newDefaultRegistry() {

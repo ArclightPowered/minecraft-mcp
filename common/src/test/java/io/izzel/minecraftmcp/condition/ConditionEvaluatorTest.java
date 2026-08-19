@@ -45,7 +45,38 @@ class ConditionEvaluatorTest {
         assertTrue(eval("missing($.nosuchproperty)", bridge));
         assertTrue(eval("missing($.nosuchproperty.deeper.still)", bridge));
         assertTrue(eval("missing(world.nosuchfield.deeper)", bridge));
-        assertTrue(eval("missing(nosuchtopname)", bridge));
+        assertThrows(ConditionContext.ConditionEvaluationException.class, () -> eval("missing(nosuchtopname)", bridge));
+    }
+
+    @Test
+    void evaluatorStillGuardsFunctionNamesAndArityAtRuntime() {
+        MockBridge bridge = new MockBridge();
+        var unknown = assertThrows(IllegalArgumentException.class, () -> eval("exsits(client)", bridge));
+        assertTrue(unknown.getMessage().contains("Unsupported function"), unknown.getMessage());
+        var arity = assertThrows(IllegalArgumentException.class, () -> eval("exists(client, world)", bridge));
+        assertTrue(arity.getMessage().contains("exists expects 1 args but got 2"), arity.getMessage());
+    }
+
+    @Test
+    void waitUntilRejectsUnknownFunctionsBeforeWaiting() {
+        MockBridge bridge = new MockBridge();
+        long start = System.currentTimeMillis();
+        var error = assertThrows(ConditionValidator.ConditionValidationException.class,
+                () -> bridge.waitUntil("exsits(client)", 30000));
+        assertTrue(error.getMessage().contains("exsits"), error.getMessage());
+        assertTrue(error.getMessage().contains("known functions"), error.getMessage());
+        assertTrue(System.currentTimeMillis() - start < 5000);
+    }
+
+    @Test
+    void waitUntilRejectsUnknownPropertiesBeforeWaiting() {
+        MockBridge bridge = new MockBridge();
+        long start = System.currentTimeMillis();
+        var error = assertThrows(ConditionValidator.ConditionValidationException.class,
+                () -> bridge.waitUntil("sceen.title != null", 30000));
+        assertTrue(error.getMessage().contains("sceen"), error.getMessage());
+        assertTrue(error.getMessage().contains("side=client"), error.getMessage());
+        assertTrue(System.currentTimeMillis() - start < 5000);
     }
 
     @Test

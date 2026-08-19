@@ -63,6 +63,13 @@ class ConditionPropertyRegistryTest {
     }
 
     @Test
+    void registryForRejectsUnknownSides() {
+        assertNotNull(ConditionPropertyProviders.registryFor("client"));
+        assertNotNull(ConditionPropertyProviders.registryFor("server"));
+        assertThrows(IllegalArgumentException.class, () -> ConditionPropertyProviders.registryFor("sever"));
+    }
+
+    @Test
     void rejectsDuplicateProperties() {
         DefaultConditionPropertyRegistry registry = ConditionPropertyProviders.newDefaultRegistry();
         registry.registerContextProperty("custom", ctx -> Map.of());
@@ -83,6 +90,17 @@ class ConditionPropertyRegistryTest {
         assertEquals(0, customLoads.get());
         assertTrue(eval("custom.value == 1", bridge, registry));
         assertEquals(1, customLoads.get());
+    }
+
+    @Test
+    void unknownPropertyFailsLoudlyAndListsWhatIsAvailable() {
+        DefaultConditionPropertyRegistry registry = ConditionPropertyProviders.newDefaultRegistry();
+
+        var error = assertThrows(ConditionContext.ConditionEvaluationException.class,
+                () -> eval("nosuchthing.value == 1", new MockBridge(), registry));
+        assertTrue(error.getMessage().contains("nosuchthing"), error.getMessage());
+        assertTrue(error.getMessage().contains("side=client"), error.getMessage());
+        assertTrue(error.getMessage().contains("screen"), error.getMessage());
     }
 
     @Test

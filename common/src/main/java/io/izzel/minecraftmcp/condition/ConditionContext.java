@@ -9,6 +9,7 @@ import io.izzel.minecraftmcp.condition.property.LazyPropertyObject;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeSet;
 
 public final class ConditionContext implements ConditionPropertyContext {
     private final MinecraftBridge bridge;
@@ -58,12 +59,18 @@ public final class ConditionContext implements ConditionPropertyContext {
 
     public Object resolveName(String name) {
         if (values != null) {
-            return values.get(name);
+            if (values.containsKey(name)) {
+                return values.get(name);
+            }
+            throw new ConditionEvaluationException(unknownProperty(name), null);
         }
         if (registry.findGlobal(name).isPresent()) {
             return loadGlobal(name);
         }
-        return implicitRoot.get(name);
+        if (registry.findContextProperty(name).isPresent()) {
+            return loadContextProperty(name);
+        }
+        throw new ConditionEvaluationException(unknownProperty(name), null);
     }
 
     public LazyPropertyObject implicitRoot() {
@@ -75,6 +82,19 @@ public final class ConditionContext implements ConditionPropertyContext {
             return values.get(name);
         }
         return loadContextProperty(name);
+    }
+
+    private String unknownProperty(String name) {
+        var known = new TreeSet<String>();
+        known.add("$");
+        if (values != null) {
+            known.addAll(values.keySet());
+        } else {
+            known.addAll(registry.contextPropertyNames());
+            known.addAll(registry.globalNames());
+        }
+        String where = bridge == null ? "" : " on side=" + bridge.side();
+        return "Unknown condition property '" + name + "'" + where + "; known: " + known;
     }
 
     private Object loadGlobal(String name) {

@@ -15,8 +15,9 @@ client.inWorld
 resolution is:
 
 1. Try a global variable named `client`.
-2. If no global `client` exists, fallback to property `client` of global `$`.
-3. Continue reading `.inWorld` from the resolved value.
+2. Otherwise `client` must be a registered context property.
+3. If it is neither, the expression is rejected when it is bound to the registry (before any wait loop or packet recording starts), listing every unknown name it contains together with the known ones.
+4. Continue reading `.inWorld` from the resolved value; members below the chain start are dynamic and resolve to `null` when absent.
 
 For:
 
@@ -24,7 +25,7 @@ For:
 $.client.inWorld
 ```
 
-resolution starts explicitly from the global `$` object.
+resolution starts explicitly from the built-in `$` root. Names read off `$` are never validated: an unknown one is `null`. This is the escape hatch for expressions that must stay portable across sides (`exists($.vehicle)`).
 
 ## Sides
 
@@ -85,7 +86,7 @@ $.mod.loaded == true
 
 ## Global variables
 
-Most extensions should register context properties. Register a global only when it intentionally must shadow fallback lookup:
+Most extensions should register context properties. Register a global only when it intentionally must shadow the context property of the same name in shorthand position:
 
 ```java
 registry.registerGlobal("custom", ctx -> Map.of("value", 2));

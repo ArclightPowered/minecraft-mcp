@@ -6,9 +6,28 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiPredicate;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 public final class ConditionEvaluator {
+    record FunctionDef(int arity, Function<List<Object>, Object> eval) {
+    }
+
+    static final Map<String, FunctionDef> FUNCTIONS = Map.of(
+        "exists", new FunctionDef(1, args -> args.get(0) != null),
+        "missing", new FunctionDef(1, args -> args.get(0) == null),
+        "contains", new FunctionDef(2, args -> stringPair(args, String::contains)),
+        "startsWith", new FunctionDef(2, args -> stringPair(args, String::startsWith)),
+        "endsWith", new FunctionDef(2, args -> stringPair(args, String::endsWith)),
+        "matches", new FunctionDef(2, args -> stringPair(args, (value, regex) -> Pattern.compile(regex).matcher(value).matches())),
+        "size", new FunctionDef(1, args -> switch (args.get(0)) {
+            case Collection<?> c -> c.size();
+            case Map<?, ?> m -> m.size();
+            case CharSequence s -> s.length();
+            case null, default -> 0;
+        }));
+
     private ConditionEvaluator() {
     }
 
@@ -70,53 +89,20 @@ public final class ConditionEvaluator {
     }
 
     private static Object evalCall(ConditionExpression.Call call, ConditionContext context) {
+        FunctionDef def = FUNCTIONS.get(call.name());
+        if (def == null) {
+            throw new IllegalArgumentException("Unsupported function: " + call.name());
+        }
+        if (call.args().size() != def.arity()) {
+            throw new IllegalArgumentException(call.name() + " expects " + def.arity() + " args but got " + call.args().size());
+        }
         List<Object> args = call.args().stream().map(arg -> evaluate(arg, context)).toList();
-        return switch (call.name()) {
-            case "exists" -> requireArgs(call, args, 1).get(0) != null;
-            case "missing" -> requireArgs(call, args, 1).get(0) == null;
-            case "contains" -> {
-                requireArgs(call, args, 2);
-                Object value = args.get(0);
-                yield value != null && String.valueOf(value).contains(String.valueOf(args.get(1)));
-            }
-            case "startsWith" -> {
-                requireArgs(call, args, 2);
-                Object value = args.get(0);
-                yield value != null && String.valueOf(value).startsWith(String.valueOf(args.get(1)));
-            }
-            case "endsWith" -> {
-                requireArgs(call, args, 2);
-                Object value = args.get(0);
-                yield value != null && String.valueOf(value).endsWith(String.valueOf(args.get(1)));
-            }
-            case "matches" -> {
-                requireArgs(call, args, 2);
-                Object value = args.get(0);
-                yield value != null && Pattern.compile(String.valueOf(args.get(1))).matcher(String.valueOf(value)).matches();
-            }
-            case "size" -> {
-                requireArgs(call, args, 1);
-                Object value = args.get(0);
-                if (value instanceof Collection<?> c) {
-                    yield c.size();
-                }
-                if (value instanceof Map<?, ?> m) {
-                    yield m.size();
-                }
-                if (value instanceof CharSequence s) {
-                    yield s.length();
-                }
-                yield 0;
-            }
-            default -> throw new IllegalArgumentException("Unsupported function: " + call.name());
-        };
+        return def.eval().apply(args);
     }
 
-    private static List<Object> requireArgs(ConditionExpression.Call call, List<Object> args, int count) {
-        if (args.size() != count) {
-            throw new IllegalArgumentException(call.name() + " expects " + count + " args but got " + args.size());
-        }
-        return args;
+    private static boolean stringPair(List<Object> args, BiPredicate<String, String> test) {
+        Object value = args.get(0);
+        return value != null && test.test(String.valueOf(value), String.valueOf(args.get(1)));
     }
 
     static boolean truthy(Object value) {

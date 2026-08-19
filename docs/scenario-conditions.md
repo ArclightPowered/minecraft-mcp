@@ -12,20 +12,33 @@ connection.disconnected
 screen.children.0.message
 ```
 
-The runtime also provides a global variable named `$`, whose value is the same context object. Therefore these two forms resolve to the same value:
+The language also has a built-in root named `$`, whose value is the whole context object. When both spellings are valid, they resolve to the same value:
 
 ```text
 $.client.inWorld
 client.inWorld
 ```
 
+They differ in how unknown names are treated (see below): the shorthand form is validated, the `$.` form is dynamic.
+
 Resolution rule:
 
 1. `client.inWorld` first looks for a global variable named `client`.
-2. If no such global variable exists, it falls back to property `client` of the global `$` object.
-3. `$.client.inWorld` explicitly starts from the global `$` object.
+2. Otherwise `client` must be a registered context property; it is read off the `$` root.
+3. A chain-start name that is neither is an **unknown property**: the expression is rejected up front, before any waiting or recording starts. All unknown names in the expression are reported together, along with the names that do exist.
+4. `$.client.inWorld` explicitly starts from the built-in `$` root. Names read off `$` are **dynamic**: an unknown one is `null`, never an error. Use this to probe for properties that may not exist on the current side, e.g. `exists($.vehicle)`.
 
 The BNF below describes property access generically and does not reserve `client`, `connection`, `screen`, or any other context names. They are ordinary properties resolved at evaluation time.
+
+### Three kinds of errors
+
+| Kind | When it is reported | Example |
+| --- | --- | --- |
+| Syntax error | Parsing the expression string | `client.inWorld ==` |
+| Static error: unknown property or function, wrong argument count, invalid literal regex | Binding the expression to a side's registry, before the first evaluation | `sceen.title != null`, `exsits(client)`, `matches(x, "[")` |
+| Evaluation error | At runtime, depending on data | `summary.hp > 3` when `hp` is absent |
+
+Reads are lenient, comparisons are strict: a missing member anywhere below a valid chain start is `null`, and `null` keeps propagating through deeper accesses (`world.nosuchfield.deeper` is `null`). `==`, `!=`, `exists` and `missing` handle `null` fine; the ordering operators `>` `>=` `<` `<=` refuse it with an evaluation error. That error is what surfaces a misspelled *member* name, which up-front validation cannot see.
 
 Common top-level properties currently provided by the evaluator:
 
@@ -81,6 +94,11 @@ endsWith(value, suffix)
 matches(value, regex)
 size(value)
 ```
+
+Function names, argument counts, and `matches` regexes written as string literals are all fixed
+once the expression is parsed, so they are checked when the expression is bound, together with
+property names. A regex that arrives as data (`matches(packetClass, summary.pattern)`) can only
+be compiled at evaluation time; its failures are evaluation errors.
 
 ## Examples
 
