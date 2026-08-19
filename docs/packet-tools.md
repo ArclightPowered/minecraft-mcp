@@ -48,7 +48,8 @@ Returns a condition-friendly status object:
   "clientbound": { "count": 4 },
   "nextSequence": 13,
   "filter": {
-    "name_a": { "count": 1 }
+    "name_a": { "count": 1 },
+    "name_b": { "count": 0, "errors": { "Cannot compare null values": 132 } }
   },
   "last": {
     "direction": "serverbound",
@@ -60,6 +61,8 @@ Returns a condition-friendly status object:
   }
 }
 ```
+
+`filter.<name>.errors` groups per-filter evaluation failures by error message (capped at 8 distinct messages per filter; further kinds fall into an `"(other)"` bucket). A filter whose count stays 0 while its errors grow is evaluating against data it cannot compare — usually a misspelled member below `summary`.
 
 ### `mc.packet.dump`
 

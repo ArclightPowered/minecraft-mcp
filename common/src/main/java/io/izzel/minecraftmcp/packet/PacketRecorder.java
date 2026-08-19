@@ -10,18 +10,24 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class PacketRecorder {
+    private static final int MAX_ERROR_KINDS_PER_FILTER = 8;
+
     private final List<RecordedPacket> packets = new ArrayList<>();
     private final AtomicLong sequence = new AtomicLong(1);
     private boolean recording;
     private PacketFilter recordingFilter = PacketFilter.empty();
     private int maxPackets = 1000;
     private Map<String, Integer> namedFilterCounts = new LinkedHashMap<>();
+    private Map<String, Map<String, Integer>> namedFilterErrors = new LinkedHashMap<>();
 
     public synchronized void start(PacketFilter filter, int maxPackets, boolean clear) {
         this.recordingFilter = filter == null ? PacketFilter.empty() : filter;
         this.maxPackets = Math.max(1, maxPackets);
-        if (clear) clear();
+        if (clear) {
+            clear();
+        }
         this.namedFilterCounts = new LinkedHashMap<>();
+        this.namedFilterErrors = new LinkedHashMap<>();
         for (String name : this.recordingFilter.namedFilters().keySet()) {
             this.namedFilterCounts.put(name, 0);
         }
@@ -31,11 +37,13 @@ public final class PacketRecorder {
     public synchronized void stop() {
         this.recording = false;
         this.namedFilterCounts = new LinkedHashMap<>();
+        this.namedFilterErrors = new LinkedHashMap<>();
     }
 
     public synchronized void clear() {
         packets.clear();
         namedFilterCounts.replaceAll((k, v) -> 0);
+        namedFilterErrors.clear();
     }
 
     public synchronized boolean recording() {
@@ -43,31 +51,52 @@ public final class PacketRecorder {
     }
 
     public void record(PacketDirection direction, String packetClass, Map<String, Object> summary) {
-        if (direction == null || packetClass == null || packetClass.isBlank()) return;
+        if (direction == null || packetClass == null || packetClass.isBlank()) {
+            return;
+        }
         RecordedPacket candidate = new RecordedPacket(
-                sequence.getAndIncrement(),
-                System.currentTimeMillis(),
-                direction,
-                packetClass,
-                simpleName(packetClass),
-                "",
-                "",
-                summary == null ? Map.of() : new LinkedHashMap<>(summary)
+            sequence.getAndIncrement(),
+            System.currentTimeMillis(),
+            direction,
+            packetClass,
+            simpleName(packetClass),
+            "",
+            "",
+            summary == null ? Map.of() : new LinkedHashMap<>(summary)
         );
         synchronized (this) {
-            if (!recording || !recordingFilter.matches(candidate)) return;
+            if (!recording || !recordingFilter.matches(candidate)) {
+                return;
+            }
             for (Map.Entry<String, PacketNamedFilter> entry : recordingFilter.namedFilters().entrySet()) {
-                if (entry.getValue().matches(candidate)) {
-                    namedFilterCounts.merge(entry.getKey(), 1, Integer::sum);
+                try {
+                    if (entry.getValue().matches(candidate)) {
+                        namedFilterCounts.merge(entry.getKey(), 1, Integer::sum);
+                    }
+                } catch (RuntimeException e) {
+                    recordFilterError(entry.getKey(), e);
                 }
             }
             packets.add(candidate);
-            while (packets.size() > maxPackets) packets.removeFirst();
+            while (packets.size() > maxPackets) {
+                packets.removeFirst();
+            }
         }
     }
 
+    private void recordFilterError(String filter, RuntimeException error) {
+        Map<String, Integer> errors = namedFilterErrors.computeIfAbsent(filter, ignored -> new LinkedHashMap<>());
+        String message = String.valueOf(error.getMessage());
+        if (!errors.containsKey(message) && errors.size() >= MAX_ERROR_KINDS_PER_FILTER) {
+            message = "(other)";
+        }
+        errors.merge(message, 1, Integer::sum);
+    }
+
     public void record(PacketDirection direction, Object packet) {
-        if (packet == null) return;
+        if (packet == null) {
+            return;
+        }
         PacketFilter filter;
         synchronized (this) {
             filter = this.recordingFilter;
@@ -85,25 +114,47 @@ public final class PacketRecorder {
         int serverbound = 0;
         int clientbound = 0;
         for (RecordedPacket packet : packets) {
-            if (packet.direction() == PacketDirection.SERVERBOUND) serverbound++;
-            if (packet.direction() == PacketDirection.CLIENTBOUND) clientbound++;
+            if (packet.direction() == PacketDirection.SERVERBOUND) {
+                serverbound++;
+            }
+            if (packet.direction() == PacketDirection.CLIENTBOUND) {
+                clientbound++;
+            }
         }
         RecordedPacket last = packets.isEmpty() ? null : packets.getLast();
-        return new PacketRecorderSnapshot(recording, packets.size(), serverbound, clientbound, sequence.get(), last, Map.copyOf(namedFilterCounts));
+        return new PacketRecorderSnapshot(recording, packets.size(), serverbound, clientbound, sequence.get(), last, Map.copyOf(namedFilterCounts), copyNamedFilterErrors());
+    }
+
+    private Map<String, Map<String, Integer>> copyNamedFilterErrors() {
+        Map<String, Map<String, Integer>> copy = new LinkedHashMap<>();
+        for (Map.Entry<String, Map<String, Integer>> entry : namedFilterErrors.entrySet()) {
+            copy.put(entry.getKey(), Map.copyOf(entry.getValue()));
+        }
+        return copy;
     }
 
     public synchronized PacketDump dump(PacketFilter filter) {
-        if (filter == null) filter = PacketFilter.empty();
+        if (filter == null) {
+            filter = PacketFilter.empty();
+        }
         List<RecordedPacket> matched = new ArrayList<>();
         for (RecordedPacket packet : packets) {
-            if (filter.matches(packet)) matched.add(packet);
+            if (filter.matches(packet)) {
+                matched.add(packet);
+            }
         }
         int total = matched.size();
-        if (filter.reverse()) Collections.reverse(matched);
-        if (matched.size() > filter.limit()) matched = new ArrayList<>(matched.subList(0, filter.limit()));
+        if (filter.reverse()) {
+            Collections.reverse(matched);
+        }
+        if (matched.size() > filter.limit()) {
+            matched = new ArrayList<>(matched.subList(0, filter.limit()));
+        }
         long next = sequence.get();
         PacketDump dump = new PacketDump(recording, total, matched.size(), next, List.copyOf(matched));
-        if (filter.clearAfterDump()) clear();
+        if (filter.clearAfterDump()) {
+            clear();
+        }
         return dump;
     }
 
