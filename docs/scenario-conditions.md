@@ -40,6 +40,12 @@ The BNF below describes property access generically and does not reserve `client
 
 Reads are lenient, comparisons are strict: a missing member anywhere below a valid chain start is `null`, and `null` keeps propagating through deeper accesses (`world.nosuchfield.deeper` is `null`). `==`, `!=`, `exists` and `missing` handle `null` fine; the ordering operators `>` `>=` `<` `<=` refuse it with an evaluation error. That error is what surfaces a misspelled *member* name, which up-front validation cannot see.
 
+For `mc.condition.wait` these map to three outcomes:
+
+- static error (unknown property or function, wrong argument count, invalid literal regex): the tool call fails immediately, listing everything that is wrong with the expression;
+- the condition never evaluated successfully before the timeout (its state stayed unreadable): the tool call fails with the number of attempts and the last error;
+- the condition evaluated fine but stayed false: the tool returns `matched: false`. Waiting on a dynamic `$.` probe that never appears also ends here, by design.
+
 Common top-level properties currently provided by the evaluator:
 
 ```text

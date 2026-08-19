@@ -13,7 +13,10 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+
+import net.minecraft.util.Util;
 
 public interface MinecraftBridge {
     String loader();
@@ -66,20 +69,39 @@ public interface MinecraftBridge {
         String normalized = condition == null ? "" : condition.trim();
         ConditionExpression expression = ConditionParser.parse(normalized);
         ConditionValidator.validate(expression, ConditionPropertyProviders.registryFor(side()), " on side=" + side());
-        long deadline = System.currentTimeMillis() + Math.max(0, timeoutMs);
-        long interval = Math.max(1, intervalTicks);
+        long deadline = Util.getNanos() + TimeUnit.MILLISECONDS.toNanos(Math.max(0, timeoutMs));
+        long intervalMs = Math.max(1, intervalTicks) * 50L;
+        boolean everEvaluated = false;
+        long attempts = 0;
         RuntimeException lastError;
-        do {
+        while (true) {
+            attempts++;
             try {
-                if (ConditionEvaluator.evaluateBoolean(expression, new ConditionContext(this))) return true;
+                if (ConditionEvaluator.evaluateBoolean(expression, new ConditionContext(this))) {
+                    return true;
+                }
+                everEvaluated = true;
                 lastError = null;
             } catch (RuntimeException e) {
                 lastError = e;
             }
-            waitTicks(interval);
-        } while (System.currentTimeMillis() < deadline);
+            long remainingMs = TimeUnit.NANOSECONDS.toMillis(deadline - Util.getNanos());
+            if (remainingMs <= 0) {
+                break;
+            }
+            try {
+                Thread.sleep(Math.min(intervalMs, remainingMs));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        if (!everEvaluated) {
+            throw new ConditionContext.ConditionEvaluationException(
+                "Condition '" + normalized + "' evaluated " + attempts + " times, never succeeded; last error: " + lastError, lastError);
+        }
         if (lastError != null) {
-            System.err.println("[Minecraft MCP] wait_until last condition evaluation error for '" + normalized + "': " + lastError.getMessage());
+            System.err.println("[Minecraft MCP] wait_until last condition evaluation error for '" + normalized + "': " + lastError);
         }
         return false;
     }

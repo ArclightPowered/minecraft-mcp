@@ -80,6 +80,34 @@ class ConditionEvaluatorTest {
     }
 
     @Test
+    void waitUntilThrowsWhenTheConditionNeverEvaluated() {
+        MockBridge bridge = new MockBridge() {
+            @Override public ClientSnapshot snapshot() {
+                throw new RuntimeException("always broken");
+            }
+        };
+        var error = assertThrows(ConditionContext.ConditionEvaluationException.class,
+                () -> bridge.waitUntil("client.inWorld == true", 300));
+        assertTrue(error.getMessage().contains("never succeeded"), error.getMessage());
+        assertTrue(error.getMessage().contains("always broken"), error.getMessage());
+    }
+
+    @Test
+    void waitUntilReturnsFalseWhenTheConditionEvaluatesButStaysFalse() {
+        MockBridge bridge = new MockBridge();
+        assertFalse(bridge.waitUntil("client.inWorld == false", 200));
+    }
+
+    @Test
+    void waitUntilClampsTheIntervalToTheRemainingTimeout() {
+        MockBridge bridge = new MockBridge();
+        long start = System.nanoTime();
+        assertFalse(bridge.waitUntil("client.inWorld == false", 200, 100));
+        long elapsedMs = (System.nanoTime() - start) / 1_000_000;
+        assertTrue(elapsedMs < 2000, "an interval of 100 ticks must be clamped to the 200ms timeout, took " + elapsedMs + "ms");
+    }
+
+    @Test
     void waitUntilRetriesTransientRuntimeEvaluationFailures() {
         MockBridge bridge = new MockBridge() {
             int attempts;
