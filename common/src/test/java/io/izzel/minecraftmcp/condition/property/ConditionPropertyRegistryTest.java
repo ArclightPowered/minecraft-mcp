@@ -57,6 +57,12 @@ class ConditionPropertyRegistryTest {
     }
 
     @Test
+    void valuesOnlyContextHasNoBridge() {
+        ConditionContext context = ConditionContext.overValues(Map.of());
+        assertThrows(IllegalStateException.class, context::bridge);
+    }
+
+    @Test
     void rejectsDuplicateProperties() {
         DefaultConditionPropertyRegistry registry = ConditionPropertyProviders.newDefaultRegistry();
         registry.registerContextProperty("custom", ctx -> Map.of());
@@ -77,6 +83,22 @@ class ConditionPropertyRegistryTest {
         assertEquals(0, customLoads.get());
         assertTrue(eval("custom.value == 1", bridge, registry));
         assertEquals(1, customLoads.get());
+    }
+
+    @Test
+    void clientAndServerRegistriesAreSeparate() {
+        DefaultConditionPropertyRegistry client = ConditionPropertyProviders.clientRegistry();
+        DefaultConditionPropertyRegistry server = ConditionPropertyProviders.serverRegistry();
+
+        assertNotSame(client, server);
+        assertTrue(client.contextPropertyNames().containsAll(
+                java.util.List.of("client", "connection", "screen", "vehicle", "world", "inventory", "packet")));
+        assertTrue(server.contextPropertyNames().isEmpty());
+        assertTrue(server.globalNames().isEmpty());
+
+        for (String clientOnly : java.util.List.of("client", "screen", "connection", "vehicle", "inventory")) {
+            assertFalse(server.contextPropertyNames().contains(clientOnly), "server leaked " + clientOnly);
+        }
     }
 
     private static boolean eval(String expression, MinecraftClientBridge bridge, DefaultConditionPropertyRegistry registry) {

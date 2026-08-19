@@ -737,7 +737,7 @@ public final class NeoForgeMinecraftMcpClientMod {
         @Override
         public Map<String, Object> startPacketRecording(Map<String, Object> args) {
             Map<String, Object> result = MinecraftClientBridge.super.startPacketRecording(args);
-            Map<String, Object> hook = mc.getConnection() == null ? Map.of("packetHandler", "not_connected") : PacketRecorderChannelInstaller.install(mc.getConnection().getConnection(), PACKET_RECORDER);
+            Map<String, Object> hook = mc.getConnection() == null ? Map.of("packetHandler", "not_connected") : PacketRecorderChannelInstaller.install(mc.getConnection().getConnection(), packetRecorder());
             java.util.Map<String, Object> merged = new java.util.LinkedHashMap<>(result);
             merged.putAll(hook);
             return merged;

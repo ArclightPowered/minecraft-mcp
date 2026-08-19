@@ -4,7 +4,7 @@ Condition expressions resolve property paths at runtime. The parser does not kno
 
 ## Resolution model
 
-The runtime has global variables. The built-in global variable `$` is a lazy context object.
+The runtime has global variables and context properties, both supplied by a per-side registry. `$` is not registered anywhere: it is a built-in of the expression language itself, a lazy view over the context properties. Registering anything under the name `$` is rejected.
 
 For a path such as:
 
@@ -26,9 +26,13 @@ $.client.inWorld
 
 resolution starts explicitly from the global `$` object.
 
+## Sides
+
+One registry is built per side (`client` and `server`); in singleplayer both live in the same JVM. A provider declares which sides it contributes to via `ConditionPropertyProvider.sides()` — the default is both. It is instantiated and asked to `register` once per side it opts into, so providers should be stateless. Providers that read client-only state must narrow `sides()` to `"client"`, otherwise they end up in the server registry and fail at evaluation time.
+
 ## Built-in context properties
 
-Built-in properties registered under `$`:
+Built-in client-side context properties:
 
 ```text
 client       bridge.snapshot().toMap()

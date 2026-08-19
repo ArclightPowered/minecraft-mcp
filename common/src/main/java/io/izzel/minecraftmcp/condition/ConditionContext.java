@@ -1,6 +1,6 @@
 package io.izzel.minecraftmcp.condition;
 
-import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
+import io.izzel.minecraftmcp.bridge.MinecraftBridge;
 import io.izzel.minecraftmcp.condition.property.ConditionProperty;
 import io.izzel.minecraftmcp.condition.property.ConditionPropertyContext;
 import io.izzel.minecraftmcp.condition.property.ConditionPropertyProviders;
@@ -11,22 +11,37 @@ import java.util.HashMap;
 import java.util.Map;
 
 public final class ConditionContext implements ConditionPropertyContext {
-    private final MinecraftClientBridge bridge;
+    private final MinecraftBridge bridge;
     private final DefaultConditionPropertyRegistry registry;
+    private final Map<String, Object> values;
     private final Map<String, Object> cache = new HashMap<>();
-    private final LazyPropertyObject implicitRoot = new LazyPropertyObject(this::loadContextProperty);
+    private final LazyPropertyObject implicitRoot = new LazyPropertyObject(this::rootProperty);
 
-    public ConditionContext(MinecraftClientBridge bridge) {
-        this(bridge, ConditionPropertyProviders.registry());
+    public ConditionContext(MinecraftBridge bridge) {
+        this(bridge, ConditionPropertyProviders.registryFor(bridge.side()));
     }
 
-    public ConditionContext(MinecraftClientBridge bridge, DefaultConditionPropertyRegistry registry) {
+    public ConditionContext(MinecraftBridge bridge, DefaultConditionPropertyRegistry registry) {
         this.bridge = bridge;
         this.registry = registry;
+        this.values = null;
+    }
+
+    private ConditionContext(Map<String, Object> values) {
+        this.bridge = null;
+        this.registry = null;
+        this.values = values;
+    }
+
+    public static ConditionContext overValues(Map<String, Object> values) {
+        return new ConditionContext(values);
     }
 
     @Override
-    public MinecraftClientBridge bridge() {
+    public MinecraftBridge bridge() {
+        if (bridge == null) {
+            throw new IllegalStateException("this condition context has no bridge");
+        }
         return bridge;
     }
 
@@ -42,6 +57,9 @@ public final class ConditionContext implements ConditionPropertyContext {
     }
 
     public Object resolveName(String name) {
+        if (values != null) {
+            return values.get(name);
+        }
         if (registry.findGlobal(name).isPresent()) {
             return loadGlobal(name);
         }
@@ -50,6 +68,13 @@ public final class ConditionContext implements ConditionPropertyContext {
 
     public LazyPropertyObject implicitRoot() {
         return implicitRoot;
+    }
+
+    private Object rootProperty(String name) {
+        if (values != null) {
+            return values.get(name);
+        }
+        return loadContextProperty(name);
     }
 
     private Object loadGlobal(String name) {
@@ -61,7 +86,9 @@ public final class ConditionContext implements ConditionPropertyContext {
     }
 
     private Object loadCached(String key, String kind, String name, ConditionProperty property) {
-        if (cache.containsKey(key)) return cache.get(key);
+        if (cache.containsKey(key)) {
+            return cache.get(key);
+        }
         Object value = loadProperty(kind, name, property);
         cache.put(key, value);
         return value;
