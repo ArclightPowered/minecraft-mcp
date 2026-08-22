@@ -4,7 +4,7 @@ import io.izzel.minecraftmcp.MinecraftMcpBootstrap;
 import io.izzel.minecraftmcp.bridge.ClientSnapshot;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
 import io.izzel.minecraftmcp.mcp.FutureResult;
-import io.izzel.minecraftmcp.mcp.LocalHttpMcpServer;
+import io.izzel.minecraftmcp.MinecraftMcpBootstrap.McpEndpoint;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import io.izzel.minecraftmcp.tools.BuiltinServerTools;
 import io.izzel.minecraftmcp.input.KeyAliases;
@@ -64,7 +64,7 @@ import net.minecraft.world.level.WorldDataConfiguration;
 
 @Mod(value = "minecraft_mcp", dist = Dist.CLIENT)
 public final class NeoForgeMinecraftMcpClientMod {
-    private static LocalHttpMcpServer server;
+    private static McpEndpoint server;
 
     public NeoForgeMinecraftMcpClientMod(IEventBus modBus) {
         modBus.addListener(this::onClientSetup);
@@ -100,6 +100,7 @@ public final class NeoForgeMinecraftMcpClientMod {
         public void shutdownClient() { mc.stop(); }
 
         public Map<String, Object> takeScreenshot(Map<String, Object> args) {
+            requireOffGameThread("taking a screenshot");
             String requested = String.valueOf(args.getOrDefault("name", ""));
             String filename;
             if (requested.isBlank()) {
@@ -201,6 +202,7 @@ public final class NeoForgeMinecraftMcpClientMod {
             });
         }
         public FutureResult<Map<String, Object>> destroyBlock(int x, int y, int z, String face) {
+            requireOffGameThread("destroying a block");
             FutureResult<Map<String, Object>> result = new FutureResult<>(this::execute);
             Direction direction;
             try { direction = Direction.valueOf((face == null ? "UP" : face.trim().toUpperCase(java.util.Locale.ROOT))); }
@@ -290,6 +292,7 @@ public final class NeoForgeMinecraftMcpClientMod {
         }
         public boolean serverMcpAvailable() { return NeoForgeMinecraftMcpMod.SERVER_PROXY.available() || mc.getSingleplayerServer() != null; }
         public Object serverMcpCall(String tool, Map<String, Object> arguments, long timeoutMs) throws Exception {
+            requireOffGameThread("waiting for a server MCP response");
             if (NeoForgeMinecraftMcpMod.SERVER_PROXY.available()) return NeoForgeMinecraftMcpMod.SERVER_PROXY.call(tool, arguments, text -> net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(new NeoForgeStringPayload(NeoForgeStringPayload.REQUEST, text)), timeoutMs);
             var server = mc.getSingleplayerServer();
             if (server == null) throw new IllegalStateException("server MCP is not available");
@@ -312,6 +315,7 @@ public final class NeoForgeMinecraftMcpClientMod {
             return Map.of("status", "sent", "kind", "chat", "message", text);
         }
         public Map<String, Object> commandSuggest(String command, long timeoutMs) throws Exception {
+            requireOffGameThread("waiting for command suggestions");
             if (mc.getConnection() == null) {
                 return Map.of("status", "unsupported", "reason", "no client connection", "command", command == null ? "" : command);
             }
@@ -752,6 +756,7 @@ public final class NeoForgeMinecraftMcpClientMod {
         }
         public Map<String, Object> moveWaypoints(List<Vec3> waypoints, boolean loop, int maxLoops, double tolerance, long timeoutMs, boolean sprint, boolean sneak, boolean controlView) {
             if (waypoints == null || waypoints.isEmpty()) throw new IllegalArgumentException("waypoints must not be empty");
+            requireOffGameThread("walking waypoints");
             long deadline = System.currentTimeMillis() + Math.max(0, timeoutMs);
             double speed = sprint ? 0.28D : 0.16D;
             int loops = 0;

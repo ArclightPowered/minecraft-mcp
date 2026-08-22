@@ -1,6 +1,7 @@
 package io.izzel.minecraftmcp.tools;
 
 import io.izzel.minecraftmcp.bridge.ClientSnapshot;
+import io.izzel.minecraftmcp.bridge.FakeGameThread;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import io.izzel.minecraftmcp.scenario.ScenarioEngine;
@@ -67,6 +68,7 @@ class BuiltinToolsInventoryContainerTest {
     }
 
     static class MockBridge implements MinecraftClientBridge {
+        private final FakeGameThread gameThread = new FakeGameThread();
         Map<String, Object> findArgs;
         Map<String, Object> countArgs;
         List<Map<String, Object>> clicks = new java.util.ArrayList<>();
@@ -74,8 +76,8 @@ class BuiltinToolsInventoryContainerTest {
         public String loader() { return "test"; }
         public String minecraftVersion() { return "test"; }
         public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnClientThread() { return true; }
-        public void execute(Runnable runnable) { runnable.run(); }
+        public boolean isOnClientThread() { return gameThread.isOn(); }
+        public void execute(Runnable runnable) { gameThread.run(runnable); }
         public ClientSnapshot snapshot() { return new ClientSnapshot(true, true, true, null, "Dev", 0, 64, 0, 0, 0); }
         public Map<String, Object> findInventoryItem(Map<String, Object> args) {
             findArgs = new LinkedHashMap<>(args);

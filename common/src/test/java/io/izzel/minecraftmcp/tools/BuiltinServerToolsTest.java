@@ -1,5 +1,6 @@
 package io.izzel.minecraftmcp.tools;
 
+import io.izzel.minecraftmcp.bridge.FakeGameThread;
 import io.izzel.minecraftmcp.bridge.MinecraftServerBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import org.junit.jupiter.api.Test;
@@ -33,12 +34,13 @@ class BuiltinServerToolsTest {
     }
 
     static class RecordingServerBridge implements MinecraftServerBridge {
+        private final FakeGameThread gameThread = new FakeGameThread();
         String command;
         public String loader() { return "test-server"; }
         public String minecraftVersion() { return "test-server"; }
         public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnServerThread() { return true; }
-        public void execute(Runnable runnable) { runnable.run(); }
+        public boolean isOnServerThread() { return gameThread.isOn(); }
+        public void execute(Runnable runnable) { gameThread.run(runnable); }
         public Map<String, Object> serverState() { return Map.of("running", true, "players", 1, "motd", "Test Server"); }
         public Map<String, Object> runCommand(String command) {
             this.command = command;

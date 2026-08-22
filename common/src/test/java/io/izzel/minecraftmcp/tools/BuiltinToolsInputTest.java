@@ -1,6 +1,7 @@
 package io.izzel.minecraftmcp.tools;
 
 import io.izzel.minecraftmcp.bridge.ClientSnapshot;
+import io.izzel.minecraftmcp.bridge.FakeGameThread;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import io.izzel.minecraftmcp.scenario.ScenarioEngine;
@@ -39,12 +40,13 @@ class BuiltinToolsInputTest {
     }
 
     static final class FakeBridge implements MinecraftClientBridge {
+        private final FakeGameThread gameThread = new FakeGameThread();
         final List<String> events = new ArrayList<>();
         public String loader() { return "test"; }
         public String minecraftVersion() { return "test"; }
         public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnClientThread() { return true; }
-        public void execute(Runnable runnable) { runnable.run(); }
+        public boolean isOnClientThread() { return gameThread.isOn(); }
+        public void execute(Runnable runnable) { gameThread.run(runnable); }
         public ClientSnapshot snapshot() { return new ClientSnapshot(true, false, null, null, 0, 0, 0, 0, 0); }
         public void pressKey(String key) { events.add("press:" + key); }
         public void setKeyDown(String key, boolean down) { events.add((down ? "down:" : "up:") + key); }

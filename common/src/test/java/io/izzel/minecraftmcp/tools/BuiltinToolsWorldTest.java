@@ -1,6 +1,7 @@
 package io.izzel.minecraftmcp.tools;
 
 import io.izzel.minecraftmcp.bridge.ClientSnapshot;
+import io.izzel.minecraftmcp.bridge.FakeGameThread;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
 import net.minecraft.world.phys.Vec3;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
@@ -77,6 +78,7 @@ class BuiltinToolsWorldTest {
     }
 
     static final class RecordingBridge implements MinecraftClientBridge {
+        private final FakeGameThread gameThread = new FakeGameThread();
         String createdWorldName;
         Map<String, Object> createdWorldOptions;
         boolean inWorld;
@@ -99,8 +101,8 @@ class BuiltinToolsWorldTest {
         public String loader() { return "test"; }
         public String minecraftVersion() { return "test"; }
         public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnClientThread() { return true; }
-        public void execute(Runnable runnable) { runnable.run(); }
+        public boolean isOnClientThread() { return gameThread.isOn(); }
+        public void execute(Runnable runnable) { gameThread.run(runnable); }
         public <T> CompletableFuture<T> submit(Supplier<T> supplier) {
             try { return CompletableFuture.completedFuture(supplier.get()); }
             catch (Throwable t) { CompletableFuture<T> f = new CompletableFuture<>(); f.completeExceptionally(t); return f; }

@@ -4,7 +4,7 @@ import io.izzel.minecraftmcp.MinecraftMcpBootstrap;
 import io.izzel.minecraftmcp.bridge.ClientSnapshot;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
 import io.izzel.minecraftmcp.mcp.FutureResult;
-import io.izzel.minecraftmcp.mcp.LocalHttpMcpServer;
+import io.izzel.minecraftmcp.MinecraftMcpBootstrap.McpEndpoint;
 import io.izzel.minecraftmcp.serverlink.ServerMcpPluginMessageHandler;
 import io.izzel.minecraftmcp.serverlink.ServerMcpProxy;
 import io.izzel.minecraftmcp.tools.BuiltinServerTools;
@@ -65,7 +65,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 
 public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer {
-    private static LocalHttpMcpServer server;
+    private static McpEndpoint server;
     @Override public void onInitializeClient() {
         try {
             registerServerMcpPluginMessages();
@@ -104,6 +104,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
         public void shutdownClient() { mc.stop(); }
 
         public Map<String, Object> takeScreenshot(Map<String, Object> args) {
+            requireOffGameThread("taking a screenshot");
             String requested = String.valueOf(args.getOrDefault("name", ""));
             String filename;
             if (requested.isBlank()) {
@@ -205,6 +206,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             });
         }
         public FutureResult<Map<String, Object>> destroyBlock(int x, int y, int z, String face) {
+            requireOffGameThread("destroying a block");
             FutureResult<Map<String, Object>> result = new FutureResult<>(this::execute);
             Direction direction;
             try { direction = Direction.valueOf((face == null ? "UP" : face.trim().toUpperCase(java.util.Locale.ROOT))); }
@@ -294,6 +296,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
         }
         public boolean serverMcpAvailable() { return SERVER_PROXY.available() || mc.getSingleplayerServer() != null; }
         public Object serverMcpCall(String tool, Map<String, Object> arguments, long timeoutMs) throws Exception {
+            requireOffGameThread("waiting for a server MCP response");
             if (SERVER_PROXY.available()) return SERVER_PROXY.call(tool, arguments, text -> ClientPlayNetworking.send(new FabricStringPayload(FabricStringPayload.REQUEST, text)), timeoutMs);
             var server = mc.getSingleplayerServer();
             if (server == null) throw new IllegalStateException("server MCP is not available");
@@ -316,6 +319,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             return Map.of("status", "sent", "kind", "chat", "message", text);
         }
         public Map<String, Object> commandSuggest(String command, long timeoutMs) throws Exception {
+            requireOffGameThread("waiting for command suggestions");
             if (mc.getConnection() == null) {
                 return Map.of("status", "unsupported", "reason", "no client connection", "command", command == null ? "" : command);
             }
@@ -757,6 +761,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
         @Override
         public Map<String, Object> moveWaypoints(List<Vec3> waypoints, boolean loop, int maxLoops, double tolerance, long timeoutMs, boolean sprint, boolean sneak, boolean controlView) {
             if (waypoints == null || waypoints.isEmpty()) throw new IllegalArgumentException("waypoints must not be empty");
+            requireOffGameThread("walking waypoints");
             long deadline = System.currentTimeMillis() + Math.max(0, timeoutMs);
             double speed = sprint ? 0.28D : 0.16D;
             int loops = 0;

@@ -1,5 +1,6 @@
 package io.izzel.minecraftmcp.serverlink;
 
+import io.izzel.minecraftmcp.bridge.FakeGameThread;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import io.izzel.minecraftmcp.tools.BuiltinServerTools;
 import org.junit.jupiter.api.Test;
@@ -42,11 +43,13 @@ class ServerMcpProxyTest {
     }
 
     static class TestServerBridge implements io.izzel.minecraftmcp.bridge.MinecraftServerBridge {
+        private final FakeGameThread gameThread = new FakeGameThread();
+
         public String loader() { return "test-server"; }
         public String minecraftVersion() { return "test-server"; }
         public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnServerThread() { return true; }
-        public void execute(Runnable runnable) { runnable.run(); }
+        public boolean isOnServerThread() { return gameThread.isOn(); }
+        public void execute(Runnable runnable) { gameThread.run(runnable); }
         public Map<String, Object> serverState() { return Map.of("running", true, "players", 2); }
     }
 }

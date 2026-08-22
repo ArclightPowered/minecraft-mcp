@@ -2,6 +2,7 @@ package io.izzel.minecraftmcp;
 
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
 import io.izzel.minecraftmcp.bridge.MinecraftServerBridge;
+import io.izzel.minecraftmcp.concurrent.McpWorkers;
 import io.izzel.minecraftmcp.config.MinecraftMcpConfig;
 import io.izzel.minecraftmcp.mcp.*;
 import io.izzel.minecraftmcp.scenario.ScenarioEngine;
@@ -10,14 +11,34 @@ import io.izzel.minecraftmcp.tools.BuiltinTools;
 import io.izzel.minecraftmcp.tools.BuiltinServerTools;
 
 public final class MinecraftMcpBootstrap {
-    private MinecraftMcpBootstrap() {}
-    public static LocalHttpMcpServer start(MinecraftClientBridge bridge) throws Exception {
+    private MinecraftMcpBootstrap() {
+    }
+
+    public record McpEndpoint(LocalHttpMcpServer server, McpWorkers workers) implements AutoCloseable {
+        public int port() {
+            return server.port();
+        }
+
+        @Override
+        public void close() {
+            server.close();
+            workers.close();
+        }
+    }
+
+    public static McpEndpoint start(MinecraftClientBridge bridge) throws Exception {
         MinecraftMcpConfig config = MinecraftMcpConfig.load();
         ToolRegistry registry = new ToolRegistry();
         ScenarioEngine scenarios = new ScenarioEngine(registry);
         BuiltinTools.register(registry, bridge, scenarios);
-        LocalHttpMcpServer server = new LocalHttpMcpServer(config, new JsonRpcHandler(registry));
-        server.start(bridge.gameDirectory(), bridge.loader(), bridge.minecraftVersion());
+        McpWorkers workers = McpWorkers.pooled("minecraft-mcp-" + bridge.side());
+        LocalHttpMcpServer server = new LocalHttpMcpServer(config, new JsonRpcHandler(registry), workers);
+        try {
+            server.start(bridge.gameDirectory(), bridge.loader(), bridge.minecraftVersion());
+        } catch (Exception e) {
+            workers.close();
+            throw e;
+        }
         if (!config.scenarioDir().isBlank()) {
             new Thread(() -> {
                 try {
@@ -31,15 +52,21 @@ public final class MinecraftMcpBootstrap {
                 }
             }, "minecraft-mcp-scenario-batch").start();
         }
-        return server;
+        return new McpEndpoint(server, workers);
     }
 
-    public static LocalHttpMcpServer start(MinecraftServerBridge bridge) throws Exception {
+    public static McpEndpoint start(MinecraftServerBridge bridge) throws Exception {
         MinecraftMcpConfig config = MinecraftMcpConfig.load();
         ToolRegistry registry = new ToolRegistry();
         BuiltinServerTools.register(registry, bridge);
-        LocalHttpMcpServer server = new LocalHttpMcpServer(config, new JsonRpcHandler(registry));
-        server.start(bridge.gameDirectory(), bridge.loader(), bridge.minecraftVersion());
-        return server;
+        McpWorkers workers = McpWorkers.pooled("minecraft-mcp-" + bridge.side());
+        LocalHttpMcpServer server = new LocalHttpMcpServer(config, new JsonRpcHandler(registry), workers);
+        try {
+            server.start(bridge.gameDirectory(), bridge.loader(), bridge.minecraftVersion());
+        } catch (Exception e) {
+            workers.close();
+            throw e;
+        }
+        return new McpEndpoint(server, workers);
     }
 }

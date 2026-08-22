@@ -2,7 +2,6 @@ package io.izzel.minecraftmcp.neoforge;
 
 import io.izzel.minecraftmcp.MinecraftMcpBootstrap;
 import io.izzel.minecraftmcp.bridge.MinecraftServerBridge;
-import io.izzel.minecraftmcp.mcp.LocalHttpMcpServer;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import io.izzel.minecraftmcp.serverlink.ServerMcpPluginMessageHandler;
 import io.izzel.minecraftmcp.serverlink.ServerMcpProxy;
@@ -25,7 +24,7 @@ public final class NeoForgeMinecraftMcpMod {
 
     static final ServerMcpProxy SERVER_PROXY = new ServerMcpProxy();
 
-    private static LocalHttpMcpServer server;
+    private static MinecraftMcpBootstrap.McpEndpoint server;
     private static ServerMcpPluginMessageHandler pluginHandler;
     public NeoForgeMinecraftMcpMod(IEventBus modBus) {
         modBus.addListener(this::registerPayloads);

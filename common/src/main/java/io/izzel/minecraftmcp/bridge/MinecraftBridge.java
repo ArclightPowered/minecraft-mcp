@@ -53,11 +53,20 @@ public interface MinecraftBridge {
         return future;
     }
 
+    default void requireOffGameThread(String operation) {
+        if (isOnGameThread()) {
+            throw new IllegalStateException(operation + " would block the " + side()
+                + " game thread it is waiting on; it has to run on an MCP worker thread");
+        }
+    }
+
     default void waitTicks(long ticks) {
+        requireOffGameThread("waiting " + ticks + " ticks");
         try {
             Thread.sleep(Math.max(0, ticks) * 50L);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            throw new IllegalStateException("interrupted while waiting " + ticks + " ticks", e);
         }
     }
 
@@ -66,6 +75,7 @@ public interface MinecraftBridge {
     }
 
     default boolean waitUntil(String condition, long timeoutMs, long intervalTicks) {
+        requireOffGameThread("waiting for condition '" + condition + "'");
         String normalized = condition == null ? "" : condition.trim();
         ConditionExpression expression = ConditionParser.parse(normalized);
         ConditionValidator.validate(expression, ConditionPropertyProviders.registryFor(side()), " on side=" + side());
@@ -93,7 +103,7 @@ public interface MinecraftBridge {
                 Thread.sleep(Math.min(intervalMs, remainingMs));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                break;
+                throw new IllegalStateException("interrupted while waiting for condition '" + normalized + "'", e);
             }
         }
         if (!everEvaluated) {

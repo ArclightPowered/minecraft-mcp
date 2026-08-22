@@ -2,7 +2,7 @@ package io.izzel.minecraftmcp.fabric;
 
 import io.izzel.minecraftmcp.MinecraftMcpBootstrap;
 import io.izzel.minecraftmcp.bridge.MinecraftServerBridge;
-import io.izzel.minecraftmcp.mcp.LocalHttpMcpServer;
+import io.izzel.minecraftmcp.MinecraftMcpBootstrap.McpEndpoint;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import io.izzel.minecraftmcp.serverlink.ServerMcpPluginMessageHandler;
 import io.izzel.minecraftmcp.serverlink.ServerMcpProxy;
@@ -20,7 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public final class FabricMinecraftMcpServerEntrypoint implements DedicatedServerModInitializer {
-    private static LocalHttpMcpServer mcpServer;
+    private static McpEndpoint mcpServer;
     private static ServerMcpPluginMessageHandler pluginHandler;
 
     @Override

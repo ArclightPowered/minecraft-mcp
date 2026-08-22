@@ -1,5 +1,6 @@
 package io.izzel.minecraftmcp.tools;
 
+import io.izzel.minecraftmcp.bridge.FakeGameThread;
 import io.izzel.minecraftmcp.bridge.MinecraftServerBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import org.junit.jupiter.api.Test;
@@ -31,14 +32,15 @@ class BuiltinServerToolsSchematicTest {
     }
 
     static final class RecordingBridge implements MinecraftServerBridge {
+        private final FakeGameThread gameThread = new FakeGameThread();
         Map<String, Object> infoArgs;
         Map<String, Object> exportArgs;
         Map<String, Object> pasteArgs;
         public String loader() { return "test-server"; }
         public String minecraftVersion() { return "test-server"; }
         public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnServerThread() { return true; }
-        public void execute(Runnable runnable) { runnable.run(); }
+        public boolean isOnServerThread() { return gameThread.isOn(); }
+        public void execute(Runnable runnable) { gameThread.run(runnable); }
         public <T> CompletableFuture<T> submit(Supplier<T> supplier) { return CompletableFuture.completedFuture(supplier.get()); }
         public Map<String, Object> serverState() { return Map.of(); }
         public Map<String, Object> schematicInfo(Map<String, Object> args) { infoArgs = args; return Map.of("status", "ok"); }
