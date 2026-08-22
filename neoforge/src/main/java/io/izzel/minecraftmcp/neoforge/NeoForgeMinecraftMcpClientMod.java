@@ -145,7 +145,6 @@ public final class NeoForgeMinecraftMcpClientMod {
             }
         }
 
-
         public void swing(String hand) {
             if (mc.player == null) return;
             InteractionHand interactionHand = "off".equalsIgnoreCase(hand) || "offhand".equalsIgnoreCase(hand) ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
@@ -300,7 +299,6 @@ public final class NeoForgeMinecraftMcpClientMod {
             BuiltinServerTools.register(registry, new NeoForgeMinecraftMcpMod.NeoForgeServerBridge(server));
             return registry.call(tool, arguments);
         }
-
 
         public Map<String, Object> sendChat(String message) {
             if (mc.player == null || mc.player.connection == null) {

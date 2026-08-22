@@ -3,7 +3,8 @@ package io.izzel.minecraftmcp;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
 import io.izzel.minecraftmcp.bridge.MinecraftServerBridge;
 import io.izzel.minecraftmcp.concurrent.McpWorkers;
-import io.izzel.minecraftmcp.config.MinecraftMcpConfig;
+import io.izzel.minecraftmcp.config.McpConfig;
+import io.izzel.minecraftmcp.config.McpConfigs;
 import io.izzel.minecraftmcp.mcp.*;
 import io.izzel.minecraftmcp.scenario.ScenarioEngine;
 import io.izzel.minecraftmcp.scenario.ScenarioRunOptions;
@@ -27,7 +28,7 @@ public final class MinecraftMcpBootstrap {
     }
 
     public static McpEndpoint start(MinecraftClientBridge bridge) throws Exception {
-        MinecraftMcpConfig config = MinecraftMcpConfig.load();
+        McpConfig config = McpConfigs.current();
         ToolRegistry registry = new ToolRegistry();
         ScenarioEngine scenarios = new ScenarioEngine(registry);
         BuiltinTools.register(registry, bridge, scenarios);
@@ -56,7 +57,7 @@ public final class MinecraftMcpBootstrap {
     }
 
     public static McpEndpoint start(MinecraftServerBridge bridge) throws Exception {
-        MinecraftMcpConfig config = MinecraftMcpConfig.load();
+        McpConfig config = McpConfigs.current();
         ToolRegistry registry = new ToolRegistry();
         BuiltinServerTools.register(registry, bridge);
         McpWorkers workers = McpWorkers.pooled("minecraft-mcp-" + bridge.side());

@@ -2,7 +2,7 @@ package io.izzel.minecraftmcp.mcp;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import io.izzel.minecraftmcp.config.MinecraftMcpConfig;
+import io.izzel.minecraftmcp.config.McpConfig;
 import io.izzel.minecraftmcp.json.Json;
 
 import java.io.*;
@@ -14,12 +14,12 @@ import java.util.Objects;
 import java.util.concurrent.Executor;
 
 public final class LocalHttpMcpServer implements AutoCloseable {
-    private final MinecraftMcpConfig config;
+    private final McpConfig config;
     private final JsonRpcHandler handler;
     private final Executor workers;
     private HttpServer server;
 
-    public LocalHttpMcpServer(MinecraftMcpConfig config, JsonRpcHandler handler, Executor workers) {
+    public LocalHttpMcpServer(McpConfig config, JsonRpcHandler handler, Executor workers) {
         this.config = config;
         this.handler = handler;
         this.workers = Objects.requireNonNull(workers, "workers");

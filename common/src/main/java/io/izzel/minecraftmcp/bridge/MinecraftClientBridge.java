@@ -257,6 +257,7 @@ public interface MinecraftClientBridge extends MinecraftBridge {
 
     @Override
     default Map<String, Object> capabilities() {
-        return Map.of("loader", loader(), "minecraftVersion", minecraftVersion(), "clientThreadScheduling", true, "headless", System.getProperty("minecraftMcp.headless", System.getenv().getOrDefault("MINECRAFT_MCP_HEADLESS", "false")));
+        return Map.of("loader", loader(), "minecraftVersion", minecraftVersion(), "clientThreadScheduling", true,
+            "headless", io.izzel.minecraftmcp.config.McpConfigs.current().headless());
     }
 }

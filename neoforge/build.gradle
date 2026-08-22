@@ -20,16 +20,10 @@ neoForge {
         client {
             client()
             gameDirectory = file('run/client')
-            systemProperty 'minecraftMcp.port', System.getProperty('minecraftMcp.port', '0')
-            systemProperty 'minecraftMcp.batchExit', System.getProperty('minecraftMcp.batchExit', 'false')
-            systemProperty 'minecraftMcp.scenarioDir', System.getProperty('minecraftMcp.scenarioDir', '')
         }
         server {
             server()
             gameDirectory = file('run/server')
-            systemProperty 'minecraftMcp.port', System.getProperty('minecraftMcp.port', '0')
-            systemProperty 'minecraftMcp.batchExit', System.getProperty('minecraftMcp.batchExit', 'false')
-            systemProperty 'minecraftMcp.scenarioDir', System.getProperty('minecraftMcp.scenarioDir', '')
         }
     }
 

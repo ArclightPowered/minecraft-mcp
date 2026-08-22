@@ -68,6 +68,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
     private static McpEndpoint server;
     @Override public void onInitializeClient() {
         try {
+            FabricMcpConfig.bootstrap();
             registerServerMcpPluginMessages();
             server = MinecraftMcpBootstrap.start(new FabricBridge());
             System.out.println("[Minecraft MCP] Fabric MCP server started on port " + server.port());
@@ -148,7 +149,6 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
                 throw new RuntimeException("Failed to take screenshot: " + e.getMessage(), e);
             }
         }
-
 
         public void swing(String hand) {
             if (mc.player == null) return;
@@ -304,7 +304,6 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             BuiltinServerTools.register(registry, new FabricMinecraftMcpServerEntrypoint.FabricServerBridge(server));
             return registry.call(tool, arguments);
         }
-
 
         public Map<String, Object> sendChat(String message) {
             if (mc.player == null || mc.player.connection == null) {

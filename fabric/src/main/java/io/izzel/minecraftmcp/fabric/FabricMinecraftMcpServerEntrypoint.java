@@ -25,6 +25,7 @@ public final class FabricMinecraftMcpServerEntrypoint implements DedicatedServer
 
     @Override
     public void onInitializeServer() {
+        FabricMcpConfig.bootstrap();
         PayloadTypeRegistry.serverboundPlay().register(FabricStringPayload.REQUEST, FabricStringPayload.codec(FabricStringPayload.REQUEST));
         PayloadTypeRegistry.clientboundPlay().register(FabricStringPayload.RESPONSE, FabricStringPayload.codec(FabricStringPayload.RESPONSE));
         PayloadTypeRegistry.clientboundPlay().register(FabricStringPayload.HELLO, FabricStringPayload.codec(FabricStringPayload.HELLO));

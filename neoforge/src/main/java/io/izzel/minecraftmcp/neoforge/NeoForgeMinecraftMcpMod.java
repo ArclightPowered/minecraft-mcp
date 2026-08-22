@@ -8,6 +8,7 @@ import io.izzel.minecraftmcp.serverlink.ServerMcpProxy;
 import io.izzel.minecraftmcp.tools.BuiltinServerTools;
 import io.izzel.minecraftmcp.schematic.ServerSchematicTools;
 import net.minecraft.server.MinecraftServer;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.NeoForge;
@@ -26,7 +27,8 @@ public final class NeoForgeMinecraftMcpMod {
 
     private static MinecraftMcpBootstrap.McpEndpoint server;
     private static ServerMcpPluginMessageHandler pluginHandler;
-    public NeoForgeMinecraftMcpMod(IEventBus modBus) {
+    public NeoForgeMinecraftMcpMod(IEventBus modBus, ModContainer container) {
+        NeoForgeMcpConfig.register(modBus, container);
         modBus.addListener(this::registerPayloads);
         NeoForge.EVENT_BUS.addListener(this::onServerStarted);
         NeoForge.EVENT_BUS.addListener(this::onServerStopping);
