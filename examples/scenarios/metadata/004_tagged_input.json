@@ -1,1 +1,1 @@
-{"name":"metadata_tagged_input","tags":["metadata","input"],"steps":[{"id":"press","tool":"mc.keyboard.press","args":{"key":"SPACE"},"expect":{"result.status":"pressed","result.key":"SPACE"}}]}
+{"name":"metadata_tagged_input","tags":["metadata","input"],"steps":[{"id":"press","tool":"mc.client.keyboard.press","args":{"key":"SPACE"},"expect":{"result.status":"pressed","result.key":"SPACE"}}]}

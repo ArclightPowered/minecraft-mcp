@@ -1,19 +1,19 @@
 # Player action tools
 
-Player action tools perform actions through the client player/game mode path. They do not add separate state-query tools; use `mc.player.state` for current player state.
+Player action tools perform actions through the client player/game mode path. They do not add separate state-query tools; use `mc.client.state` for current player state.
 
 Implemented actions:
 
-- `mc.player.look`
-- `mc.player.look_at`
-- `mc.player.use_item`
-- `mc.player.attack.block`
-- `mc.player.destroy.block`
-- `mc.player.drop`
-- `mc.player.jump`
-- existing `mc.player.swing`
+- `mc.client.player.look`
+- `mc.client.player.look_at`
+- `mc.client.player.use_item`
+- `mc.client.player.attack.block`
+- `mc.client.player.destroy.block`
+- `mc.client.player.drop`
+- `mc.client.player.jump`
+- existing `mc.client.player.swing`
 
-## `mc.player.look`
+## `mc.client.player.look`
 
 ```json
 {
@@ -34,7 +34,7 @@ Returns:
 
 Pitch is clamped to `[-90, 90]`.
 
-## `mc.player.look_at`
+## `mc.client.player.look_at`
 
 ```json
 {
@@ -46,7 +46,7 @@ Pitch is clamped to `[-90, 90]`.
 
 Rotates the player toward the world coordinate and returns the target plus computed yaw/pitch.
 
-## `mc.player.use_item`
+## `mc.client.player.use_item`
 
 ```json
 {
@@ -56,7 +56,7 @@ Rotates the player toward the world coordinate and returns the target plus compu
 
 `hand` accepts `main`, `mainhand`, `off`, `off_hand`, or `offhand`. The loader bridge calls the normal client game mode item-use path and swings when the interaction consumes action.
 
-## `mc.player.attack.block`
+## `mc.client.player.attack.block`
 
 ```json
 {
@@ -69,7 +69,7 @@ Rotates the player toward the world coordinate and returns the target plus compu
 
 Starts destroying/attacking the target block through the client game mode path and swings the main hand. `face` accepts vanilla directions: `up`, `down`, `north`, `south`, `west`, `east`.
 
-## `mc.player.destroy.block`
+## `mc.client.player.destroy.block`
 
 ```json
 {
@@ -83,7 +83,7 @@ Starts destroying/attacking the target block through the client game mode path a
 
 Keeps calling the normal client block destroy path until the target block becomes air. The tool returns a `FutureResult`; the registry applies the standard call-level `timeoutMs` and cancels the future when that timeout expires. Returns `status: "destroyed"` on success with `attempts` and `elapsedMs`.
 
-## `mc.player.drop`
+## `mc.client.player.drop`
 
 ```json
 {
@@ -93,7 +93,7 @@ Keeps calling the normal client block destroy path until the target block become
 
 Drops one selected item when `all=false`, or the selected stack when `all=true`.
 
-## `mc.player.jump`
+## `mc.client.player.jump`
 
 ```json
 {}
@@ -107,7 +107,7 @@ Sneak and sprint are not standalone player action tools. Use the movement tool p
 
 ```json
 {
-  "tool": "mc.movement.waypoints",
+  "tool": "mc.client.movement.waypoints",
   "args": {
     "waypoints": [{"x": 0, "y": 64, "z": 4}],
     "sprint": true,

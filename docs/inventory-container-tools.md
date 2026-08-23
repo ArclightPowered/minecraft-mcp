@@ -2,7 +2,7 @@
 
 `minecraft-mcp` exposes inventory/container tools for client-side automation. Read tools return structured snapshots; container click tools use Minecraft's normal client interaction path instead of directly mutating item stacks.
 
-## `mc.inventory.state`
+## `mc.client.inventory.state`
 
 Returns the player inventory snapshot.
 
@@ -27,7 +27,7 @@ Slot summaries include:
 section, index, slot, playerInventoryIndex, item, count, empty, maxStackSize, displayName
 ```
 
-## `mc.inventory.find`
+## `mc.client.inventory.find`
 
 Arguments:
 
@@ -52,7 +52,7 @@ Returns:
 }
 ```
 
-## `mc.inventory.count`
+## `mc.client.inventory.count`
 
 Arguments:
 
@@ -66,7 +66,7 @@ Returns:
 { "item": "minecraft:diamond", "count": 3 }
 ```
 
-## `mc.inventory.selected`
+## `mc.client.inventory.selected`
 
 Returns the selected hotbar slot item:
 
@@ -80,7 +80,7 @@ Returns the selected hotbar slot item:
 }
 ```
 
-## `mc.container.state`
+## `mc.client.container.state`
 
 Returns the currently open container/menu state.
 
@@ -121,7 +121,7 @@ slot, containerSlot, index, x, y, hasItem, mayPickup, mayPlace, active, item, co
 
 Use the `slot` field from this result when calling click tools.
 
-## `mc.container.click`
+## `mc.client.container.click`
 
 Arguments:
 
@@ -153,7 +153,7 @@ Returns:
 }
 ```
 
-## `mc.container.quick_move`
+## `mc.client.container.quick_move`
 
 Convenience wrapper for shift-click / quick-move:
 
@@ -167,7 +167,7 @@ Equivalent to:
 clickType=QUICK_MOVE, button=0
 ```
 
-## `mc.container.drop`
+## `mc.client.container.drop`
 
 Arguments:
 
@@ -180,7 +180,7 @@ Arguments:
 
 Equivalent to `clickType=THROW`, with `button=0` for one item and `button=1` for the full stack.
 
-## `mc.container.close`
+## `mc.client.container.close`
 
 Closes the current container using the normal player close path.
 
@@ -192,7 +192,7 @@ Returns:
 
 ## Runtime notes
 
-- Wait for `client.inWorld == true` before inventory/container interaction after `mc.world.join`.
+- Wait for `client.inWorld == true` before inventory/container interaction after `mc.client.world.join`.
 - Container click tools require an open container/menu and use `Minecraft#gameMode.handleInventoryMouseClick(...)`.
 - Creative inventory and survival inventory have different slot layouts; scenarios that click fixed slot numbers should put the player into a known game mode first.
 - The example scenarios live under `examples/scenarios/inventory-container/`.

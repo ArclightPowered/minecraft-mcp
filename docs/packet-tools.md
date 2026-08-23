@@ -6,7 +6,7 @@ Packet recording observes the active Minecraft `Connection` through a Netty pipe
 
 ## Tools
 
-### `mc.packet.recording.start`
+### `mc.client.packet.recording.start`
 
 Starts recording and installs the Netty handler when the client has an active connection.
 
@@ -30,15 +30,15 @@ Each entry in `filters` is a condition expression evaluated against every record
 
 `direction` may be `both`, `serverbound`, or `clientbound`. `parseBundlePackets` defaults to `true`; when enabled, vanilla `BundlePacket` instances are expanded and their `subPackets()` are recorded/filtered individually. Set it to `false` to record the bundle wrapper itself.
 
-### `mc.packet.recording.stop`
+### `mc.client.packet.recording.stop`
 
 Stops recording and removes the Netty handler when possible.
 
-### `mc.packet.recording.clear`
+### `mc.client.packet.recording.clear`
 
 Clears the in-memory packet buffer.
 
-### `mc.packet.recording.status`
+### `mc.client.packet.recording.status`
 
 Returns a condition-friendly status object:
 
@@ -66,7 +66,7 @@ Returns a condition-friendly status object:
 
 `filter.<name>.errors` groups per-filter evaluation failures by error message (capped at 8 distinct messages per filter; further kinds fall into an `"(other)"` bucket). A filter whose count stays 0 while its errors grow is evaluating against data it cannot compare — usually a misspelled member below `summary`.
 
-### `mc.packet.dump`
+### `mc.client.packet.dump`
 
 Dumps recorded packets with filters.
 
@@ -86,9 +86,9 @@ Arguments:
 
 The result includes `nextSinceSequence`, so agents can poll incrementally.
 
-### `mc.packet.wait`
+### `mc.client.packet.wait`
 
-Waits until recorded packets matching the same filter fields used by `mc.packet.dump` reach a required count.
+Waits until recorded packets matching the same filter fields used by `mc.client.packet.dump` reach a required count.
 
 Arguments:
 
@@ -114,7 +114,7 @@ Result:
 
 ## Scenario conditions
 
-Packet state is available through the condition property SPI as `packet`. For assertions about specific packets, define a named filter on `mc.packet.recording.start` and wait on that filter's stable cumulative count. Do not rely on `packet.last` for packet existence checks because any later packet can replace it.
+Packet state is available through the condition property SPI as `packet`. For assertions about specific packets, define a named filter on `mc.client.packet.recording.start` and wait on that filter's stable cumulative count. Do not rely on `packet.last` for packet existence checks because any later packet can replace it.
 
 ```text
 packet.recording == true
@@ -124,4 +124,4 @@ packet.clientbound.count > 0
 packet.filter.name_a.count > 0
 ```
 
-Use `mc.condition.wait` for packet assertions because packet timing is asynchronous.
+Use `mc.client.condition.wait` for packet assertions because packet timing is asynchronous.

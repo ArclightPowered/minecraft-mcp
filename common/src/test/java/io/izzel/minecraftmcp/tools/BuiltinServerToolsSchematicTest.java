@@ -3,6 +3,7 @@ package io.izzel.minecraftmcp.tools;
 import io.izzel.minecraftmcp.bridge.FakeGameThread;
 import io.izzel.minecraftmcp.bridge.MinecraftServerBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
+import io.izzel.minecraftmcp.scenario.ScenarioEngine;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -17,11 +18,11 @@ class BuiltinServerToolsSchematicTest {
     void serverSchematicToolsDelegateToServerBridge() throws Exception {
         RecordingBridge bridge = new RecordingBridge();
         ToolRegistry registry = new ToolRegistry();
-        BuiltinServerTools.register(registry, bridge);
+        BuiltinServerTools.register(registry, bridge, new ScenarioEngine(registry));
 
         Object info = registry.call("mc.schematic.info", Map.of("path", "a.schem"));
-        Object export = registry.call("mc.schematic.export", Map.of("path", "a.schem"));
-        Object paste = registry.call("mc.schematic.paste", Map.of("path", "a.schem"));
+        Object export = registry.call("mc.server.schematic.export", Map.of("path", "a.schem"));
+        Object paste = registry.call("mc.server.schematic.paste", Map.of("path", "a.schem"));
 
         assertEquals(Map.of("status", "ok"), info);
         assertEquals(Map.of("status", "exported"), export);
@@ -36,15 +37,48 @@ class BuiltinServerToolsSchematicTest {
         Map<String, Object> infoArgs;
         Map<String, Object> exportArgs;
         Map<String, Object> pasteArgs;
-        public String loader() { return "test-server"; }
-        public String minecraftVersion() { return "test-server"; }
-        public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnServerThread() { return gameThread.isOn(); }
-        public void execute(Runnable runnable) { gameThread.run(runnable); }
-        public <T> CompletableFuture<T> submit(Supplier<T> supplier) { return CompletableFuture.completedFuture(supplier.get()); }
-        public Map<String, Object> serverState() { return Map.of(); }
-        public Map<String, Object> schematicInfo(Map<String, Object> args) { infoArgs = args; return Map.of("status", "ok"); }
-        public Map<String, Object> exportSchematic(Map<String, Object> args) { exportArgs = args; return Map.of("status", "exported"); }
-        public Map<String, Object> pasteSchematic(Map<String, Object> args) { pasteArgs = args; return Map.of("status", "pasted"); }
+
+        public String loader() {
+            return "test-server";
+        }
+
+        public String minecraftVersion() {
+            return "test-server";
+        }
+
+        public Path gameDirectory() {
+            return Path.of(".");
+        }
+
+        public boolean isOnServerThread() {
+            return gameThread.isOn();
+        }
+
+        public void execute(Runnable runnable) {
+            gameThread.run(runnable);
+        }
+
+        public <T> CompletableFuture<T> submit(Supplier<T> supplier) {
+            return CompletableFuture.completedFuture(supplier.get());
+        }
+
+        public Map<String, Object> serverState() {
+            return Map.of();
+        }
+
+        public Map<String, Object> schematicInfo(Map<String, Object> args) {
+            infoArgs = args;
+            return Map.of("status", "ok");
+        }
+
+        public Map<String, Object> exportSchematic(Map<String, Object> args) {
+            exportArgs = args;
+            return Map.of("status", "exported");
+        }
+
+        public Map<String, Object> pasteSchematic(Map<String, Object> args) {
+            pasteArgs = args;
+            return Map.of("status", "pasted");
+        }
     }
 }

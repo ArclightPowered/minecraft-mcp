@@ -1,1 +1,1 @@
-{"name":"world_leave_to_title","tags":["world","full-client"],"steps":[{"id":"leave","tool":"mc.world.leave","args":{},"expect":{"result.status":"left_to_title"}}]}
+{"name":"world_leave_to_title","tags":["world","full-client"],"steps":[{"id":"leave","tool":"mc.client.world.leave","args":{},"expect":{"result.status":"left_to_title"}}]}

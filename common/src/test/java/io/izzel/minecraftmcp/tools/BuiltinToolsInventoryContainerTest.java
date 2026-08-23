@@ -4,7 +4,6 @@ import io.izzel.minecraftmcp.bridge.ClientSnapshot;
 import io.izzel.minecraftmcp.bridge.FakeGameThread;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
-import io.izzel.minecraftmcp.scenario.ScenarioEngine;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -19,11 +18,11 @@ class BuiltinToolsInventoryContainerTest {
     void inventoryToolsDelegateToBridge() throws Exception {
         ToolRegistry registry = new ToolRegistry();
         MockBridge bridge = new MockBridge();
-        BuiltinTools.register(registry, bridge, new ScenarioEngine(registry));
+        BuiltinClientTools.register(registry, bridge);
 
-        Object find = registry.call("mc.inventory.find", Map.of("item", "minecraft:stone", "section", "hotbar", "limit", 2));
-        Object count = registry.call("mc.inventory.count", Map.of("item", "minecraft:stone"));
-        Object selected = registry.call("mc.inventory.selected", Map.of());
+        Object find = registry.call("mc.client.inventory.find", Map.of("item", "minecraft:stone", "section", "hotbar", "limit", 2));
+        Object count = registry.call("mc.client.inventory.count", Map.of("item", "minecraft:stone"));
+        Object selected = registry.call("mc.client.inventory.selected", Map.of());
 
         assertEquals(Map.of("found", true, "totalCount", 64, "matches", List.of(Map.of("item", "minecraft:stone", "count", 64))), find);
         assertEquals(Map.of("item", "minecraft:stone", "count", 64), count);
@@ -36,13 +35,13 @@ class BuiltinToolsInventoryContainerTest {
     void containerToolsDelegateAndNormalizeArguments() throws Exception {
         ToolRegistry registry = new ToolRegistry();
         MockBridge bridge = new MockBridge();
-        BuiltinTools.register(registry, bridge, new ScenarioEngine(registry));
+        BuiltinClientTools.register(registry, bridge);
 
-        Object state = registry.call("mc.container.state", Map.of());
-        Object click = registry.call("mc.container.click", Map.of("slot", 5, "button", 1, "clickType", "pickup"));
-        Object quick = registry.call("mc.container.quick_move", Map.of("slot", 6));
-        Object drop = registry.call("mc.container.drop", Map.of("slot", 7, "all", true));
-        Object close = registry.call("mc.container.close", Map.of());
+        Object state = registry.call("mc.client.container.state", Map.of());
+        Object click = registry.call("mc.client.container.click", Map.of("slot", 5, "button", 1, "clickType", "pickup"));
+        Object quick = registry.call("mc.client.container.quick_move", Map.of("slot", 6));
+        Object drop = registry.call("mc.client.container.drop", Map.of("slot", 7, "all", true));
+        Object close = registry.call("mc.client.container.close", Map.of());
 
         assertEquals(Map.of("hasContainer", true, "containerId", 1, "slots", List.of()), state);
         assertEquals(Map.of("status", "clicked", "slot", 5, "button", 1, "clickType", "PICKUP", "containerId", 1), click);
@@ -59,12 +58,12 @@ class BuiltinToolsInventoryContainerTest {
     @Test
     void rejectsInvalidInventoryAndContainerArguments() {
         ToolRegistry registry = new ToolRegistry();
-        BuiltinTools.register(registry, new MockBridge(), new ScenarioEngine(registry));
+        BuiltinClientTools.register(registry, new MockBridge());
 
-        assertThrows(IllegalArgumentException.class, () -> registry.call("mc.inventory.find", Map.of()));
-        assertThrows(IllegalArgumentException.class, () -> registry.call("mc.inventory.count", Map.of("item", "")));
-        assertThrows(IllegalArgumentException.class, () -> registry.call("mc.container.click", Map.of("slot", -1)));
-        assertThrows(IllegalArgumentException.class, () -> registry.call("mc.container.click", Map.of("slot", 0, "clickType", "BAD")));
+        assertThrows(IllegalArgumentException.class, () -> registry.call("mc.client.inventory.find", Map.of()));
+        assertThrows(IllegalArgumentException.class, () -> registry.call("mc.client.inventory.count", Map.of("item", "")));
+        assertThrows(IllegalArgumentException.class, () -> registry.call("mc.client.container.click", Map.of("slot", -1)));
+        assertThrows(IllegalArgumentException.class, () -> registry.call("mc.client.container.click", Map.of("slot", 0, "clickType", "BAD")));
     }
 
     static class MockBridge implements MinecraftClientBridge {

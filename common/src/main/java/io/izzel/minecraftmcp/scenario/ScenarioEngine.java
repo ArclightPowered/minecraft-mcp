@@ -45,12 +45,12 @@ public final class ScenarioEngine {
 
     @SuppressWarnings("unchecked")
     private void runOne(Path path, ScenarioReport report, ScenarioRunOptions options) {
-        List<Map<String,Object>> stepReports = new ArrayList<>();
+        List<Map<String, Object>> stepReports = new ArrayList<>();
         String name = path.getFileName().toString();
         Map<String, Object> metadata = new LinkedHashMap<>();
         String expected = "pass";
         try {
-            Map<String,Object> scenario = (Map<String,Object>) Json.parse(Files.readString(path));
+            Map<String, Object> scenario = (Map<String, Object>) Json.parse(Files.readString(path));
             name = String.valueOf(scenario.getOrDefault("name", name));
             expected = String.valueOf(scenario.getOrDefault("expected", "pass"));
             List<String> tags = stringList(scenario.get("tags"));
@@ -66,18 +66,18 @@ public final class ScenarioEngine {
 
             List<Object> steps = (List<Object>) scenario.getOrDefault("steps", List.of());
             for (Object stepObj : steps) {
-                Map<String,Object> step = (Map<String,Object>) stepObj;
+                Map<String, Object> step = (Map<String, Object>) stepObj;
                 String id = String.valueOf(step.getOrDefault("id", step.get("tool")));
                 String tool = String.valueOf(step.get("tool"));
-                Map<String,Object> args = step.get("args") instanceof Map<?,?> m ? (Map<String,Object>) m : Map.of();
+                Map<String, Object> args = step.get("args") instanceof Map<?, ?> m ? (Map<String, Object>) m : Map.of();
                 Object result = registry.call(tool, args);
-                Map<String,Object> stepReport = new LinkedHashMap<>();
+                Map<String, Object> stepReport = new LinkedHashMap<>();
                 stepReport.put("id", id);
                 stepReport.put("tool", tool);
                 stepReport.put("status", "passed");
                 stepReport.put("result", result);
-                if (step.get("expect") instanceof Map<?,?> expect) {
-                    ScenarioAssertion.assertExpect(stepReport, (Map<String,Object>) expect);
+                if (step.get("expect") instanceof Map<?, ?> expect) {
+                    ScenarioAssertion.assertExpect(stepReport, (Map<String, Object>) expect);
                 }
                 stepReports.add(stepReport);
             }
@@ -89,18 +89,21 @@ public final class ScenarioEngine {
     }
 
     @SuppressWarnings("unchecked")
-    private String skipReason(Map<String,Object> scenario, List<String> tags, ScenarioRunOptions options) {
+    private String skipReason(Map<String, Object> scenario, List<String> tags, ScenarioRunOptions options) {
         if (!options.includeTags().isEmpty() && Collections.disjoint(tags, options.includeTags())) {
             return "missing includeTags " + options.includeTags();
         }
         if (!options.excludeTags().isEmpty() && !Collections.disjoint(tags, options.excludeTags())) {
             return "matched excludeTags " + options.excludeTags();
         }
-        if (scenario.get("requires") instanceof Map<?,?> requires) {
-            Object loadersObj = requires.get("loaders");
-            List<String> loaders = stringList(loadersObj);
+        if (scenario.get("requires") instanceof Map<?, ?> requires) {
+            List<String> loaders = stringList(requires.get("loaders"));
             if (options.loader() != null && !loaders.isEmpty() && !loaders.contains(options.loader())) {
                 return "loader " + options.loader() + " not in " + loaders;
+            }
+            List<String> sides = stringList(requires.get("sides"));
+            if (options.side() != null && !sides.isEmpty() && !sides.contains(options.side())) {
+                return "side " + options.side() + " not in " + sides;
             }
         }
         return null;

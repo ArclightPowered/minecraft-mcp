@@ -1,1 +1,1 @@
-{"name":"smoke_current_screen","tags":["smoke","ui"],"steps":[{"id":"screen","tool":"mc.screen.current","args":{},"expect":{"result.screen":{"contains":"Screen"}}}]}
+{"name":"smoke_current_screen","tags":["smoke","ui"],"steps":[{"id":"screen","tool":"mc.client.screen.current","args":{},"expect":{"result.screen":{"contains":"Screen"}}}]}

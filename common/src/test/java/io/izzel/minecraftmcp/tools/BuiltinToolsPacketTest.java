@@ -4,7 +4,6 @@ import io.izzel.minecraftmcp.bridge.ClientSnapshot;
 import io.izzel.minecraftmcp.bridge.FakeGameThread;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
-import io.izzel.minecraftmcp.scenario.ScenarioEngine;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -19,15 +18,15 @@ class BuiltinToolsPacketTest {
     void packetToolsDelegateToBridge() throws Exception {
         RecordingBridge bridge = new RecordingBridge();
         ToolRegistry registry = new ToolRegistry();
-        BuiltinTools.register(registry, bridge, new ScenarioEngine(registry));
+        BuiltinClientTools.register(registry, bridge);
 
-        Object start = registry.call("mc.packet.recording.start", Map.of("clear", true, "maxPackets", 5, "direction", "serverbound"));
-        Object status = registry.call("mc.packet.recording.status", Map.of());
-        Object dump = registry.call("mc.packet.dump", Map.of("nameContains", "Swing", "limit", 10));
-        Object wait = registry.call("mc.packet.wait", Map.of("nameContains", "Swing", "count", 1, "timeoutMs", 1));
-        Object screenshot = registry.call("mc.screenshot.take", Map.of("name", "unit.png"));
-        Object clear = registry.call("mc.packet.recording.clear", Map.of());
-        Object stop = registry.call("mc.packet.recording.stop", Map.of());
+        Object start = registry.call("mc.client.packet.recording.start", Map.of("clear", true, "maxPackets", 5, "direction", "serverbound"));
+        Object status = registry.call("mc.client.packet.recording.status", Map.of());
+        Object dump = registry.call("mc.client.packet.dump", Map.of("nameContains", "Swing", "limit", 10));
+        Object wait = registry.call("mc.client.packet.wait", Map.of("nameContains", "Swing", "count", 1, "timeoutMs", 1));
+        Object screenshot = registry.call("mc.client.screenshot.take", Map.of("name", "unit.png"));
+        Object clear = registry.call("mc.client.packet.recording.clear", Map.of());
+        Object stop = registry.call("mc.client.packet.recording.stop", Map.of());
 
         assertEquals(Map.of("status", "started", "maxPackets", 5), start);
         assertEquals(Map.of("recording", true, "count", 1), status);

@@ -3,7 +3,7 @@
   "steps": [
     {
       "id": "hold_forward",
-      "tool": "mc.keyboard.hold",
+      "tool": "mc.client.keyboard.hold",
       "args": {
         "key": "W",
         "ticks": 2

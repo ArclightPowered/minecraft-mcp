@@ -3,7 +3,7 @@
   "tags": ["packet", "world"],
   "steps": [
     {
-      "tool": "mc.packet.recording.start",
+      "tool": "mc.client.packet.recording.start",
       "args": {
         "clear": true,
         "maxPackets": 200,
@@ -17,13 +17,13 @@
       }
     },
     {
-      "tool": "mc.player.swing",
+      "tool": "mc.client.player.swing",
       "args": {
         "hand": "main_hand"
       }
     },
     {
-      "tool": "mc.condition.wait",
+      "tool": "mc.client.condition.wait",
       "args": {
         "condition": "packet.filter.name_a.count > 0",
         "timeoutMs": 5000
@@ -33,7 +33,7 @@
       }
     },
     {
-      "tool": "mc.packet.dump",
+      "tool": "mc.client.packet.dump",
       "args": {
         "direction": "serverbound",
         "nameContains": "Swing",
@@ -41,7 +41,7 @@
       }
     },
     {
-      "tool": "mc.packet.recording.stop",
+      "tool": "mc.client.packet.recording.stop",
       "args": {}
     }
   ]

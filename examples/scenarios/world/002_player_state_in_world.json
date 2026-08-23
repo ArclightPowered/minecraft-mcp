@@ -1,1 +1,1 @@
-{"name":"world_player_state_in_world","tags":["world","full-client"],"steps":[{"id":"state","tool":"mc.player.state","args":{},"expect":{"result.running":true,"result.inWorld":true}}]}
+{"name":"world_player_state_in_world","tags":["world","full-client"],"steps":[{"id":"state","tool":"mc.client.state","args":{},"expect":{"result.running":true,"result.inWorld":true}}]}

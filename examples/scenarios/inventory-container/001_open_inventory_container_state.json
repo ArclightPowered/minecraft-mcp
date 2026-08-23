@@ -9,7 +9,7 @@
   "steps": [
     {
       "id": "join_world",
-      "tool": "mc.world.join",
+      "tool": "mc.client.world.join",
       "args": {
         "name": "minecraft_mcp_inventory_container",
         "seed": 24680,
@@ -21,7 +21,7 @@
     },
     {
       "id": "wait_world_attached",
-      "tool": "mc.condition.wait",
+      "tool": "mc.client.condition.wait",
       "args": {
         "condition": "client.rawInWorld == true",
         "timeoutMs": 300000
@@ -32,7 +32,7 @@
     },
     {
       "id": "wait_world_playable",
-      "tool": "mc.condition.wait",
+      "tool": "mc.client.condition.wait",
       "args": {
         "condition": "client.inWorld == true && client.screen == null",
         "timeoutMs": 300000
@@ -43,7 +43,7 @@
     },
     {
       "id": "open_inventory",
-      "tool": "mc.keyboard.press",
+      "tool": "mc.client.keyboard.press",
       "args": {
         "key": "E"
       },
@@ -54,7 +54,7 @@
     },
     {
       "id": "wait_open",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 2
       },
@@ -64,7 +64,7 @@
     },
     {
       "id": "container_state",
-      "tool": "mc.container.state",
+      "tool": "mc.client.container.state",
       "expect": {
         "result.inWorld": true,
         "result.hasContainer": true,
@@ -73,14 +73,14 @@
     },
     {
       "id": "close_container",
-      "tool": "mc.container.close",
+      "tool": "mc.client.container.close",
       "expect": {
         "result.status": "closed"
       }
     },
     {
       "id": "wait_close",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 2
       },
@@ -90,7 +90,7 @@
     },
     {
       "id": "screen_closed",
-      "tool": "mc.screen.state",
+      "tool": "mc.client.screen.state",
       "expect": {
         "result.hasScreen": false
       }

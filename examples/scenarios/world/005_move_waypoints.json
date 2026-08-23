@@ -7,7 +7,7 @@
   ],
   "steps": [
     {
-      "tool": "mc.movement.waypoints",
+      "tool": "mc.client.movement.waypoints",
       "expect": {
         "result.status": "completed",
         "result.sneak": false

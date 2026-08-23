@@ -4,7 +4,6 @@ import io.izzel.minecraftmcp.bridge.ClientSnapshot;
 import io.izzel.minecraftmcp.bridge.FakeGameThread;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
-import io.izzel.minecraftmcp.scenario.ScenarioEngine;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -19,9 +18,9 @@ class BuiltinToolsInputTest {
     void keyPressDelegatesToBridgeAndReturnsPressedStatus() throws Exception {
         FakeBridge bridge = new FakeBridge();
         ToolRegistry registry = new ToolRegistry();
-        BuiltinTools.register(registry, bridge, new ScenarioEngine(registry));
+        BuiltinClientTools.register(registry, bridge);
 
-        Object result = registry.call("mc.keyboard.press", Map.of("key", "E"));
+        Object result = registry.call("mc.client.keyboard.press", Map.of("key", "E"));
 
         assertEquals(Map.of("status", "pressed", "key", "E"), result);
         assertEquals(List.of("press:E"), bridge.events);
@@ -31,9 +30,9 @@ class BuiltinToolsInputTest {
     void keyHoldDelegatesPressWaitReleaseToBridge() throws Exception {
         FakeBridge bridge = new FakeBridge();
         ToolRegistry registry = new ToolRegistry();
-        BuiltinTools.register(registry, bridge, new ScenarioEngine(registry));
+        BuiltinClientTools.register(registry, bridge);
 
-        Object result = registry.call("mc.keyboard.hold", Map.of("key", "W", "ticks", 2));
+        Object result = registry.call("mc.client.keyboard.hold", Map.of("key", "W", "ticks", 2));
 
         assertEquals(Map.of("status", "held", "key", "W", "ticks", 2L), result);
         assertEquals(List.of("down:W", "wait:2", "up:W"), bridge.events);

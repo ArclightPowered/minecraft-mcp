@@ -1,1 +1,1 @@
-{"name":"assert_key_hold_returns_held","tags":["assert","input"],"steps":[{"id":"hold","tool":"mc.keyboard.hold","args":{"key":"W","ticks":2},"expect":{"result.status":"held","result.key":"W","result.ticks":2}}]}
+{"name":"assert_key_hold_returns_held","tags":["assert","input"],"steps":[{"id":"hold","tool":"mc.client.keyboard.hold","args":{"key":"W","ticks":2},"expect":{"result.status":"held","result.key":"W","result.ticks":2}}]}

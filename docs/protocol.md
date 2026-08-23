@@ -10,44 +10,44 @@ Supported methods:
 
 Implemented tools:
 
-- `mc.world.join` supports normal world creation by default and accepts `preset`/`generator: "flat"` or `"superflat"` for superflat test worlds.
+- `mc.client.world.join` supports normal world creation by default and accepts `preset`/`generator: "flat"` or `"superflat"` for superflat test worlds.
 
 - `mc.client.state` returns both `inWorld` and `rawInWorld`. `rawInWorld` means the underlying client level/player exists; `inWorld` means the client is in a playable world state with no loading/GUI screen blocking normal controls.
 
 - `mc.client.state`
-- `mc.player.state`
-- `mc.player.swing`
-- `mc.player.look`
-- `mc.player.look_at`
-- `mc.player.use_item`
-- `mc.player.attack.block`
-- `mc.player.destroy.block`
-- `mc.player.drop`
-- `mc.player.jump`
-- `mc.inventory.state`
-- `mc.inventory.find`
-- `mc.inventory.count`
-- `mc.inventory.selected`
-- `mc.container.state`
-- `mc.container.click`
-- `mc.container.quick_move`
-- `mc.container.drop`
-- `mc.container.close`
-- `mc.hotbar.select`
-- `mc.command.run`
-- `mc.command.suggest`
-- `mc.server.sync`
-- `mc.screen.current`
-- `mc.ticks.wait`
-- `mc.keyboard.press`
-- `mc.keyboard.hold`
-- `mc.screenshot.take`
-- `mc.packet.recording.start`
-- `mc.packet.recording.stop`
-- `mc.packet.recording.clear`
-- `mc.packet.recording.status`
-- `mc.packet.dump`
-- `mc.packet.wait`
+- `mc.client.state`
+- `mc.client.player.swing`
+- `mc.client.player.look`
+- `mc.client.player.look_at`
+- `mc.client.player.use_item`
+- `mc.client.player.attack.block`
+- `mc.client.player.destroy.block`
+- `mc.client.player.drop`
+- `mc.client.player.jump`
+- `mc.client.inventory.state`
+- `mc.client.inventory.find`
+- `mc.client.inventory.count`
+- `mc.client.inventory.selected`
+- `mc.client.container.state`
+- `mc.client.container.click`
+- `mc.client.container.quick_move`
+- `mc.client.container.drop`
+- `mc.client.container.close`
+- `mc.client.hotbar.select`
+- `mc.client.command.run`
+- `mc.client.command.suggest`
+- `mc.client.connection.sync`
+- `mc.client.screen.current`
+- `mc.client.ticks.wait`
+- `mc.client.keyboard.press`
+- `mc.client.keyboard.hold`
+- `mc.client.screenshot.take`
+- `mc.client.packet.recording.start`
+- `mc.client.packet.recording.stop`
+- `mc.client.packet.recording.clear`
+- `mc.client.packet.recording.status`
+- `mc.client.packet.dump`
+- `mc.client.packet.wait`
 - `mc.debug.capabilities`
 - `mc.scenario.batch.run`
 - `mc.scenario.report`

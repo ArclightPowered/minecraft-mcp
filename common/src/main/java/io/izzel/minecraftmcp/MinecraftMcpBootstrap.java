@@ -8,7 +8,9 @@ import io.izzel.minecraftmcp.config.McpConfigs;
 import io.izzel.minecraftmcp.mcp.*;
 import io.izzel.minecraftmcp.scenario.ScenarioEngine;
 import io.izzel.minecraftmcp.scenario.ScenarioRunOptions;
-import io.izzel.minecraftmcp.tools.BuiltinTools;
+import io.izzel.minecraftmcp.tools.BuiltinClientTools;
+import io.izzel.minecraftmcp.tools.BuiltinCommonTools;
+import io.izzel.minecraftmcp.tools.BuiltinRemoteTools;
 import io.izzel.minecraftmcp.tools.BuiltinServerTools;
 
 public final class MinecraftMcpBootstrap {
@@ -29,9 +31,11 @@ public final class MinecraftMcpBootstrap {
 
     public static McpEndpoint start(MinecraftClientBridge bridge) throws Exception {
         McpConfig config = McpConfigs.current();
-        ToolRegistry registry = new ToolRegistry();
+        ToolRegistry registry = new ToolRegistry(McpConfigs::current);
         ScenarioEngine scenarios = new ScenarioEngine(registry);
-        BuiltinTools.register(registry, bridge, scenarios);
+        BuiltinCommonTools.register(registry, bridge, scenarios);
+        BuiltinClientTools.register(registry, bridge);
+        BuiltinRemoteTools.registerClient(registry, bridge);
         McpWorkers workers = McpWorkers.pooled("minecraft-mcp-" + bridge.side());
         LocalHttpMcpServer server = new LocalHttpMcpServer(config, new JsonRpcHandler(registry), workers);
         try {
@@ -43,7 +47,8 @@ public final class MinecraftMcpBootstrap {
         if (!config.scenarioDir().isBlank()) {
             new Thread(() -> {
                 try {
-                    scenarios.runBatch(config.scenarioDir(), ScenarioRunOptions.builder().loader(bridge.loader()).build());
+                    scenarios.runBatch(config.scenarioDir(), ScenarioRunOptions.builder()
+                        .loader(bridge.loader()).side(bridge.side()).build());
                 } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
@@ -58,8 +63,9 @@ public final class MinecraftMcpBootstrap {
 
     public static McpEndpoint start(MinecraftServerBridge bridge) throws Exception {
         McpConfig config = McpConfigs.current();
-        ToolRegistry registry = new ToolRegistry();
-        BuiltinServerTools.register(registry, bridge);
+        ToolRegistry registry = new ToolRegistry(McpConfigs::current);
+        ScenarioEngine scenarios = new ScenarioEngine(registry);
+        BuiltinServerTools.register(registry, bridge, scenarios);
         McpWorkers workers = McpWorkers.pooled("minecraft-mcp-" + bridge.side());
         LocalHttpMcpServer server = new LocalHttpMcpServer(config, new JsonRpcHandler(registry), workers);
         try {

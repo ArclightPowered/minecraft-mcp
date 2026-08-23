@@ -1,1 +1,1 @@
-{"name":"arclight_2137_leave_world","tags":["arclight-2137","world","full-client"],"steps":[{"id":"leave","tool":"mc.world.leave","args":{},"expect":{"result.status":"left_to_title"}}]}
+{"name":"arclight_2137_leave_world","tags":["arclight-2137","world","full-client"],"steps":[{"id":"leave","tool":"mc.client.world.leave","args":{},"expect":{"result.status":"left_to_title"}}]}

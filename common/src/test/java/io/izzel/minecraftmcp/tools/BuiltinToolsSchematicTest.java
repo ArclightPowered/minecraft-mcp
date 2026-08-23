@@ -4,7 +4,6 @@ import io.izzel.minecraftmcp.bridge.ClientSnapshot;
 import io.izzel.minecraftmcp.bridge.FakeGameThread;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
-import io.izzel.minecraftmcp.scenario.ScenarioEngine;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -18,11 +17,11 @@ class BuiltinToolsSchematicTest {
     @Test
     void schematicToolsAreServerToolsNotClientTools() {
         ToolRegistry registry = new ToolRegistry();
-        BuiltinTools.register(registry, new RecordingBridge(), new ScenarioEngine(registry));
+        BuiltinClientTools.register(registry, new RecordingBridge());
 
         assertThrows(IllegalArgumentException.class, () -> registry.call("mc.schematic.info", Map.of("path", "a.schem")));
-        assertThrows(IllegalArgumentException.class, () -> registry.call("mc.schematic.export", Map.of("path", "a.schem")));
-        assertThrows(IllegalArgumentException.class, () -> registry.call("mc.schematic.paste", Map.of("path", "a.schem")));
+        assertThrows(IllegalArgumentException.class, () -> registry.call("mc.server.schematic.export", Map.of("path", "a.schem")));
+        assertThrows(IllegalArgumentException.class, () -> registry.call("mc.server.schematic.paste", Map.of("path", "a.schem")));
     }
 
     static final class RecordingBridge implements MinecraftClientBridge {

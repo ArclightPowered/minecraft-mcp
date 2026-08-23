@@ -3,7 +3,7 @@
   "steps": [
     {
       "id": "wait",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 1
       },

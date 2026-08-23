@@ -4,7 +4,7 @@
   "steps": [
     {
       "id": "join_world",
-      "tool": "mc.world.join",
+      "tool": "mc.client.world.join",
       "args": {
         "name": "minecraft_mcp_schematic_test",
         "seed": 12345,
@@ -16,7 +16,7 @@
     },
     {
       "id": "wait_world",
-      "tool": "mc.condition.wait",
+      "tool": "mc.client.condition.wait",
       "args": {
         "condition": "client.inWorld == true",
         "timeoutMs": 120000,
@@ -28,7 +28,7 @@
     },
     {
       "id": "server_available",
-      "tool": "mc.server.call",
+      "tool": "mc.remote.call",
       "args": {
         "tool": "mc.server.state",
         "arguments": {},
@@ -40,7 +40,7 @@
     },
     {
       "id": "fixture_info",
-      "tool": "mc.server.call",
+      "tool": "mc.remote.call",
       "args": {
         "tool": "mc.schematic.info",
         "arguments": { "path": "fixture.schem" },
@@ -59,9 +59,9 @@
     },
     {
       "id": "paste_fixture",
-      "tool": "mc.server.call",
+      "tool": "mc.remote.call",
       "args": {
-        "tool": "mc.schematic.paste",
+        "tool": "mc.server.schematic.paste",
         "arguments": {
           "path": "fixture.schem",
           "origin": { "x": 3, "y": 80, "z": 0 },
@@ -80,9 +80,9 @@
     },
     {
       "id": "export_region",
-      "tool": "mc.server.call",
+      "tool": "mc.remote.call",
       "args": {
-        "tool": "mc.schematic.export",
+        "tool": "mc.server.schematic.export",
         "arguments": {
           "from": { "x": 3, "y": 80, "z": 0 },
           "to": { "x": 4, "y": 80, "z": 0 },
@@ -105,7 +105,7 @@
     },
     {
       "id": "roundtrip_info",
-      "tool": "mc.server.call",
+      "tool": "mc.remote.call",
       "args": {
         "tool": "mc.schematic.info",
         "arguments": { "path": "roundtrip-server.schem" },

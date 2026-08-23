@@ -1,6 +1,6 @@
 # Scenario condition expression syntax
 
-`mc.condition.wait` conditions use a small boolean expression language.
+`mc.client.condition.wait` conditions use a small boolean expression language.
 
 ## Context object
 

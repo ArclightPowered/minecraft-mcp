@@ -5,7 +5,6 @@ import io.izzel.minecraftmcp.bridge.FakeGameThread;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
 import io.izzel.minecraftmcp.mcp.FutureResult;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
-import io.izzel.minecraftmcp.scenario.ScenarioEngine;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -20,17 +19,17 @@ class BuiltinToolsPlayerActionTest {
     void playerActionToolsDelegateToBridgeAndReturnStructuredResults() throws Exception {
         RecordingBridge bridge = new RecordingBridge();
         ToolRegistry registry = new ToolRegistry();
-        BuiltinTools.register(registry, bridge, new ScenarioEngine(registry));
+        BuiltinClientTools.register(registry, bridge);
 
-        assertEquals(Map.of("status", "looked", "yaw", 90.0f, "pitch", 10.0f), registry.call("mc.player.look", Map.of("yaw", 90, "pitch", 10)));
-        assertEquals(Map.of("status", "looked_at", "x", 1.0, "y", 65.0, "z", -2.0), registry.call("mc.player.look_at", Map.of("x", 1, "y", 65, "z", -2)));
-        assertEquals(Map.of("status", "used", "hand", "offhand"), registry.call("mc.player.use_item", Map.of("hand", "offhand")));
-        assertEquals(Map.of("status", "attacked_block", "x", 1, "y", 2, "z", 3, "face", "north"), registry.call("mc.player.attack.block", Map.of("x", 1, "y", 2, "z", 3, "face", "north")));
-        assertEquals(Map.of("status", "destroyed", "x", 4, "y", 5, "z", 6, "face", "east"), registry.call("mc.player.destroy.block", Map.of("x", 4, "y", 5, "z", 6, "face", "east", "timeoutMs", 1234)));
-        assertEquals(Map.of("status", "dropped", "all", true), registry.call("mc.player.drop", Map.of("all", true)));
-        assertEquals(Map.of("status", "jumped"), registry.call("mc.player.jump", Map.of()));
-        assertThrows(IllegalArgumentException.class, () -> registry.call("mc.player.sneak", Map.of("down", true)));
-        assertThrows(IllegalArgumentException.class, () -> registry.call("mc.player.sprint", Map.of("down", false)));
+        assertEquals(Map.of("status", "looked", "yaw", 90.0f, "pitch", 10.0f), registry.call("mc.client.player.look", Map.of("yaw", 90, "pitch", 10)));
+        assertEquals(Map.of("status", "looked_at", "x", 1.0, "y", 65.0, "z", -2.0), registry.call("mc.client.player.look_at", Map.of("x", 1, "y", 65, "z", -2)));
+        assertEquals(Map.of("status", "used", "hand", "offhand"), registry.call("mc.client.player.use_item", Map.of("hand", "offhand")));
+        assertEquals(Map.of("status", "attacked_block", "x", 1, "y", 2, "z", 3, "face", "north"), registry.call("mc.client.player.attack.block", Map.of("x", 1, "y", 2, "z", 3, "face", "north")));
+        assertEquals(Map.of("status", "destroyed", "x", 4, "y", 5, "z", 6, "face", "east"), registry.call("mc.client.player.destroy.block", Map.of("x", 4, "y", 5, "z", 6, "face", "east", "timeoutMs", 1234)));
+        assertEquals(Map.of("status", "dropped", "all", true), registry.call("mc.client.player.drop", Map.of("all", true)));
+        assertEquals(Map.of("status", "jumped"), registry.call("mc.client.player.jump", Map.of()));
+        assertThrows(IllegalArgumentException.class, () -> registry.call("mc.client.player.sneak", Map.of("down", true)));
+        assertThrows(IllegalArgumentException.class, () -> registry.call("mc.client.player.sprint", Map.of("down", false)));
 
         assertEquals(90.0f, bridge.yaw);
         assertEquals(10.0f, bridge.pitch);

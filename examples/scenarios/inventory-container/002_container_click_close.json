@@ -9,7 +9,7 @@
   "steps": [
     {
       "id": "join_world",
-      "tool": "mc.world.join",
+      "tool": "mc.client.world.join",
       "args": {
         "name": "minecraft_mcp_inventory_container_click",
         "seed": 13579,
@@ -21,7 +21,7 @@
     },
     {
       "id": "wait_world_attached",
-      "tool": "mc.condition.wait",
+      "tool": "mc.client.condition.wait",
       "args": {
         "condition": "client.rawInWorld == true",
         "timeoutMs": 300000
@@ -32,7 +32,7 @@
     },
     {
       "id": "wait_world_playable",
-      "tool": "mc.condition.wait",
+      "tool": "mc.client.condition.wait",
       "args": {
         "condition": "client.inWorld == true && client.screen == null",
         "timeoutMs": 300000
@@ -43,7 +43,7 @@
     },
     {
       "id": "give_diamond",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/give @s minecraft:diamond 1"
       },
@@ -54,7 +54,7 @@
     },
     {
       "id": "sync_after_give_diamond",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -64,7 +64,7 @@
     },
     {
       "id": "set_survival",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/gamemode survival"
       },
@@ -75,7 +75,7 @@
     },
     {
       "id": "sync_after_set_survival",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -85,7 +85,7 @@
     },
     {
       "id": "wait_inventory_sync",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 5
       },
@@ -95,7 +95,7 @@
     },
     {
       "id": "open_inventory",
-      "tool": "mc.keyboard.press",
+      "tool": "mc.client.keyboard.press",
       "args": {
         "key": "E"
       },
@@ -106,7 +106,7 @@
     },
     {
       "id": "wait_open",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 2
       },
@@ -116,7 +116,7 @@
     },
     {
       "id": "click_hotbar_slot_0",
-      "tool": "mc.container.click",
+      "tool": "mc.client.container.click",
       "args": {
         "slot": 36,
         "button": 0,
@@ -130,7 +130,7 @@
     },
     {
       "id": "carried_diamond",
-      "tool": "mc.container.state",
+      "tool": "mc.client.container.state",
       "expect": {
         "result.hasContainer": true,
         "result.carried.item": "minecraft:diamond",
@@ -139,7 +139,7 @@
     },
     {
       "id": "put_back",
-      "tool": "mc.container.click",
+      "tool": "mc.client.container.click",
       "args": {
         "slot": 36,
         "button": 0,
@@ -153,7 +153,7 @@
     },
     {
       "id": "close_container",
-      "tool": "mc.container.close",
+      "tool": "mc.client.container.close",
       "expect": {
         "result.status": "closed"
       }

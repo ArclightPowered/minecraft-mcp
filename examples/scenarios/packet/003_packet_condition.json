@@ -3,7 +3,7 @@
   "tags": ["packet", "world"],
   "steps": [
     {
-      "tool": "mc.packet.recording.start",
+      "tool": "mc.client.packet.recording.start",
       "args": {
         "clear": true,
         "maxPackets": 200,
@@ -11,7 +11,7 @@
       }
     },
     {
-      "tool": "mc.condition.wait",
+      "tool": "mc.client.condition.wait",
       "args": {
         "condition": "packet.recording == true",
         "timeoutMs": 1000
@@ -21,14 +21,14 @@
       }
     },
     {
-      "tool": "mc.packet.recording.status",
+      "tool": "mc.client.packet.recording.status",
       "args": {},
       "expect": {
         "result.recording": true
       }
     },
     {
-      "tool": "mc.packet.recording.stop",
+      "tool": "mc.client.packet.recording.stop",
       "args": {}
     }
   ]
