@@ -8,6 +8,7 @@
   "license": "${mod_license}",
   "environment": "*",
   "entrypoints": {
+    "main": ["io.izzel.minecraftmcp.fabric.FabricMinecraftMcpCommonEntrypoint"],
     "client": ["io.izzel.minecraftmcp.fabric.FabricMinecraftMcpEntrypoint"],
     "server": ["io.izzel.minecraftmcp.fabric.FabricMinecraftMcpServerEntrypoint"]
   },

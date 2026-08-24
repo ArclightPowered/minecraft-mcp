@@ -46,7 +46,7 @@ class ConditionPropertyRegistryTest {
         });
         ConditionContext context = new ConditionContext(new MockBridge(), registry);
         assertTrue(ConditionEvaluator.evaluateBoolean(
-                ConditionParser.parse("custom.value == 7 && $.custom.value == 7"), context));
+            ConditionParser.parse("custom.value == 7 && $.custom.value == 7"), context));
         assertEquals(1, loads.get());
     }
 
@@ -98,7 +98,7 @@ class ConditionPropertyRegistryTest {
         DefaultConditionPropertyRegistry registry = ConditionPropertyProviders.newDefaultRegistry();
 
         var error = assertThrows(ConditionContext.ConditionEvaluationException.class,
-                () -> eval("nosuchthing.value == 1", new MockBridge(), registry));
+            () -> eval("nosuchthing.value == 1", new MockBridge(), registry));
         assertTrue(error.getMessage().contains("nosuchthing"), error.getMessage());
         assertTrue(error.getMessage().contains("side=client"), error.getMessage());
         assertTrue(error.getMessage().contains("screen"), error.getMessage());
@@ -111,13 +111,18 @@ class ConditionPropertyRegistryTest {
 
         assertNotSame(client, server);
         assertTrue(client.contextPropertyNames().containsAll(
-                java.util.List.of("client", "connection", "screen", "vehicle", "world", "inventory", "packet")));
-        assertTrue(server.contextPropertyNames().isEmpty());
+            java.util.List.of("client", "connection", "screen", "vehicle", "world", "inventory", "packet")));
+        assertTrue(server.contextPropertyNames().containsAll(
+            java.util.List.of("server", "world", "players", "tick", "packet")));
         assertTrue(server.globalNames().isEmpty());
+
+        assertTrue(client.contextPropertyNames().contains("world"));
+        assertTrue(server.contextPropertyNames().contains("world"));
 
         for (String clientOnly : java.util.List.of("client", "screen", "connection", "vehicle", "inventory")) {
             assertFalse(server.contextPropertyNames().contains(clientOnly), "server leaked " + clientOnly);
         }
+        assertFalse(client.contextPropertyNames().contains("server"));
     }
 
     private static boolean eval(String expression, MinecraftClientBridge bridge, DefaultConditionPropertyRegistry registry) {

@@ -1,0 +1,42 @@
+{
+  "name": "server_state_and_capabilities",
+  "tags": [
+    "server",
+    "smoke"
+  ],
+  "requires": {
+    "sides": [
+      "server"
+    ]
+  },
+  "steps": [
+    {
+      "id": "state",
+      "tool": "mc.server.state",
+      "args": {},
+      "expect": {
+        "result.running": true,
+        "result.dedicated": true
+      }
+    },
+    {
+      "id": "capabilities",
+      "tool": "mc.debug.capabilities",
+      "args": {},
+      "expect": {
+        "result.dedicatedServer": true,
+        "result.serverThreadScheduling": true
+      }
+    },
+    {
+      "id": "ticks",
+      "tool": "mc.server.ticks.wait",
+      "args": {
+        "ticks": 2
+      },
+      "expect": {
+        "result.waitedTicks": 2
+      }
+    }
+  ]
+}

@@ -14,6 +14,8 @@ class GameThreadGuardTest {
         Bridge bridge = new Bridge();
 
         assertDoesNotThrow(() -> bridge.waitTicks(0));
+        assertEquals(0L, bridge.awaitTicks(0));
+        assertFalse(bridge.waitUntil("server.running == false", 0));
     }
 
     @Test
@@ -21,6 +23,9 @@ class GameThreadGuardTest {
         Bridge bridge = new Bridge();
 
         assertThrows(IllegalStateException.class, () -> bridge.onGameThread(() -> bridge.waitTicks(20)));
+        assertThrows(IllegalStateException.class, () -> bridge.onGameThread(() -> bridge.awaitTicks(40)));
+        assertThrows(IllegalStateException.class,
+                () -> bridge.onGameThread(() -> bridge.waitUntil("server.running == true", 30_000)));
     }
 
     @Test
@@ -28,10 +33,21 @@ class GameThreadGuardTest {
         Bridge bridge = new Bridge();
 
         IllegalStateException failure = assertThrows(IllegalStateException.class,
-            () -> bridge.onGameThread(() -> bridge.waitTicks(40)));
+            () -> bridge.onGameThread(() -> bridge.awaitTicks(40)));
 
         assertTrue(failure.getMessage().contains("server"), failure.getMessage());
-        assertTrue(failure.getMessage().contains("40 ticks"), failure.getMessage());
+        assertTrue(failure.getMessage().contains("40 server ticks"), failure.getMessage());
+    }
+
+    @Test
+    void absurdTickWaitsAreRejectedInsteadOfBlockingAWorker() {
+        IllegalArgumentException server = assertThrows(IllegalArgumentException.class,
+            () -> new Bridge().awaitTicks(MinecraftBridge.MAX_WAIT_TICKS + 1));
+        IllegalArgumentException client = assertThrows(IllegalArgumentException.class,
+            () -> new ClientBridge().waitTicks(MinecraftBridge.MAX_WAIT_TICKS + 1));
+
+        assertTrue(server.getMessage().contains(String.valueOf(MinecraftBridge.MAX_WAIT_TICKS)), server.getMessage());
+        assertTrue(client.getMessage().contains(String.valueOf(MinecraftBridge.MAX_WAIT_TICKS)), client.getMessage());
     }
 
     @Test

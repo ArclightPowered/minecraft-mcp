@@ -26,11 +26,18 @@ public final class ScenarioEngine {
 
     @SuppressWarnings("unchecked")
     public ScenarioReport runBatch(String directory, ScenarioRunOptions options) throws Exception {
-        Path dir = directory == null || directory.isBlank() ? Paths.get("examples/scenarios") : Paths.get(directory);
         ScenarioReport report = new ScenarioReport(Instant.now());
         latest = report;
+        if (directory == null || directory.isBlank()) {
+            report.add("<no directory>", "failed", List.of(),
+                "Scenario directory is required (pass 'directory', or set minecraftMcp.scenario.directory / MINECRAFT_MCP_SCENARIO_DIRECTORY / [scenario] directory in the config file). Prefer an absolute path: relative paths resolve against the game working directory, not the repository root.");
+            report.finish();
+            return report;
+        }
+        Path dir = Paths.get(directory);
         if (!Files.isDirectory(dir)) {
-            report.add(dir.toString(), "failed", List.of(), "Scenario directory not found");
+            report.add(dir.toString(), "failed", List.of(),
+                "Scenario directory not found: " + dir.toAbsolutePath().normalize() + " (working directory: " + Paths.get("").toAbsolutePath() + ")");
             report.finish();
             return report;
         }

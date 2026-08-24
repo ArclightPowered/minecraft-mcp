@@ -34,8 +34,8 @@ class ToolNamespaceTest {
         assertTrue(server.containsAll(common), "server missing common tools");
 
         for (String clientOnly : List.of("mc.client.screenshot.take", "mc.client.screen.state", "mc.client.keyboard.press",
-                "mc.client.container.click", "mc.client.inventory.state", "mc.client.world.join", "mc.client.packet.dump",
-                "mc.client.movement.waypoints", "mc.client.state")) {
+            "mc.client.container.click", "mc.client.inventory.state", "mc.client.world.join", "mc.client.packet.dump",
+            "mc.client.movement.waypoints", "mc.client.state")) {
             assertTrue(client.contains(clientOnly), "client should have " + clientOnly);
             assertFalse(server.contains(clientOnly), "server must not expose " + clientOnly);
         }
@@ -46,10 +46,10 @@ class ToolNamespaceTest {
         Set<String> unprefixed = new TreeSet<>(client);
         unprefixed.retainAll(server);
         assertEquals(Set.of("mc.debug.capabilities", "mc.schematic.info",
-                "mc.scenario.batch.run", "mc.scenario.report"), unprefixed);
+            "mc.scenario.batch.run", "mc.scenario.report"), unprefixed);
 
         for (String serverOnly : List.of("mc.server.state", "mc.server.command.run",
-                "mc.server.ticks.wait", "mc.server.schematic.export", "mc.server.schematic.paste")) {
+            "mc.server.condition.wait", "mc.server.schematic.export", "mc.server.schematic.paste")) {
             assertTrue(server.contains(serverOnly), "server should have " + serverOnly);
             assertFalse(client.contains(serverOnly), "client must not expose " + serverOnly);
         }
@@ -66,7 +66,7 @@ class ToolNamespaceTest {
         int scanned = 0;
         try (Stream<Path> files = Files.walk(root)) {
             for (Path file : files.filter(Files::isRegularFile)
-                    .filter(p -> p.getFileName().toString().endsWith(".json")).sorted().toList()) {
+                .filter(p -> p.getFileName().toString().endsWith(".json")).sorted().toList()) {
                 scanned++;
                 Object parsed = Json.parse(Files.readString(file));
                 if (parsed instanceof Map<?, ?> scenario && "fail".equals(scenario.get("expected"))) {
@@ -84,9 +84,9 @@ class ToolNamespaceTest {
         assertTrue(scanned >= 60, "expected to scan the scenario library, only saw " + scanned + " files");
         assertTrue(seen.size() >= 30, "expected to collect many distinct tool names, got " + seen);
         assertTrue(seen.contains("mc.server.state"),
-                "nested args.tool values should be collected too, got " + seen);
+            "nested args.tool values should be collected too, got " + seen);
         assertTrue(unknown.isEmpty(), "scenarios reference tools that no endpoint registers:\n  "
-                + String.join("\n  ", unknown));
+            + String.join("\n  ", unknown));
     }
 
     private static Set<String> collectToolNames(Object node) {
@@ -131,7 +131,7 @@ class ToolNamespaceTest {
 
     private static Set<String> names(ToolRegistry registry) {
         return registry.listTools().stream().map(tool -> String.valueOf(tool.get("name")))
-                .collect(Collectors.toCollection(TreeSet::new));
+            .collect(Collectors.toCollection(TreeSet::new));
     }
 
     static final class FakeClientBridge implements MinecraftClientBridge {

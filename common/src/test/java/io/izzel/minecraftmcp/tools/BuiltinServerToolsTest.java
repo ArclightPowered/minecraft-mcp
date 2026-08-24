@@ -27,7 +27,7 @@ class BuiltinServerToolsTest {
         assertEquals(Map.of("loader", "test-server", "minecraftVersion", "test-server", "dedicatedServer", true, "serverThreadScheduling", true), capabilities);
         assertEquals("list", bridge.command);
         assertEquals(Map.of("status", "sent", "command", "list"), command);
-        assertEquals(Map.of("waitedTicks", 2L), wait);
+        assertEquals(Map.of("requestedTicks", 2L, "waitedTicks", 2L, "complete", true), wait);
         assertTrue(registry.find("mc.debug.capabilities").isPresent());
         assertTrue(registry.find("mc.client.ticks.wait").isEmpty());
         assertTrue(registry.find("mc.client.screenshot.take").isEmpty());

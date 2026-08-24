@@ -51,7 +51,9 @@ public final class ConditionPropertyProviders {
     }
 
     private static void registerDefaults(DefaultConditionPropertyRegistry registry, String side) {
-        if (!SERVER_SIDE.equals(side)) {
+        if (SERVER_SIDE.equals(side)) {
+            new ServerConditionProperties().register(registry);
+        } else {
             new ClientConditionProperties().register(registry);
         }
     }

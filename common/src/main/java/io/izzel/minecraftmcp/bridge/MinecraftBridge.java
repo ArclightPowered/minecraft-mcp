@@ -19,6 +19,8 @@ import java.util.function.Supplier;
 import net.minecraft.util.Util;
 
 public interface MinecraftBridge {
+    long MAX_WAIT_TICKS = 24_000;
+
     String loader();
 
     String side();
@@ -62,6 +64,9 @@ public interface MinecraftBridge {
 
     default void waitTicks(long ticks) {
         requireOffGameThread("waiting " + ticks + " ticks");
+        if (ticks > MAX_WAIT_TICKS) {
+            throw new IllegalArgumentException("cannot wait " + ticks + " ticks; the limit is " + MAX_WAIT_TICKS);
+        }
         try {
             Thread.sleep(Math.max(0, ticks) * 50L);
         } catch (InterruptedException e) {

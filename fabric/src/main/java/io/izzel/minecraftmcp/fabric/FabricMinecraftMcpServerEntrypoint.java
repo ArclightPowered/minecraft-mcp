@@ -7,6 +7,7 @@ import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import io.izzel.minecraftmcp.serverlink.ServerMcpPluginMessageHandler;
 import io.izzel.minecraftmcp.serverlink.ServerMcpProxy;
 import io.izzel.minecraftmcp.schematic.ServerSchematicTools;
+import io.izzel.minecraftmcp.server.ServerWorldTools;
 import io.izzel.minecraftmcp.tools.BuiltinServerTools;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -45,14 +46,16 @@ public final class FabricMinecraftMcpServerEntrypoint implements DedicatedServer
             }
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-            if (mcpServer != null) mcpServer.close();
+            if (mcpServer != null) {
+                mcpServer.close();
+            }
         });
     }
 
     static final class FabricServerBridge implements MinecraftServerBridge {
         private final MinecraftServer server;
         FabricServerBridge(MinecraftServer server) { this.server = server; }
-        public String loader() { return "fabric-server"; }
+        public String loader() { return "fabric"; }
         public String minecraftVersion() { return server.getServerVersion(); }
         public Path gameDirectory() { return server.getServerDirectory(); }
         public boolean isOnServerThread() { return server.isSameThread(); }
@@ -68,11 +71,19 @@ public final class FabricMinecraftMcpServerEntrypoint implements DedicatedServer
             result.put("overworldTime", server.overworld().getGameTime());
             return result;
         }
-        public Map<String, Object> runCommand(String command) {
-            String normalized = command.startsWith("/") ? command : "/" + command;
-            server.getCommands().performPrefixedCommand(server.createCommandSourceStack(), normalized);
-            return Map.of("status", "executed", "command", command);
-        }
+        public Map<String, Object> runCommand(String command, String asPlayer) { return ServerWorldTools.runCommand(server, command, asPlayer); }
+        public Map<String, Object> players() { return ServerWorldTools.players(server); }
+        public Map<String, Object> playerState(String who) { return ServerWorldTools.playerState(server, who); }
+        public Map<String, Object> playerInventory(String who) { return ServerWorldTools.playerInventory(server, who); }
+        public Map<String, Object> connectionList() { return ServerWorldTools.connectionList(server); }
+        public Map<String, Object> worldList() { return ServerWorldTools.worldList(server); }
+        public Map<String, Object> worldSnapshot(String dimension) { return ServerWorldTools.worldSnapshot(server, dimension); }
+        public Map<String, Object> blockAt(String dimension, int x, int y, int z) { return ServerWorldTools.blockAt(server, dimension, x, y, z); }
+        public Map<String, Object> setBlock(String dimension, int x, int y, int z, String blockState) { return ServerWorldTools.setBlock(server, dimension, x, y, z, blockState); }
+        public Map<String, Object> entityQuery(Map<String, Object> args) { return ServerWorldTools.entityQuery(server, args); }
+        public Map<String, Object> chunkState(String dimension, int chunkX, int chunkZ) { return ServerWorldTools.chunkState(server, dimension, chunkX, chunkZ); }
+        public Map<String, Object> tickStats() { return ServerWorldTools.tickStats(server); }
+        public Map<String, Object> tailLog(int lines) { return ServerWorldTools.tailLog(gameDirectory(), lines); }
         public Map<String, Object> exportSchematic(Map<String, Object> args) { return ServerSchematicTools.exportSchematic(server.overworld(), gameDirectory(), args); }
         public Map<String, Object> pasteSchematic(Map<String, Object> args) { return ServerSchematicTools.pasteSchematic(server.overworld(), gameDirectory(), args); }
         public void shutdownServer() { server.halt(false); }
