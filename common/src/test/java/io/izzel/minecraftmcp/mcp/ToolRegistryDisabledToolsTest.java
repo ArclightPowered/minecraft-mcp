@@ -65,6 +65,14 @@ class ToolRegistryDisabledToolsTest {
     }
 
     @Test
+    void allToolsIgnoresThePolicy() {
+        ToolRegistry registry = populated(() -> TestConfigs.access(List.of("mc.remote.*"), List.of()));
+
+        assertEquals(4, registry.allTools().size(), "allTools is the registration-time view");
+        assertEquals(2, registry.listTools().size());
+    }
+
+    @Test
     void policyIsReadPerLookupSoEditsTakeEffectWithoutRebuilding() {
         AtomicReference<McpConfig> policy = new AtomicReference<>(TestConfigs.empty());
         ToolRegistry registry = populated(policy::get);

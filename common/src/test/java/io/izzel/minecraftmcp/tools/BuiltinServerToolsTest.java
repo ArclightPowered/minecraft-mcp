@@ -34,6 +34,21 @@ class BuiltinServerToolsTest {
         assertTrue(registry.find("mc.remote.call").isEmpty());
     }
 
+    @Test
+    void capabilitiesReportDedicatedFalseWhenBridgeWrapsAnIntegratedServer() throws Exception {
+        ToolRegistry registry = new ToolRegistry();
+        BuiltinServerTools.register(registry, new RecordingServerBridge() {
+            @Override
+            public boolean dedicated() {
+                return false;
+            }
+        }, new ScenarioEngine(registry));
+
+        assertEquals(
+            Map.of("loader", "test-server", "minecraftVersion", "test-server", "dedicatedServer", false, "serverThreadScheduling", true),
+            registry.call("mc.debug.capabilities", Map.of()));
+    }
+
     static class RecordingServerBridge implements MinecraftServerBridge {
         private final FakeGameThread gameThread = new FakeGameThread();
         String command;

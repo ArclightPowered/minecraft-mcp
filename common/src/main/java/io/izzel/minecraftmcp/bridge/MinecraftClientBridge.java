@@ -88,6 +88,14 @@ public interface MinecraftClientBridge extends MinecraftBridge {
         throw new UnsupportedOperationException("Server connection is not implemented by " + loader());
     }
 
+    default boolean integratedServerAvailable() {
+        return false;
+    }
+
+    default MinecraftServerBridge integratedServerBridge() {
+        return null;
+    }
+
     default boolean serverMcpAvailable() {
         return false;
     }

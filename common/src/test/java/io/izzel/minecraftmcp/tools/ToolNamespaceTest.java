@@ -51,7 +51,8 @@ class ToolNamespaceTest {
         for (String serverOnly : List.of("mc.server.state", "mc.server.command.run",
             "mc.server.condition.wait", "mc.server.schematic.export", "mc.server.schematic.paste")) {
             assertTrue(server.contains(serverOnly), "server should have " + serverOnly);
-            assertFalse(client.contains(serverOnly), "client must not expose " + serverOnly);
+            assertFalse(client.contains(serverOnly), "client must not natively register " + serverOnly
+                + "; the client endpoint only reaches it through the bootstrap integrated-server wrapper");
         }
     }
 

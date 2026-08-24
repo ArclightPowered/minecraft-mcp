@@ -7,6 +7,7 @@ import io.izzel.minecraftmcp.config.McpConfig;
 import io.izzel.minecraftmcp.config.McpConfigs;
 import io.izzel.minecraftmcp.mcp.*;
 import io.izzel.minecraftmcp.scenario.ScenarioEngine;
+import io.izzel.minecraftmcp.server.IntegratedServerBridge;
 import io.izzel.minecraftmcp.scenario.ScenarioRunOptions;
 import io.izzel.minecraftmcp.tools.BuiltinClientTools;
 import io.izzel.minecraftmcp.tools.BuiltinCommonTools;
@@ -36,6 +37,7 @@ public final class MinecraftMcpBootstrap {
         BuiltinCommonTools.register(registry, bridge, scenarios);
         BuiltinClientTools.register(registry, bridge);
         BuiltinRemoteTools.registerClient(registry, bridge);
+        registerIntegratedServerTools(registry, bridge);
         McpWorkers workers = McpWorkers.pooled("minecraft-mcp-" + bridge.side());
         LocalHttpMcpServer server = new LocalHttpMcpServer(config, new JsonRpcHandler(registry), workers);
         try {
@@ -59,6 +61,27 @@ public final class MinecraftMcpBootstrap {
             }, "minecraft-mcp-scenario-batch").start();
         }
         return new McpEndpoint(server, workers);
+    }
+
+    static void registerIntegratedServerTools(ToolRegistry registry, MinecraftClientBridge bridge) {
+        IntegratedServerBridge integrated = new IntegratedServerBridge(bridge);
+        ToolRegistry serverTools = new ToolRegistry();
+        BuiltinServerTools.register(serverTools, integrated);
+        for (McpTool tool : serverTools.allTools()) {
+            if (!tool.name().startsWith("mc.server.")) {
+                continue;
+            }
+            registry.register(McpTools.simple(tool.name(), tool.description(), tool.inputSchema(), args -> {
+                if (!integrated.present()) {
+                    return java.util.Map.of(
+                        "error", "no_local_server",
+                        "side", "client",
+                        "hint", "this process has no MinecraftServer; open a singleplayer world, "
+                            + "or use mc.remote.call to reach the one you are connected to");
+                }
+                return tool.call(args);
+            }));
+        }
     }
 
     public static McpEndpoint start(MinecraftServerBridge bridge) throws Exception {

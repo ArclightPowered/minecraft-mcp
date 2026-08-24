@@ -71,6 +71,7 @@ public final class FabricMinecraftMcpServerEntrypoint implements DedicatedServer
             result.put("overworldTime", server.overworld().getGameTime());
             return result;
         }
+        public boolean dedicated() { return server.isDedicatedServer(); }
         public Map<String, Object> runCommand(String command, String asPlayer) { return ServerWorldTools.runCommand(server, command, asPlayer); }
         public Map<String, Object> players() { return ServerWorldTools.players(server); }
         public Map<String, Object> playerState(String who) { return ServerWorldTools.playerState(server, who); }

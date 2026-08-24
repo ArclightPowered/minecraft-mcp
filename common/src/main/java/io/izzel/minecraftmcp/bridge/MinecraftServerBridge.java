@@ -107,12 +107,16 @@ public interface MinecraftServerBridge extends MinecraftBridge {
         throw new UnsupportedOperationException("Server shutdown is not implemented by " + loader());
     }
 
+    default boolean dedicated() {
+        return true;
+    }
+
     @Override
     default Map<String, Object> capabilities() {
         return Map.of(
             "loader", loader(),
             "minecraftVersion", minecraftVersion(),
-            "dedicatedServer", true,
+            "dedicatedServer", dedicated(),
             "serverThreadScheduling", true
         );
     }

@@ -1,0 +1,80 @@
+{
+  "name": "client_endpoint_serves_both_sides",
+  "tags": ["topology-b", "full-client"],
+  "requires": { "sides": ["client"] },
+  "steps": [
+    {
+      "id": "capabilities",
+      "tool": "mc.debug.capabilities",
+      "args": {},
+      "expect": { "result.clientThreadScheduling": true }
+    },
+    {
+      "id": "no_world_yet",
+      "tool": "mc.server.state",
+      "args": {},
+      "expect": { "result.error": "no_local_server", "result.side": "client" }
+    },
+    {
+      "id": "join",
+      "tool": "mc.client.world.join",
+      "args": { "name": "minecraft_mcp_topology_b", "seed": 7, "preset": "flat" },
+      "expect": { "result.status": "joining" }
+    },
+    {
+      "id": "wait_world",
+      "tool": "mc.client.condition.wait",
+      "args": { "condition": "client.inWorld == true", "timeoutMs": 180000, "intervalTicks": 10 },
+      "expect": { "result.matched": true }
+    },
+    {
+      "id": "server_state",
+      "tool": "mc.server.state",
+      "args": {},
+      "expect": { "result.running": true, "result.dedicated": false }
+    },
+    {
+      "id": "server_world",
+      "tool": "mc.server.world.snapshot",
+      "args": {},
+      "expect": { "result.dimension": "minecraft:overworld" }
+    },
+    {
+      "id": "server_command",
+      "tool": "mc.server.command.run",
+      "args": { "command": "/difficulty" },
+      "expect": { "result.success": true }
+    },
+    {
+      "id": "server_real_ticks",
+      "_comment": "Regression: ServerTickCounter must be fed in a client process too. Registered only from Fabric's DedicatedServerModInitializer, this timed out at waitedTicks 0 in singleplayer while passing on a dedicated server.",
+      "tool": "mc.server.ticks.wait",
+      "args": { "ticks": 5 },
+      "expect": { "result.waitedTicks": 5, "result.complete": true }
+    },
+    {
+      "id": "leave",
+      "tool": "mc.client.world.leave",
+      "args": {},
+      "expect": { "result.status": "left_to_title" }
+    },
+    {
+      "id": "endpoint_still_alive",
+      "tool": "mc.debug.capabilities",
+      "args": {},
+      "expect": { "result.clientThreadScheduling": true }
+    },
+    {
+      "id": "wait_integrated_stopped",
+      "tool": "mc.client.condition.wait",
+      "args": { "condition": "client.integratedServer == false", "timeoutMs": 60000, "intervalTicks": 5 },
+      "expect": { "result.matched": true }
+    },
+    {
+      "id": "server_gone_again",
+      "tool": "mc.server.state",
+      "args": {},
+      "expect": { "result.error": "no_local_server" }
+    }
+  ]
+}

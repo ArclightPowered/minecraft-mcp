@@ -28,6 +28,10 @@ public final class ToolRegistry {
         }
     }
 
+    public Collection<McpTool> allTools() {
+        return List.copyOf(tools.values());
+    }
+
     public Optional<McpTool> find(String name) {
         if (disabled(name)) {
             return Optional.empty();

@@ -289,6 +289,11 @@ public final class NeoForgeMinecraftMcpClientMod {
             ConnectScreen.startConnecting(new TitleScreen(), mc, ServerAddress.parseString(target), data, false, null);
             return Map.of("status", "connecting", "address", target, "name", displayName);
         }
+        public boolean integratedServerAvailable() { return mc.getSingleplayerServer() != null; }
+        public io.izzel.minecraftmcp.bridge.MinecraftServerBridge integratedServerBridge() {
+            var server = mc.getSingleplayerServer();
+            return server == null ? null : new NeoForgeMinecraftMcpMod.NeoForgeServerBridge(server);
+        }
         public boolean serverMcpAvailable() { return NeoForgeMinecraftMcpMod.SERVER_PROXY.available() || mc.getSingleplayerServer() != null; }
         public Object serverMcpCall(String tool, Map<String, Object> arguments, long timeoutMs) throws Exception {
             requireOffGameThread("waiting for a server MCP response");
