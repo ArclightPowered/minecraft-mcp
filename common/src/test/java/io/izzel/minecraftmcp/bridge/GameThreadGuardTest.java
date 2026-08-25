@@ -2,8 +2,6 @@ package io.izzel.minecraftmcp.bridge;
 
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -11,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class GameThreadGuardTest {
     @Test
     void aWorkerThreadMayBlock() {
-        Bridge bridge = new Bridge();
+        FakeServerBridge bridge = new FakeServerBridge();
 
         assertDoesNotThrow(() -> bridge.waitTicks(0));
         assertEquals(0L, bridge.awaitTicks(0));
@@ -20,7 +18,7 @@ class GameThreadGuardTest {
 
     @Test
     void blockingInsideTheGameLoopIsRefusedRatherThanSlow() {
-        Bridge bridge = new Bridge();
+        FakeServerBridge bridge = new FakeServerBridge();
 
         assertThrows(IllegalStateException.class, () -> bridge.onGameThread(() -> bridge.waitTicks(20)));
         assertThrows(IllegalStateException.class, () -> bridge.onGameThread(() -> bridge.awaitTicks(40)));
@@ -30,7 +28,7 @@ class GameThreadGuardTest {
 
     @Test
     void theRefusalNamesTheSideAndTheOperation() {
-        Bridge bridge = new Bridge();
+        FakeServerBridge bridge = new FakeServerBridge();
 
         IllegalStateException failure = assertThrows(IllegalStateException.class,
             () -> bridge.onGameThread(() -> bridge.awaitTicks(40)));
@@ -42,9 +40,9 @@ class GameThreadGuardTest {
     @Test
     void absurdTickWaitsAreRejectedInsteadOfBlockingAWorker() {
         IllegalArgumentException server = assertThrows(IllegalArgumentException.class,
-            () -> new Bridge().awaitTicks(MinecraftBridge.MAX_WAIT_TICKS + 1));
+            () -> new FakeServerBridge().awaitTicks(MinecraftBridge.MAX_WAIT_TICKS + 1));
         IllegalArgumentException client = assertThrows(IllegalArgumentException.class,
-            () -> new ClientBridge().waitTicks(MinecraftBridge.MAX_WAIT_TICKS + 1));
+            () -> new FakeClientBridge().waitTicks(MinecraftBridge.MAX_WAIT_TICKS + 1));
 
         assertTrue(server.getMessage().contains(String.valueOf(MinecraftBridge.MAX_WAIT_TICKS)), server.getMessage());
         assertTrue(client.getMessage().contains(String.valueOf(MinecraftBridge.MAX_WAIT_TICKS)), client.getMessage());
@@ -52,7 +50,7 @@ class GameThreadGuardTest {
 
     @Test
     void submitStillShortCircuitsOnTheGameThread() {
-        Bridge bridge = new Bridge();
+        FakeServerBridge bridge = new FakeServerBridge();
         AtomicReference<Integer> depth = new AtomicReference<>(0);
 
         bridge.onGameThread(() -> {
@@ -69,7 +67,7 @@ class GameThreadGuardTest {
 
     @Test
     void anInterruptedWaitTicksFailsLoudInsteadOfClaimingSuccess() {
-        ClientBridge bridge = new ClientBridge();
+        FakeClientBridge bridge = new FakeClientBridge();
 
         Thread.currentThread().interrupt();
         IllegalStateException failure = assertThrows(IllegalStateException.class, () -> bridge.waitTicks(1));
@@ -80,7 +78,7 @@ class GameThreadGuardTest {
 
     @Test
     void anInterruptedWaitUntilFailsLoudInsteadOfClaimingTimeout() {
-        ClientBridge bridge = new ClientBridge();
+        FakeClientBridge bridge = new FakeClientBridge();
         assertFalse(bridge.waitUntil("client.inWorld == false", 0));
 
         Thread.currentThread().interrupt();
@@ -89,31 +87,5 @@ class GameThreadGuardTest {
 
         assertTrue(Thread.interrupted(), "the interrupt flag has to be restored");
         assertTrue(failure.getMessage().contains("client.inWorld == false"), failure.getMessage());
-    }
-
-    private static final class Bridge implements MinecraftServerBridge {
-        private final FakeGameThread gameThread = new FakeGameThread();
-
-        void onGameThread(Runnable task) {
-            gameThread.run(task);
-        }
-
-        public String loader() { return "test"; }
-        public String minecraftVersion() { return "test"; }
-        public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnServerThread() { return gameThread.isOn(); }
-        public void execute(Runnable runnable) { gameThread.run(runnable); }
-        public Map<String, Object> serverState() { return Map.of("running", true); }
-    }
-
-    private static final class ClientBridge implements MinecraftClientBridge {
-        private final FakeGameThread gameThread = new FakeGameThread();
-
-        public String loader() { return "test"; }
-        public String minecraftVersion() { return "test"; }
-        public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnClientThread() { return gameThread.isOn(); }
-        public void execute(Runnable runnable) { gameThread.run(runnable); }
-        public ClientSnapshot snapshot() { return new ClientSnapshot(true, true, null, "Dev", 1, 70, 3, 0, 0); }
     }
 }

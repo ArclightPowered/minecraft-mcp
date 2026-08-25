@@ -1,15 +1,11 @@
 package io.izzel.minecraftmcp.tools;
 
-import io.izzel.minecraftmcp.bridge.FakeGameThread;
-import io.izzel.minecraftmcp.bridge.MinecraftServerBridge;
+import io.izzel.minecraftmcp.bridge.FakeServerBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import io.izzel.minecraftmcp.scenario.ScenarioEngine;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -32,50 +28,24 @@ class BuiltinServerToolsSchematicTest {
         assertEquals("a.schem", bridge.pasteArgs.get("path"));
     }
 
-    static final class RecordingBridge implements MinecraftServerBridge {
-        private final FakeGameThread gameThread = new FakeGameThread();
+    static final class RecordingBridge extends FakeServerBridge {
         Map<String, Object> infoArgs;
         Map<String, Object> exportArgs;
         Map<String, Object> pasteArgs;
 
-        public String loader() {
-            return "test-server";
-        }
-
-        public String minecraftVersion() {
-            return "test-server";
-        }
-
-        public Path gameDirectory() {
-            return Path.of(".");
-        }
-
-        public boolean isOnServerThread() {
-            return gameThread.isOn();
-        }
-
-        public void execute(Runnable runnable) {
-            gameThread.run(runnable);
-        }
-
-        public <T> CompletableFuture<T> submit(Supplier<T> supplier) {
-            return CompletableFuture.completedFuture(supplier.get());
-        }
-
-        public Map<String, Object> serverState() {
-            return Map.of();
-        }
-
+        @Override
         public Map<String, Object> schematicInfo(Map<String, Object> args) {
             infoArgs = args;
             return Map.of("status", "ok");
         }
 
+        @Override
         public Map<String, Object> exportSchematic(Map<String, Object> args) {
             exportArgs = args;
             return Map.of("status", "exported");
         }
 
+        @Override
         public Map<String, Object> pasteSchematic(Map<String, Object> args) {
             pasteArgs = args;
             return Map.of("status", "pasted");

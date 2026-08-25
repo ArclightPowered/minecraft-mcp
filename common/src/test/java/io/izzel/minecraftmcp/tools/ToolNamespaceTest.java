@@ -1,9 +1,7 @@
 package io.izzel.minecraftmcp.tools;
 
-import io.izzel.minecraftmcp.bridge.FakeGameThread;
-import io.izzel.minecraftmcp.bridge.ClientSnapshot;
-import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
-import io.izzel.minecraftmcp.bridge.MinecraftServerBridge;
+import io.izzel.minecraftmcp.bridge.FakeClientBridge;
+import io.izzel.minecraftmcp.bridge.FakeServerBridge;
 import io.izzel.minecraftmcp.json.Json;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import io.izzel.minecraftmcp.scenario.ScenarioEngine;
@@ -133,25 +131,5 @@ class ToolNamespaceTest {
     private static Set<String> names(ToolRegistry registry) {
         return registry.listTools().stream().map(tool -> String.valueOf(tool.get("name")))
             .collect(Collectors.toCollection(TreeSet::new));
-    }
-
-    static final class FakeClientBridge implements MinecraftClientBridge {
-        public String loader() { return "test"; }
-        public String minecraftVersion() { return "test"; }
-        public Path gameDirectory() { return Path.of("."); }
-        private final FakeGameThread gameThread = new FakeGameThread();
-        public boolean isOnClientThread() { return gameThread.isOn(); }
-        public void execute(Runnable runnable) { gameThread.run(runnable); }
-        public ClientSnapshot snapshot() { return new ClientSnapshot(true, false, null, null, 0, 0, 0, 0, 0); }
-    }
-
-    static final class FakeServerBridge implements MinecraftServerBridge {
-        public String loader() { return "test"; }
-        public String minecraftVersion() { return "test"; }
-        public Path gameDirectory() { return Path.of("."); }
-        private final FakeGameThread gameThread = new FakeGameThread();
-        public boolean isOnServerThread() { return gameThread.isOn(); }
-        public void execute(Runnable runnable) { gameThread.run(runnable); }
-        public Map<String, Object> serverState() { return Map.of("running", true); }
     }
 }

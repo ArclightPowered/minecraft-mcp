@@ -1,12 +1,9 @@
 package io.izzel.minecraftmcp.tools;
 
-import io.izzel.minecraftmcp.bridge.ClientSnapshot;
-import io.izzel.minecraftmcp.bridge.FakeGameThread;
-import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
+import io.izzel.minecraftmcp.bridge.FakeClientBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,17 +35,10 @@ class BuiltinToolsInputTest {
         assertEquals(List.of("down:W", "wait:2", "up:W"), bridge.events);
     }
 
-    static final class FakeBridge implements MinecraftClientBridge {
-        private final FakeGameThread gameThread = new FakeGameThread();
+    static final class FakeBridge extends FakeClientBridge {
         final List<String> events = new ArrayList<>();
-        public String loader() { return "test"; }
-        public String minecraftVersion() { return "test"; }
-        public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnClientThread() { return gameThread.isOn(); }
-        public void execute(Runnable runnable) { gameThread.run(runnable); }
-        public ClientSnapshot snapshot() { return new ClientSnapshot(true, false, null, null, 0, 0, 0, 0, 0); }
-        public void pressKey(String key) { events.add("press:" + key); }
-        public void setKeyDown(String key, boolean down) { events.add((down ? "down:" : "up:") + key); }
-        public void waitTicks(long ticks) { events.add("wait:" + ticks); }
+        @Override public void pressKey(String key) { events.add("press:" + key); }
+        @Override public void setKeyDown(String key, boolean down) { events.add((down ? "down:" : "up:") + key); }
+        @Override public void waitTicks(long ticks) { events.add("wait:" + ticks); }
     }
 }

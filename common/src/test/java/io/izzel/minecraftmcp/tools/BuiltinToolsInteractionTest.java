@@ -1,15 +1,10 @@
 package io.izzel.minecraftmcp.tools;
 
-import io.izzel.minecraftmcp.bridge.ClientSnapshot;
-import io.izzel.minecraftmcp.bridge.FakeGameThread;
-import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
+import io.izzel.minecraftmcp.bridge.FakeClientBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -76,38 +71,25 @@ class BuiltinToolsInteractionTest {
         assertTrue(bridge.waitUntil("vehicle.isPassenger == false", 100));
     }
 
-    static final class RecordingBridge implements MinecraftClientBridge {
-        private final FakeGameThread gameThread = new FakeGameThread();
+    static final class RecordingBridge extends FakeClientBridge {
         String swingHand;
         String command;
         String address;
         String serverName;
         boolean passenger = true;
-        public String loader() { return "test"; }
-        public String minecraftVersion() { return "test"; }
-        public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnClientThread() { return gameThread.isOn(); }
-        public void execute(Runnable runnable) { gameThread.run(runnable); }
-        public <T> CompletableFuture<T> submit(Supplier<T> supplier) {
-            try { return CompletableFuture.completedFuture(supplier.get()); }
-            catch (Throwable t) { CompletableFuture<T> f = new CompletableFuture<>(); f.completeExceptionally(t); return f; }
-        }
-        public ClientSnapshot snapshot() {
-            return new ClientSnapshot(true, true, null, "Player", 0, 64, 0, 0, 0);
-        }
-        public void swing(String hand) { swingHand = hand; }
-        public Map<String, Object> vehicleState() {
+        @Override public void swing(String hand) { swingHand = hand; }
+        @Override public Map<String, Object> vehicleState() {
             java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
             result.put("inWorld", true);
             result.put("isPassenger", passenger);
             result.put("vehicle", passenger ? "minecraft:boat" : null);
             return result;
         }
-        public Map<String, Object> runCommand(String command) {
+        @Override public Map<String, Object> runCommand(String command) {
             this.command = command;
             return Map.of("status", "sent", "command", command);
         }
-        public Map<String, Object> connectServer(String address, String name) {
+        @Override public Map<String, Object> connectServer(String address, String name) {
             this.address = address;
             this.serverName = name;
             return Map.of("status", "connecting", "address", address, "name", name);

@@ -39,10 +39,6 @@ public interface MinecraftServerBridge extends MinecraftBridge {
 
     Map<String, Object> serverState();
 
-    default Map<String, Object> runCommand(String command) {
-        return runCommand(command, null);
-    }
-
     default Map<String, Object> runCommand(String command, String asPlayer) {
         throw new UnsupportedOperationException("Server command execution is not implemented by " + loader());
     }

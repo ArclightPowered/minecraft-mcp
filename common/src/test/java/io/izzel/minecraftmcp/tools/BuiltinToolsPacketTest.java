@@ -1,15 +1,10 @@
 package io.izzel.minecraftmcp.tools;
 
-import io.izzel.minecraftmcp.bridge.ClientSnapshot;
-import io.izzel.minecraftmcp.bridge.FakeGameThread;
-import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
+import io.izzel.minecraftmcp.bridge.FakeClientBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -39,24 +34,16 @@ class BuiltinToolsPacketTest {
         assertEquals("Swing", bridge.dumpArgs.get("nameContains"));
     }
 
-    static final class RecordingBridge implements MinecraftClientBridge {
-        private final FakeGameThread gameThread = new FakeGameThread();
+    static final class RecordingBridge extends FakeClientBridge {
         Map<String, Object> startArgs;
         Map<String, Object> dumpArgs;
         Map<String, Object> waitArgs;
-        public String loader() { return "test"; }
-        public String minecraftVersion() { return "test"; }
-        public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnClientThread() { return gameThread.isOn(); }
-        public void execute(Runnable runnable) { gameThread.run(runnable); }
-        public <T> CompletableFuture<T> submit(Supplier<T> supplier) { return CompletableFuture.completedFuture(supplier.get()); }
-        public ClientSnapshot snapshot() { return new ClientSnapshot(true, false, null, null, 0, 0, 0, 0, 0); }
-        public Map<String, Object> startPacketRecording(Map<String, Object> args) { startArgs = args; return Map.of("status", "started", "maxPackets", ((Number) args.get("maxPackets")).intValue()); }
-        public Map<String, Object> stopPacketRecording() { return Map.of("status", "stopped"); }
-        public Map<String, Object> clearPacketRecording() { return Map.of("status", "cleared"); }
-        public Map<String, Object> packetRecordingStatus() { return Map.of("recording", true, "count", 1); }
-        public Map<String, Object> dumpPackets(Map<String, Object> args) { dumpArgs = args; return Map.of("returned", 1, "filter", args.get("nameContains")); }
-        public Map<String, Object> waitForPackets(Map<String, Object> args) { waitArgs = args; return Map.of("matched", true, "count", 1, "required", ((Number) args.get("count")).intValue()); }
-        public Map<String, Object> takeScreenshot(Map<String, Object> args) { return Map.of("status", "saved", "path", "screenshots/" + args.get("name"), "width", 800, "height", 600); }
+        @Override public Map<String, Object> startPacketRecording(Map<String, Object> args) { startArgs = args; return Map.of("status", "started", "maxPackets", ((Number) args.get("maxPackets")).intValue()); }
+        @Override public Map<String, Object> stopPacketRecording() { return Map.of("status", "stopped"); }
+        @Override public Map<String, Object> clearPacketRecording() { return Map.of("status", "cleared"); }
+        @Override public Map<String, Object> packetRecordingStatus() { return Map.of("recording", true, "count", 1); }
+        @Override public Map<String, Object> dumpPackets(Map<String, Object> args) { dumpArgs = args; return Map.of("returned", 1, "filter", args.get("nameContains")); }
+        @Override public Map<String, Object> waitForPackets(Map<String, Object> args) { waitArgs = args; return Map.of("matched", true, "count", 1, "required", ((Number) args.get("count")).intValue()); }
+        @Override public Map<String, Object> takeScreenshot(Map<String, Object> args) { return Map.of("status", "saved", "path", "screenshots/" + args.get("name"), "width", 800, "height", 600); }
     }
 }

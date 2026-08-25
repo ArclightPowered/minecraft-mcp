@@ -1,14 +1,12 @@
 package io.izzel.minecraftmcp;
 
-import io.izzel.minecraftmcp.bridge.ClientSnapshot;
-import io.izzel.minecraftmcp.bridge.FakeGameThread;
-import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
+import io.izzel.minecraftmcp.bridge.FakeClientBridge;
+import io.izzel.minecraftmcp.bridge.FakeServerBridge;
 import io.izzel.minecraftmcp.bridge.MinecraftServerBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import io.izzel.minecraftmcp.tools.BuiltinServerTools;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -20,7 +18,7 @@ class MinecraftMcpBootstrapTest {
     @Test
     void withoutALocalServerTheToolAnswersWithAHintInsteadOfFailing() throws Exception {
         ToolRegistry registry = new ToolRegistry();
-        MinecraftMcpBootstrap.registerIntegratedServerTools(registry, new FakeClientBridge());
+        MinecraftMcpBootstrap.registerIntegratedServerTools(registry, new FakeIntegratedClient());
 
         Map<?, ?> result = assertInstanceOf(Map.class, registry.call("mc.server.state", Map.of()));
 
@@ -31,7 +29,7 @@ class MinecraftMcpBootstrapTest {
 
     @Test
     void theServerIsLookedUpPerCallSoJoiningAndLeavingWorldsJustWorks() throws Exception {
-        FakeClientBridge client = new FakeClientBridge();
+        FakeIntegratedClient client = new FakeIntegratedClient();
         ToolRegistry registry = new ToolRegistry();
         MinecraftMcpBootstrap.registerIntegratedServerTools(registry, client);
 
@@ -49,7 +47,7 @@ class MinecraftMcpBootstrapTest {
     @Test
     void everyServerToolIsMirroredOntoTheClientEndpoint() {
         ToolRegistry client = new ToolRegistry();
-        MinecraftMcpBootstrap.registerIntegratedServerTools(client, new FakeClientBridge());
+        MinecraftMcpBootstrap.registerIntegratedServerTools(client, new FakeIntegratedClient());
 
         ToolRegistry server = new ToolRegistry();
         BuiltinServerTools.register(server, new FakeIntegratedServer());
@@ -64,28 +62,14 @@ class MinecraftMcpBootstrapTest {
             .collect(Collectors.toCollection(TreeSet::new));
     }
 
-    private static final class FakeClientBridge implements MinecraftClientBridge {
-        private final FakeGameThread gameThread = new FakeGameThread();
+    private static final class FakeIntegratedClient extends FakeClientBridge {
         MinecraftServerBridge server;
 
-        public String loader() { return "test"; }
-        public String minecraftVersion() { return "test"; }
-        public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnClientThread() { return gameThread.isOn(); }
-        public void execute(Runnable runnable) { gameThread.run(runnable); }
-        public ClientSnapshot snapshot() { return new ClientSnapshot(true, false, null, null, 0, 0, 0, 0, 0); }
-        public boolean integratedServerAvailable() { return server != null; }
-        public MinecraftServerBridge integratedServerBridge() { return server; }
+        @Override public boolean integratedServerAvailable() { return server != null; }
+        @Override public MinecraftServerBridge integratedServerBridge() { return server; }
     }
 
-    private static final class FakeIntegratedServer implements MinecraftServerBridge {
-        private final FakeGameThread gameThread = new FakeGameThread();
-
-        public String loader() { return "test"; }
-        public String minecraftVersion() { return "test"; }
-        public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnServerThread() { return gameThread.isOn(); }
-        public void execute(Runnable runnable) { gameThread.run(runnable); }
-        public Map<String, Object> serverState() { return Map.of("running", true, "integrated", true); }
+    private static final class FakeIntegratedServer extends FakeServerBridge {
+        @Override public Map<String, Object> serverState() { return Map.of("running", true, "integrated", true); }
     }
 }

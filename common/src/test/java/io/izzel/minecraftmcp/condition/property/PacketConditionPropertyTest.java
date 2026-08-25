@@ -1,17 +1,12 @@
 package io.izzel.minecraftmcp.condition.property;
 
-import io.izzel.minecraftmcp.bridge.ClientSnapshot;
-import io.izzel.minecraftmcp.bridge.FakeGameThread;
-import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
+import io.izzel.minecraftmcp.bridge.FakeClientBridge;
 import io.izzel.minecraftmcp.condition.ConditionContext;
 import io.izzel.minecraftmcp.condition.ConditionEvaluator;
 import io.izzel.minecraftmcp.condition.ConditionParser;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,17 +22,8 @@ class PacketConditionPropertyTest {
         assertTrue(ConditionEvaluator.evaluateBoolean(ConditionParser.parse("packet.filter.name_a.count == 1"), context));
     }
 
-    static final class PacketBridge implements MinecraftClientBridge {
-        private final FakeGameThread gameThread = new FakeGameThread();
-
-        public String loader() { return "test"; }
-        public String minecraftVersion() { return "test"; }
-        public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnClientThread() { return gameThread.isOn(); }
-        public void execute(Runnable runnable) { gameThread.run(runnable); }
-        public <T> CompletableFuture<T> submit(Supplier<T> supplier) { return CompletableFuture.completedFuture(supplier.get()); }
-        public ClientSnapshot snapshot() { return new ClientSnapshot(true, false, null, null, 0, 0, 0, 0, 0); }
-        public Map<String, Object> packetRecordingStatus() {
+    static final class PacketBridge extends FakeClientBridge {
+        @Override public Map<String, Object> packetRecordingStatus() {
             return Map.of(
                     "recording", true,
                     "count", 2,

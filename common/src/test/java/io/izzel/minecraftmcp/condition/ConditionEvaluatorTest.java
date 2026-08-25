@@ -1,11 +1,10 @@
 package io.izzel.minecraftmcp.condition;
 
+import io.izzel.minecraftmcp.bridge.FakeClientBridge;
 import io.izzel.minecraftmcp.bridge.ClientSnapshot;
-import io.izzel.minecraftmcp.bridge.FakeGameThread;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -125,19 +124,11 @@ class ConditionEvaluatorTest {
         return ConditionEvaluator.evaluateBoolean(ConditionParser.parse(expression), new ConditionContext(bridge));
     }
 
-    static class MockBridge implements MinecraftClientBridge {
-        private final FakeGameThread gameThread = new FakeGameThread();
-
-        public String loader() { return "test"; }
-        public String minecraftVersion() { return "test"; }
-        public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnClientThread() { return gameThread.isOn(); }
-        public void execute(Runnable runnable) { gameThread.run(runnable); }
-        public ClientSnapshot snapshot() { return new ClientSnapshot(true, true, null, "Dev", 1, 70, 3, 0, 0); }
-        public Map<String, Object> vehicleState() { return Map.of("isPassenger", false); }
-        public Map<String, Object> screenState() { return Map.of("hasScreen", true, "children", List.of(Map.of("id", "widget-0", "message", "Singleplayer"))); }
-        public Map<String, Object> disconnectState() { return Map.of("disconnected", true, "message", "Incompatible client"); }
-        public Map<String, Object> worldSnapshot() { return Map.of("inWorld", true); }
-        public Map<String, Object> inventorySnapshot() { return Map.of("selected", 0); }
+    static class MockBridge extends FakeClientBridge {
+        @Override public Map<String, Object> vehicleState() { return Map.of("isPassenger", false); }
+        @Override public Map<String, Object> screenState() { return Map.of("hasScreen", true, "children", List.of(Map.of("id", "widget-0", "message", "Singleplayer"))); }
+        @Override public Map<String, Object> disconnectState() { return Map.of("disconnected", true, "message", "Incompatible client"); }
+        @Override public Map<String, Object> worldSnapshot() { return Map.of("inWorld", true); }
+        @Override public Map<String, Object> inventorySnapshot() { return Map.of("selected", 0); }
     }
 }

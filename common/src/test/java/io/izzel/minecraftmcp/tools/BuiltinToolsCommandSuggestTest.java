@@ -1,15 +1,10 @@
 package io.izzel.minecraftmcp.tools;
 
-import io.izzel.minecraftmcp.bridge.ClientSnapshot;
-import io.izzel.minecraftmcp.bridge.FakeGameThread;
-import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
+import io.izzel.minecraftmcp.bridge.FakeClientBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -40,18 +35,10 @@ class BuiltinToolsCommandSuggestTest {
         assertEquals(4321L, bridge.lastTimeoutMs);
     }
 
-    static final class RecordingBridge implements MinecraftClientBridge {
-        private final FakeGameThread gameThread = new FakeGameThread();
+    static final class RecordingBridge extends FakeClientBridge {
         String lastCommand;
         long lastTimeoutMs;
-        public String loader() { return "test"; }
-        public String minecraftVersion() { return "test"; }
-        public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnClientThread() { return gameThread.isOn(); }
-        public void execute(Runnable runnable) { gameThread.run(runnable); }
-        public <T> CompletableFuture<T> submit(Supplier<T> supplier) { return CompletableFuture.completedFuture(supplier.get()); }
-        public ClientSnapshot snapshot() { return new ClientSnapshot(true, true, null, null, 0, 0, 0, 0, 0); }
-        public Map<String, Object> commandSuggest(String command, long timeoutMs) {
+        @Override public Map<String, Object> commandSuggest(String command, long timeoutMs) {
             this.lastCommand = command;
             this.lastTimeoutMs = timeoutMs;
             return Map.of("status", "suggested", "command", command, "id", 42, "suggestions", 3);

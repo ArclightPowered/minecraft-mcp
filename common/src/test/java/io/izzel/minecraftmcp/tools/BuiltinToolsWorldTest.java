@@ -1,16 +1,12 @@
 package io.izzel.minecraftmcp.tools;
 
+import io.izzel.minecraftmcp.bridge.FakeClientBridge;
 import io.izzel.minecraftmcp.bridge.ClientSnapshot;
-import io.izzel.minecraftmcp.bridge.FakeGameThread;
-import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
 import net.minecraft.world.phys.Vec3;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -76,8 +72,7 @@ class BuiltinToolsWorldTest {
         assertTrue(bridge.leftWorld);
     }
 
-    static final class RecordingBridge implements MinecraftClientBridge {
-        private final FakeGameThread gameThread = new FakeGameThread();
+    static final class RecordingBridge extends FakeClientBridge {
         String createdWorldName;
         Map<String, Object> createdWorldOptions;
         boolean inWorld;
@@ -97,67 +92,58 @@ class BuiltinToolsWorldTest {
         boolean moveSneak;
         boolean moveControlView;
 
-        public String loader() { return "test"; }
-        public String minecraftVersion() { return "test"; }
-        public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnClientThread() { return gameThread.isOn(); }
-        public void execute(Runnable runnable) { gameThread.run(runnable); }
-        public <T> CompletableFuture<T> submit(Supplier<T> supplier) {
-            try { return CompletableFuture.completedFuture(supplier.get()); }
-            catch (Throwable t) { CompletableFuture<T> f = new CompletableFuture<>(); f.completeExceptionally(t); return f; }
-        }
-        public ClientSnapshot snapshot() {
+        @Override public ClientSnapshot snapshot() {
             return new ClientSnapshot(true, inWorld, null, inWorld ? "Player" : null, inWorld ? 1 : 0, inWorld ? 64 : 0, inWorld ? 1 : 0, 0, 0);
         }
-        public void createTestWorld(String name, Map<String, Object> options) {
+        @Override public void createTestWorld(String name, Map<String, Object> options) {
             createdWorldName = name;
             createdWorldOptions = options;
             inWorld = true;
         }
-        public void leaveWorldToTitle() {
+        @Override public void leaveWorldToTitle() {
             leftWorld = true;
             inWorld = false;
         }
-        public Map<String, Object> worldSnapshot() {
+        @Override public Map<String, Object> worldSnapshot() {
             return Map.of("inWorld", inWorld, "dimension", "minecraft:overworld", "gameTime", 42L, "difficulty", "peaceful");
         }
-        public Map<String, Object> inventorySnapshot() {
+        @Override public Map<String, Object> inventorySnapshot() {
             return Map.of("selected", selectedSlot, "hotbar", Collections.nCopies(9, Map.of("item", "minecraft:air", "count", 0)));
         }
-        public Map<String, Object> selectHotbarSlot(int slot) {
+        @Override public Map<String, Object> selectHotbarSlot(int slot) {
             selectedSlot = slot;
             return Map.of("status", "selected", "slot", slot);
         }
-        public Map<String, Object> sendChat(String message) {
+        @Override public Map<String, Object> sendChat(String message) {
             chatMessage = message;
             return Map.of("status", "sent", "kind", message.startsWith("/") ? "command" : "chat", "message", message);
         }
-        public Map<String, Object> screenState() {
+        @Override public Map<String, Object> screenState() {
             return Map.of("hasScreen", true, "screen", "test.Screen", "title", "Test Screen");
         }
-        public Map<String, Object> typeText(String text, boolean submit) {
+        @Override public Map<String, Object> typeText(String text, boolean submit) {
             typedText = text;
             submitted = submit;
             return Map.of("status", "typed", "chars", text.length(), "submitted", submit);
         }
-        public Map<String, Object> clickScreen(double x, double y, int button) {
+        @Override public Map<String, Object> clickScreen(double x, double y, int button) {
             clickX = x;
             clickY = y;
             return Map.of("status", "clicked", "handled", true, "x", x, "y", y, "button", button);
         }
-        public Map<String, Object> clickWidget(String id, String message, int button) {
+        @Override public Map<String, Object> clickWidget(String id, String message, int button) {
             return Map.of("status", "clicked", "handled", true, "id", id, "message", "OK", "button", button);
         }
-        public Map<String, Object> disconnectState() {
+        @Override public Map<String, Object> disconnectState() {
             return Map.of("disconnected", false, "message", "");
         }
-        public Map<String, Object> interactBlock(int x, int y, int z, String face, String hand) {
+        @Override public Map<String, Object> interactBlock(int x, int y, int z, String face, String hand) {
             return Map.of("status", "interacted", "x", x, "y", y, "z", z, "face", face, "hand", hand);
         }
-        public Map<String, Object> blockAt(int x, int y, int z) {
+        @Override public Map<String, Object> blockAt(int x, int y, int z) {
             return Map.of("x", x, "y", y, "z", z, "block", "minecraft:stone");
         }
-        public Map<String, Object> moveWaypoints(List<Vec3> waypoints, boolean loop, int maxLoops, double tolerance, long timeoutMs, boolean sprint, boolean sneak, boolean controlView) {
+        @Override public Map<String, Object> moveWaypoints(List<Vec3> waypoints, boolean loop, int maxLoops, double tolerance, long timeoutMs, boolean sprint, boolean sneak, boolean controlView) {
             this.moveWaypoints = waypoints;
             this.moveLoop = loop;
             this.moveMaxLoops = maxLoops;

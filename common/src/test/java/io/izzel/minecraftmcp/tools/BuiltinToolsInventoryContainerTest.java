@@ -1,12 +1,9 @@
 package io.izzel.minecraftmcp.tools;
 
-import io.izzel.minecraftmcp.bridge.ClientSnapshot;
-import io.izzel.minecraftmcp.bridge.FakeGameThread;
-import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
+import io.izzel.minecraftmcp.bridge.FakeClientBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,32 +63,25 @@ class BuiltinToolsInventoryContainerTest {
         assertThrows(IllegalArgumentException.class, () -> registry.call("mc.client.container.click", Map.of("slot", 0, "clickType", "BAD")));
     }
 
-    static class MockBridge implements MinecraftClientBridge {
-        private final FakeGameThread gameThread = new FakeGameThread();
+    static class MockBridge extends FakeClientBridge {
         Map<String, Object> findArgs;
         Map<String, Object> countArgs;
         List<Map<String, Object>> clicks = new java.util.ArrayList<>();
 
-        public String loader() { return "test"; }
-        public String minecraftVersion() { return "test"; }
-        public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnClientThread() { return gameThread.isOn(); }
-        public void execute(Runnable runnable) { gameThread.run(runnable); }
-        public ClientSnapshot snapshot() { return new ClientSnapshot(true, true, true, null, "Dev", 0, 64, 0, 0, 0); }
-        public Map<String, Object> findInventoryItem(Map<String, Object> args) {
+        @Override public Map<String, Object> findInventoryItem(Map<String, Object> args) {
             findArgs = new LinkedHashMap<>(args);
             return Map.of("found", true, "totalCount", 64, "matches", List.of(Map.of("item", "minecraft:stone", "count", 64)));
         }
-        public Map<String, Object> countInventoryItem(Map<String, Object> args) {
+        @Override public Map<String, Object> countInventoryItem(Map<String, Object> args) {
             countArgs = new LinkedHashMap<>(args);
             return Map.of("item", args.get("item"), "count", 64);
         }
-        public Map<String, Object> selectedInventoryItem() { return Map.of("selected", 3, "item", "minecraft:stone", "count", 64); }
-        public Map<String, Object> containerState() { return Map.of("hasContainer", true, "containerId", 1, "slots", List.of()); }
-        public Map<String, Object> clickContainer(int slot, int button, String clickType) {
+        @Override public Map<String, Object> selectedInventoryItem() { return Map.of("selected", 3, "item", "minecraft:stone", "count", 64); }
+        @Override public Map<String, Object> containerState() { return Map.of("hasContainer", true, "containerId", 1, "slots", List.of()); }
+        @Override public Map<String, Object> clickContainer(int slot, int button, String clickType) {
             clicks.add(Map.of("slot", slot, "button", button, "clickType", clickType));
             return Map.of("status", "clicked", "slot", slot, "button", button, "clickType", clickType, "containerId", 1);
         }
-        public Map<String, Object> closeContainer() { return Map.of("status", "closed"); }
+        @Override public Map<String, Object> closeContainer() { return Map.of("status", "closed"); }
     }
 }
