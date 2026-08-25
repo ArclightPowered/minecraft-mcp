@@ -109,6 +109,16 @@ public final class McpConfig {
         };
     }
 
+    public String refusal(ChannelCaller caller) {
+        return switch (caller) {
+            case ChannelCaller.Local ignored -> "refused";
+            case ChannelCaller.Player player -> "player " + player.label() + " lacks the "
+                + player.permissionNode() + " permission on this server";
+            case ChannelCaller.Server server -> "server " + server.label() + " is not trusted by this client; "
+                + "add \"" + server.address() + "\" to trustedServers in " + configSource;
+        };
+    }
+
     static String foldAddress(String address) {
         return address == null ? "" : address.trim().toLowerCase(Locale.ROOT);
     }

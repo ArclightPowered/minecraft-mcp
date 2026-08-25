@@ -43,7 +43,7 @@ issue stack trace.
 Against a normal Fabric/NeoForge client:
 
 ```bash
-xvfb-run -a ./gradlew :neoforge:runClient -DminecraftMcp.port=0 -DminecraftMcp.batchExit=false
+xvfb-run -a ./gradlew :neoforge:runClient -DminecraftMcp.endpoint.port=0 -DminecraftMcp.scenario.batchExit=false
 ```
 
 Run against the local dev client/integrated server:
@@ -80,7 +80,29 @@ setup before running the manual scenario:
 2. Sit the controlled player in the cockpit/typewriter seat.
 3. Run `020_sable_vehicle_observer.json`, or run the whole directory without excluding
    `manual-setup`.
-4. Inspect the Arclight server log for Sable lines like:
+4. Read the server log for the Sable stack.
+
+Step 4 no longer has to be done by hand. If the server also runs this mod, the client can reach it
+over the plugin channel and pull the log into the scenario itself:
+
+```json
+{
+  "id": "server_log",
+  "tool": "mc.remote.call",
+  "args": {
+    "tool": "mc.server.log.tail",
+    "arguments": { "lines": 200 },
+    "timeoutMs": 30000
+  },
+  "expect": { "result.status": "ok" }
+}
+```
+
+Here the agent can only reach the client's endpoint, because the server is on another machine, so
+`mc.remote.call` is the only way in. Everything the server exposes —
+`mc.server.state`, `mc.server.players`, `mc.server.entity.query` — is reachable the same way.
+
+Look for Sable lines like:
 
 ```text
 Aborting entity get for abnormally large AABB
@@ -90,6 +112,9 @@ ServerGamePacketListenerImpl...arclight$animateEvents
 ServerGamePacketListenerImpl.handleAnimate
 ServerboundSwingPacket.handle
 ```
+
+An Arclight server will not have this mod installed, so there the log stays a manual step; the
+`mc.remote.call` route applies when you control both ends.
 
 Expected current-bug behavior on affected Arclight builds:
 

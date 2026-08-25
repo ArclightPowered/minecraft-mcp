@@ -21,10 +21,12 @@ public final class ClientConditionProperties implements ConditionPropertyProvide
         registry.registerContextProperty("client", ctx ->
             ctx.cached("client", () -> {
                 MinecraftClientBridge bridge = client(ctx);
-                Map<String, Object> map = new LinkedHashMap<>(bridge.submit(() -> bridge.snapshot().toMap()).get(PROPERTY_TIMEOUT_SECONDS, TimeUnit.SECONDS));
-                map.put("integratedServer", bridge.integratedServerAvailable());
-                map.put("server_available", bridge.serverMcpAvailable());
-                return map;
+                return bridge.submit(() -> {
+                    Map<String, Object> map = new LinkedHashMap<>(bridge.snapshot().toMap());
+                    map.put("integratedServer", bridge.integratedServerAvailable());
+                    map.put("remoteAvailable", bridge.remoteMcpAvailable());
+                    return map;
+                }).get(PROPERTY_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             })
         );
         snapshot(registry, "connection", MinecraftClientBridge::disconnectState);

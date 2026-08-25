@@ -1,10 +1,13 @@
 package io.izzel.minecraftmcp.bridge;
 
+import io.izzel.minecraftmcp.config.McpConfigs;
 import io.izzel.minecraftmcp.packet.PacketFilter;
 import io.izzel.minecraftmcp.packet.PacketRecorder;
 import io.izzel.minecraftmcp.packet.PacketRecorders;
 import io.izzel.minecraftmcp.mcp.FutureResult;
+import io.izzel.minecraftmcp.serverlink.RemoteMcpProxy;
 
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -96,7 +99,7 @@ public interface MinecraftClientBridge extends MinecraftBridge {
         return null;
     }
 
-    default boolean serverMcpAvailable() {
+    default boolean remoteMcpAvailable() {
         return false;
     }
 
@@ -204,14 +207,6 @@ public interface MinecraftClientBridge extends MinecraftBridge {
         throw new UnsupportedOperationException("Waypoint movement is not implemented by " + loader());
     }
 
-    default Map<String, Object> exportSchematic(Map<String, Object> args) {
-        throw new UnsupportedOperationException("Schematic export is not implemented by " + loader());
-    }
-
-    default Map<String, Object> pasteSchematic(Map<String, Object> args) {
-        throw new UnsupportedOperationException("Schematic paste is not implemented by " + loader());
-    }
-
     default Map<String, Object> startPacketRecording(Map<String, Object> args) {
         int maxPackets = ((Number) args.getOrDefault("maxPackets", 1000)).intValue();
         boolean clear = Boolean.parseBoolean(String.valueOf(args.getOrDefault("clear", true)));
@@ -266,6 +261,6 @@ public interface MinecraftClientBridge extends MinecraftBridge {
     @Override
     default Map<String, Object> capabilities() {
         return Map.of("loader", loader(), "minecraftVersion", minecraftVersion(), "clientThreadScheduling", true,
-            "headless", io.izzel.minecraftmcp.config.McpConfigs.current().headless());
+            "headless", McpConfigs.current().headless());
     }
 }

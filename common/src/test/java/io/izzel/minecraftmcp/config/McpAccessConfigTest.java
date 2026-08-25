@@ -95,4 +95,35 @@ class McpAccessConfigTest {
         assertTrue(config.toolDisabled("mc.remote.call"), "a trimmed wildcard still matches by prefix");
         assertFalse(config.toolDisabled("mc.Server.Log.Tail"));
     }
+
+    @Test
+    void refusingAServerQuotesTheExactStringToAddAndWhereToAddIt() {
+        McpConfig config = with(List.of(), List.of("good.example.com"));
+
+        String refusal = config.refusal(new ChannelCaller.Server("MC.Example.Com:25565"));
+
+        assertTrue(refusal.contains("add \"MC.Example.Com:25565\" to trustedServers"), refusal);
+        assertTrue(refusal.contains("config/test.json"), refusal);
+    }
+
+    @Test
+    void refusingAPlayerNamesThePermissionNodeAsThatLoaderSpellsIt() {
+        UUID id = UUID.randomUUID();
+
+        String refusal = empty().refusal(new ChannelCaller.Player(id, "Griefer", false, NODE));
+
+        assertTrue(refusal.contains("Griefer"), refusal);
+        assertTrue(refusal.contains(id.toString()), refusal);
+        assertTrue(refusal.contains(NODE), refusal);
+    }
+
+    @Test
+    void everyCallerKindHasARefusal() {
+        for (ChannelCaller caller : List.of(
+            new ChannelCaller.Local("singleplayer"),
+            new ChannelCaller.Player(UUID.randomUUID(), "Dev", false, NODE),
+            new ChannelCaller.Server("evil.example.com"))) {
+            assertFalse(empty().refusal(caller).isBlank(), () -> "no refusal for " + caller);
+        }
+    }
 }

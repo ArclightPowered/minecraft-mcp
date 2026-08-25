@@ -39,15 +39,25 @@ Supported scenario metadata:
 {
   "tags": ["input", "smoke"],
   "requires": {
-    "loaders": ["fabric", "neoforge"]
+    "loaders": ["fabric", "neoforge"],
+    "sides": ["client"]
   },
   "expected": "pass"
 }
 ```
 
 - `tags`: used by `includeTags` / `excludeTags` in `mc.scenario.batch.run`.
-- `requires.loaders`: skips scenarios that do not match the active loader.
+- `requires.loaders`: skips scenarios that do not match the active loader. Always `fabric` or
+  `neoforge` — a dedicated server reports the same loader as its client, and the side is a separate
+  axis.
+- `requires.sides`: `client` and/or `server`; skips scenarios that do not apply to the endpoint
+  running the batch. A dedicated-server endpoint registers no `mc.client.*` tools at all, so a
+  client scenario would otherwise fail rather than skip.
 - `expected: "fail"`: expected failures are reported as `expected_failed` and do not increase `failed`.
+
+Preconditions beyond the side (is a remote server involved? has the world been created yet?) are
+expressed with `tags` plus `excludeTags`, as `arclight-2137/` already does with `external-server`
+and `manual-setup`.
 
 Run all scenarios through MCP:
 

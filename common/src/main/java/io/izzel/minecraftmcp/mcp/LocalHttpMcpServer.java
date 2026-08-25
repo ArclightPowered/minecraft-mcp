@@ -9,6 +9,7 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
@@ -25,15 +26,23 @@ public final class LocalHttpMcpServer implements AutoCloseable {
         this.workers = Objects.requireNonNull(workers, "workers");
     }
 
-    public void start(Path gameDir, String loader, String minecraftVersion) throws IOException {
+    public void start(Path gameDir, Map<String, Object> descriptor) throws IOException {
         server = HttpServer.create(new InetSocketAddress(config.bindHost(), config.port()), 0);
         server.createContext("/mcp", this::handle);
         server.setExecutor(workers);
         server.start();
         int port = server.getAddress().getPort();
-        Path discovery = gameDir.resolve("mcp/server.json");
-        Files.createDirectories(discovery.getParent());
-        Files.writeString(discovery, Json.stringify(Map.of("protocol", "mcp", "transport", "http-jsonrpc", "host", config.bindHost(), "port", port, "path", "/mcp", "authToken", config.authToken(), "loader", loader, "minecraftVersion", minecraftVersion)), StandardCharsets.UTF_8);
+        Map<String, Object> discovery = new LinkedHashMap<>();
+        discovery.put("protocol", "mcp");
+        discovery.put("transport", "http-jsonrpc");
+        discovery.put("host", config.bindHost());
+        discovery.put("port", port);
+        discovery.put("path", "/mcp");
+        discovery.put("authToken", config.authToken());
+        discovery.putAll(descriptor);
+        Path file = gameDir.resolve("mcp/server.json");
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, Json.stringify(discovery), StandardCharsets.UTF_8);
     }
 
     private void handle(HttpExchange ex) throws IOException {

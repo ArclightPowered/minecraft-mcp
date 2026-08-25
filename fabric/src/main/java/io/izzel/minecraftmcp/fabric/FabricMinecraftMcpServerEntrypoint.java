@@ -2,54 +2,96 @@ package io.izzel.minecraftmcp.fabric;
 
 import io.izzel.minecraftmcp.MinecraftMcpBootstrap;
 import io.izzel.minecraftmcp.bridge.MinecraftServerBridge;
-import io.izzel.minecraftmcp.MinecraftMcpBootstrap.McpEndpoint;
-import io.izzel.minecraftmcp.mcp.ToolRegistry;
-import io.izzel.minecraftmcp.serverlink.ServerMcpPluginMessageHandler;
-import io.izzel.minecraftmcp.serverlink.ServerMcpProxy;
+import io.izzel.minecraftmcp.config.McpConfigs;
+import io.izzel.minecraftmcp.config.ChannelCaller;
+import io.izzel.minecraftmcp.config.McpPermissions;
+import io.izzel.minecraftmcp.serverlink.McpPluginMessageHandler;
+import io.izzel.minecraftmcp.serverlink.RemoteMcpProxies;
+import io.izzel.minecraftmcp.tools.BuiltinRemoteTools;
 import io.izzel.minecraftmcp.schematic.ServerSchematicTools;
 import io.izzel.minecraftmcp.server.ServerWorldTools;
-import io.izzel.minecraftmcp.tools.BuiltinServerTools;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public final class FabricMinecraftMcpServerEntrypoint implements DedicatedServerModInitializer {
-    private static McpEndpoint mcpServer;
-    private static ServerMcpPluginMessageHandler pluginHandler;
+    private static volatile MinecraftMcpBootstrap.McpEndpoint endpoint;
+    private static volatile McpPluginMessageHandler pluginHandler;
 
     @Override
     public void onInitializeServer() {
         FabricMcpConfig.bootstrap();
         PayloadTypeRegistry.serverboundPlay().register(FabricStringPayload.REQUEST, FabricStringPayload.codec(FabricStringPayload.REQUEST));
         PayloadTypeRegistry.clientboundPlay().register(FabricStringPayload.RESPONSE, FabricStringPayload.codec(FabricStringPayload.RESPONSE));
-        PayloadTypeRegistry.clientboundPlay().register(FabricStringPayload.HELLO, FabricStringPayload.codec(FabricStringPayload.HELLO));
-        ServerPlayNetworking.registerGlobalReceiver(FabricStringPayload.REQUEST, (payload, context) -> pluginHandler.receive(payload.text(), response -> ServerPlayNetworking.send(context.player(), new FabricStringPayload(FabricStringPayload.RESPONSE, response))));
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> ServerPlayNetworking.send(handler.player, new FabricStringPayload(FabricStringPayload.HELLO, ServerMcpProxy.hello())));
+        PayloadTypeRegistry.clientboundPlay().register(FabricStringPayload.CLIENT_REQUEST, FabricStringPayload.codec(FabricStringPayload.CLIENT_REQUEST));
+        PayloadTypeRegistry.serverboundPlay().register(FabricStringPayload.CLIENT_RESPONSE, FabricStringPayload.codec(FabricStringPayload.CLIENT_RESPONSE));
+
+        ServerPlayNetworking.registerGlobalReceiver(FabricStringPayload.REQUEST, (payload, context) -> {
+            if (pluginHandler == null) {
+                return;
+            }
+            var responseSender = context.responseSender();
+            pluginHandler.receiveRequest(payload.text(), callerFor(context.player()),
+                    response -> responseSender.sendPacket(new FabricStringPayload(FabricStringPayload.RESPONSE, response)));
+        });
+        ServerPlayNetworking.registerGlobalReceiver(FabricStringPayload.CLIENT_RESPONSE, (payload, context) -> {
+            if (pluginHandler == null) {
+                return;
+            }
+            pluginHandler.receiveResponse(payload.text(), callerFor(context.player()));
+        });
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
+                RemoteMcpProxies.rememberClientName(handler.player.getUUID(), handler.player.getGameProfile().name()));
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
+                RemoteMcpProxies.forgetClient(handler.player.getUUID()));
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             try {
                 FabricServerBridge bridge = new FabricServerBridge(server);
-                mcpServer = MinecraftMcpBootstrap.start(bridge);
-                ToolRegistry pluginRegistry = new ToolRegistry();
-                BuiltinServerTools.register(pluginRegistry, bridge);
-                pluginHandler = new ServerMcpPluginMessageHandler(pluginRegistry);
-                server.getPlayerList().getPlayers().forEach(player -> ServerPlayNetworking.send(player, new FabricStringPayload(FabricStringPayload.HELLO, ServerMcpProxy.hello())));
-                System.out.println("[Minecraft MCP] Fabric dedicated MCP server started on port " + mcpServer.port());
+                endpoint = MinecraftMcpBootstrap.start(bridge);
+                pluginHandler = new McpPluginMessageHandler(endpoint.registry(), McpConfigs::current, endpoint.workers());
+                BuiltinRemoteTools.registerServer(endpoint.registry(), bridge,
+                        (uuid, text) ->
+                                server.execute(() -> {
+                                    var target = server.getPlayerList().getPlayer(uuid);
+                                    if (target != null) {
+                                        ServerPlayNetworking.send(target, new FabricStringPayload(FabricStringPayload.CLIENT_REQUEST, text));
+                                    }
+                                }),
+                        uuid -> {
+                            var target = server.getPlayerList().getPlayer(uuid);
+                            if (target == null) {
+                                return null;
+                            }
+                            return new BuiltinRemoteTools.ClientPeer(callerFor(target),
+                                    ServerPlayNetworking.canSend(target, FabricStringPayload.CLIENT_REQUEST));
+                        });
+                server.getPlayerList().getPlayers().forEach(player ->
+                        RemoteMcpProxies.rememberClientName(player.getUUID(), player.getGameProfile().name()));
+                System.out.println("[Minecraft MCP] Fabric dedicated MCP server started on port " + endpoint.port());
             } catch (Exception e) {
                 throw new RuntimeException("Failed to start Minecraft MCP dedicated server", e);
             }
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-            if (mcpServer != null) {
-                mcpServer.close();
+            if (endpoint != null) {
+                endpoint.close();
+                endpoint = null;
             }
+            pluginHandler = null;
         });
+    }
+
+    private static ChannelCaller.Player callerFor(ServerPlayer player) {
+        return new ChannelCaller.Player(player.getUUID(), player.getGameProfile().name(),
+                FabricMcpConfig.mayRemoteCall(player), McpPermissions.REMOTE_CALL_FABRIC);
     }
 
     static final class FabricServerBridge implements MinecraftServerBridge {
@@ -57,8 +99,9 @@ public final class FabricMinecraftMcpServerEntrypoint implements DedicatedServer
         FabricServerBridge(MinecraftServer server) { this.server = server; }
         public String loader() { return "fabric"; }
         public String minecraftVersion() { return server.getServerVersion(); }
-        public Path gameDirectory() { return server.getServerDirectory(); }
+        public Path gameDirectory() { return server.getServerDirectory().toAbsolutePath().normalize(); }
         public boolean isOnServerThread() { return server.isSameThread(); }
+        public boolean dedicated() { return server.isDedicatedServer(); }
         public void execute(Runnable runnable) { server.execute(runnable); }
         public Map<String, Object> serverState() {
             Map<String, Object> result = new LinkedHashMap<>();
@@ -71,7 +114,6 @@ public final class FabricMinecraftMcpServerEntrypoint implements DedicatedServer
             result.put("overworldTime", server.overworld().getGameTime());
             return result;
         }
-        public boolean dedicated() { return server.isDedicatedServer(); }
         public Map<String, Object> runCommand(String command, String asPlayer) { return ServerWorldTools.runCommand(server, command, asPlayer); }
         public Map<String, Object> players() { return ServerWorldTools.players(server); }
         public Map<String, Object> playerState(String who) { return ServerWorldTools.playerState(server, who); }

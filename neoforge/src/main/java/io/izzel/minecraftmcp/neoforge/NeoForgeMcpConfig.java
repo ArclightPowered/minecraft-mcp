@@ -4,11 +4,20 @@ import io.izzel.minecraftmcp.config.DefaultOptions;
 import io.izzel.minecraftmcp.config.McpConfig;
 import io.izzel.minecraftmcp.config.McpConfigs;
 import io.izzel.minecraftmcp.config.McpOptions;
+import io.izzel.minecraftmcp.config.McpPermissions;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.Permissions;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.server.permission.PermissionAPI;
+import net.neoforged.neoforge.server.permission.events.PermissionGatherEvent;
+import net.neoforged.neoforge.server.permission.nodes.PermissionNode;
+import net.neoforged.neoforge.server.permission.nodes.PermissionTypes;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -18,6 +27,14 @@ import java.util.Optional;
 
 final class NeoForgeMcpConfig {
     static final String FILE_NAME = "minecraft-mcp.toml";
+
+    static final PermissionNode<Boolean> REMOTE_CALL = new PermissionNode<>(
+        McpPermissions.NAMESPACE, McpPermissions.REMOTE_CALL_PATH, PermissionTypes.BOOLEAN,
+        (player, uuid, context) -> player != null && player.permissions().hasPermission(Permissions.COMMANDS_OWNER))
+        .setInformation(
+            Component.literal("Minecraft MCP remote call"),
+            Component.literal("Exchange MCP tool calls with this server over the plugin channel, "
+                + "in either direction."));
 
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
     private static final Map<List<String>, ModConfigSpec.ConfigValue<?>> VALUES = new LinkedHashMap<>();
@@ -78,11 +95,16 @@ final class NeoForgeMcpConfig {
             // every start. Empty is exactly what we want to ship.
             .defineListAllowEmpty("disabledTools", List.of(),
                 () -> "mc.server.log.tail", NeoForgeMcpConfig::nonBlankString));
-        define(BUILDER.comment("Servers allowed to drive this client over the plugin channel.",
+        define(BUILDER.comment("Servers this client exchanges MCP messages with, in either direction:",
+                "each entry lets that server drive this client, and lets mc.remote.call from",
+                "this client reach that server. Calling a server that is not listed fails",
+                "immediately rather than timing out.",
                 "Matched against the address exactly as typed into the multiplayer screen,",
                 "ignoring case. No parsing: \"example.com\" and \"example.com:25565\" are",
                 "different entries. A refusal message quotes the exact string to add.",
-                "Singleplayer is always trusted. Client-side only; a dedicated server ignores this.")
+                "Singleplayer is always trusted. Client-side only; a dedicated server ignores this.",
+                "Players are not listed here - a player needs the " + McpPermissions.REMOTE_CALL_NEOFORGE
+                    + " permission.")
             .translation("minecraft_mcp.configuration.access.trustedServers")
             .defineListAllowEmpty("trustedServers", List.of(),
                 () -> "127.0.0.1:25565", NeoForgeMcpConfig::nonBlankString));
@@ -121,11 +143,22 @@ final class NeoForgeMcpConfig {
         McpConfigs.install(new McpConfig(new SpecOptions(), "config/" + FILE_NAME));
         modBus.addListener(ModConfigEvent.Loading.class, NeoForgeMcpConfig::reportFor);
         modBus.addListener(ModConfigEvent.Reloading.class, NeoForgeMcpConfig::reportFor);
+        NeoForge.EVENT_BUS.addListener(PermissionGatherEvent.Nodes.class, event -> event.addNodes(REMOTE_CALL));
     }
 
     private static void reportFor(ModConfigEvent event) {
         if (FILE_NAME.equals(event.getConfig().getFileName())) {
             McpConfigs.report();
+        }
+    }
+
+    static boolean mayRemoteCall(ServerPlayer player) {
+        try {
+            return PermissionAPI.getPermission(player, REMOTE_CALL);
+        } catch (RuntimeException e) {
+            System.err.println("[Minecraft MCP] could not resolve " + McpPermissions.REMOTE_CALL_NEOFORGE
+                + " for " + player.getGameProfile().name() + ", refusing: " + e);
+            return false;
         }
     }
 

@@ -16,6 +16,12 @@
       "expect": { "result.error": "no_local_server", "result.side": "client" }
     },
     {
+      "id": "remote_absent",
+      "tool": "mc.remote.state",
+      "args": {},
+      "expect": { "result.side": "client", "result.available": false, "result.kind": "none" }
+    },
+    {
       "id": "join",
       "tool": "mc.client.world.join",
       "args": { "name": "minecraft_mcp_topology_b", "seed": 7, "preset": "flat" },
@@ -26,6 +32,12 @@
       "tool": "mc.client.condition.wait",
       "args": { "condition": "client.inWorld == true", "timeoutMs": 180000, "intervalTicks": 10 },
       "expect": { "result.matched": true }
+    },
+    {
+      "id": "integrated_now_present",
+      "tool": "mc.remote.state",
+      "args": {},
+      "expect": { "result.integratedServer": true, "result.kind": "integrated" }
     },
     {
       "id": "server_state",

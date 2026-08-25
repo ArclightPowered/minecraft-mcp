@@ -3,30 +3,30 @@ package io.izzel.minecraftmcp.neoforge;
 import io.izzel.minecraftmcp.MinecraftMcpBootstrap;
 import io.izzel.minecraftmcp.bridge.ClientSnapshot;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
+import io.izzel.minecraftmcp.config.McpConfigs;
 import io.izzel.minecraftmcp.mcp.FutureResult;
-import io.izzel.minecraftmcp.MinecraftMcpBootstrap.McpEndpoint;
-import io.izzel.minecraftmcp.mcp.ToolRegistry;
-import io.izzel.minecraftmcp.tools.BuiltinServerTools;
+import io.izzel.minecraftmcp.serverlink.McpPluginMessageHandler;
+import io.izzel.minecraftmcp.serverlink.RemoteMcpProxies;
 import io.izzel.minecraftmcp.input.KeyAliases;
 import io.izzel.minecraftmcp.packet.CommandSuggestionSync;
 import io.izzel.minecraftmcp.packet.PacketRecorderChannelInstaller;
-import io.izzel.minecraftmcp.schematic.Schematic;
-import io.izzel.minecraftmcp.schematic.SchematicPathResolver;
-import io.izzel.minecraftmcp.schematic.SpongeSchematicV3;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.SharedConstants;
-import net.minecraft.commands.arguments.blocks.BlockStateParser;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import net.neoforged.neoforge.common.NeoForge;
 
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.gui.screens.DisconnectedScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -41,7 +41,6 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.core.BlockPos;
@@ -52,28 +51,37 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.levelgen.WorldOptions;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
 import net.minecraft.world.level.LevelSettings;
-import net.minecraft.world.level.storage.PrimaryLevelData;
 import net.minecraft.world.level.WorldDataConfiguration;
 
 @Mod(value = "minecraft_mcp", dist = Dist.CLIENT)
 public final class NeoForgeMinecraftMcpClientMod {
-    private static McpEndpoint server;
+    private static volatile MinecraftMcpBootstrap.McpEndpoint clientEndpoint;
+    private static volatile McpPluginMessageHandler clientPluginHandler;
 
     public NeoForgeMinecraftMcpClientMod(IEventBus modBus) {
         modBus.addListener(this::onClientSetup);
+        NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut.class,
+                event -> RemoteMcpProxies.toServer().failPending());
     }
 
     private void onClientSetup(net.neoforged.fml.event.lifecycle.FMLClientSetupEvent event) {
         try {
-            server = MinecraftMcpBootstrap.start(new NeoForgeBridge());
-            System.out.println("[Minecraft MCP] NeoForge MCP server started on port " + server.port());
+            clientEndpoint = MinecraftMcpBootstrap.start(new NeoForgeBridge());
+            clientPluginHandler = new McpPluginMessageHandler(clientEndpoint.registry(),
+                    McpConfigs::current, clientEndpoint.workers());
+            ClientPayloadRouter.set(
+                    (context, text) -> clientPluginHandler.receiveRequest(text,
+                            NeoForgeClientTrust.currentServerCaller(context),
+                            response -> context.reply(new NeoForgeStringPayload(NeoForgeStringPayload.CLIENT_RESPONSE, response))),
+                    (context, text) -> clientPluginHandler.receiveResponse(text,
+                            NeoForgeClientTrust.currentServerCaller(context)));
+            System.out.println("[Minecraft MCP] NeoForge MCP server started on port " + clientEndpoint.port());
         } catch (Exception e) { throw new RuntimeException("Failed to start Minecraft MCP", e); }
     }
 
@@ -294,15 +302,25 @@ public final class NeoForgeMinecraftMcpClientMod {
             var server = mc.getSingleplayerServer();
             return server == null ? null : new NeoForgeMinecraftMcpMod.NeoForgeServerBridge(server);
         }
-        public boolean serverMcpAvailable() { return NeoForgeMinecraftMcpMod.SERVER_PROXY.available() || mc.getSingleplayerServer() != null; }
+        public boolean remoteMcpAvailable() {
+            var listener = mc.getConnection();
+            return listener != null && listener.hasChannel(NeoForgeStringPayload.REQUEST);
+        }
         public Object serverMcpCall(String tool, Map<String, Object> arguments, long timeoutMs) throws Exception {
             requireOffGameThread("waiting for a server MCP response");
-            if (NeoForgeMinecraftMcpMod.SERVER_PROXY.available()) return NeoForgeMinecraftMcpMod.SERVER_PROXY.call(tool, arguments, text -> net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(new NeoForgeStringPayload(NeoForgeStringPayload.REQUEST, text)), timeoutMs);
-            var server = mc.getSingleplayerServer();
-            if (server == null) throw new IllegalStateException("server MCP is not available");
-            ToolRegistry registry = new ToolRegistry();
-            BuiltinServerTools.register(registry, new NeoForgeMinecraftMcpMod.NeoForgeServerBridge(server));
-            return registry.call(tool, arguments);
+            var peer = submit(() -> remoteMcpAvailable()
+                    ? NeoForgeClientTrust.currentServerCaller()
+                    : null).get(5, TimeUnit.SECONDS);
+            if (peer == null) {
+                throw new IllegalStateException(mc.getSingleplayerServer() != null
+                        ? "no remote server; this process has its own integrated server, use mc.server.* instead"
+                        : "no remote server reachable over the plugin channel");
+            }
+            var config = McpConfigs.current();
+            if (!config.trusts(peer)) {
+                throw new IllegalStateException(config.refusal(peer));
+            }
+            return RemoteMcpProxies.toServer().call(tool, arguments, text -> ClientPacketDistributor.sendToServer(new NeoForgeStringPayload(NeoForgeStringPayload.REQUEST, text)), timeoutMs);
         }
 
         public Map<String, Object> sendChat(String message) {
@@ -632,116 +650,6 @@ public final class NeoForgeMinecraftMcpClientMod {
         }
 
         @Override
-        public Map<String, Object> exportSchematic(Map<String, Object> args) {
-            return submit(() -> {
-                if (mc.level == null) return java.util.Map.<String, Object>of("status", "no_world");
-                try {
-                    Path path = SchematicPathResolver.resolve(gameDirectory(), String.valueOf(args.getOrDefault("path", "export.schem")));
-                    Map<?, ?> from = (Map<?, ?>) args.get("from");
-                    Map<?, ?> to = (Map<?, ?>) args.get("to");
-                    if (from == null || to == null) throw new IllegalArgumentException("from and to coordinates are required");
-                    int minX = Math.min(coord(from, "x"), coord(to, "x"));
-                    int minY = Math.min(coord(from, "y"), coord(to, "y"));
-                    int minZ = Math.min(coord(from, "z"), coord(to, "z"));
-                    int maxX = Math.max(coord(from, "x"), coord(to, "x"));
-                    int maxY = Math.max(coord(from, "y"), coord(to, "y"));
-                    int maxZ = Math.max(coord(from, "z"), coord(to, "z"));
-                    int width = maxX - minX + 1;
-                    int height = maxY - minY + 1;
-                    int length = maxZ - minZ + 1;
-                    int volume = width * height * length;
-                    int maxBlocks = ((Number) args.getOrDefault("maxBlocks", 32768)).intValue();
-                    if (volume > maxBlocks) throw new IllegalArgumentException("schematic volume " + volume + " exceeds maxBlocks " + maxBlocks);
-                    java.util.Map<String, Integer> paletteIndex = new java.util.LinkedHashMap<>();
-                    java.util.List<String> palette = new java.util.ArrayList<>();
-                    int[] blockData = new int[volume];
-                    for (int y = 0; y < height; y++) {
-                        for (int z = 0; z < length; z++) {
-                            for (int x = 0; x < width; x++) {
-                                BlockState state = mc.level.getBlockState(new BlockPos(minX + x, minY + y, minZ + z));
-                                String serialized = BlockStateParser.serialize(state);
-                                int idx = paletteIndex.computeIfAbsent(serialized, key -> { palette.add(key); return palette.size() - 1; });
-                                blockData[x + z * width + y * width * length] = idx;
-                            }
-                        }
-                    }
-                    java.util.Map<String, Object> metadata = new java.util.LinkedHashMap<>();
-                    Object metaArg = args.get("metadata");
-                    if (metaArg instanceof Map<?, ?> map) {
-                        for (Map.Entry<?, ?> entry : map.entrySet()) metadata.put(String.valueOf(entry.getKey()), entry.getValue());
-                    }
-                    Schematic schematic = new Schematic(width, height, length, new int[] {minX, minY, minZ}, palette, blockData, List.of(), new int[0], metadata, new net.minecraft.nbt.ListTag(), new net.minecraft.nbt.ListTag());
-                    SpongeSchematicV3.write(path, schematic, SharedConstants.getCurrentVersion().dataVersion().version());
-                    java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
-                    result.put("status", "exported");
-                    result.put("path", path.toAbsolutePath().normalize().toString());
-                    result.put("format", "sponge-v3");
-                    result.put("width", width);
-                    result.put("height", height);
-                    result.put("length", length);
-                    result.put("volume", volume);
-                    result.put("paletteSize", palette.size());
-                    return result;
-                } catch (Exception e) {
-                    throw new IllegalArgumentException("Failed to export Sponge v3 schematic: " + e.getMessage(), e);
-                }
-            }).join();
-        }
-
-        @Override
-        public Map<String, Object> pasteSchematic(Map<String, Object> args) {
-            return submit(() -> {
-                if (mc.level == null) return java.util.Map.<String, Object>of("status", "no_world");
-                try {
-                    Path path = SchematicPathResolver.resolve(gameDirectory(), String.valueOf(args.getOrDefault("path", "")));
-                    Schematic schematic = SpongeSchematicV3.read(path);
-                    int maxBlocks = ((Number) args.getOrDefault("maxBlocks", 32768)).intValue();
-                    if (schematic.volume() > maxBlocks) throw new IllegalArgumentException("schematic volume " + schematic.volume() + " exceeds maxBlocks " + maxBlocks);
-                    Map<?, ?> origin = (Map<?, ?>) args.get("origin");
-                    int originX = origin == null ? (mc.player == null ? 0 : (int) Math.floor(mc.player.getX())) : coord(origin, "x");
-                    int originY = origin == null ? (mc.player == null ? 0 : (int) Math.floor(mc.player.getY())) : coord(origin, "y");
-                    int originZ = origin == null ? (mc.player == null ? 0 : (int) Math.floor(mc.player.getZ())) : coord(origin, "z");
-                    boolean ignoreAir = Boolean.parseBoolean(String.valueOf(args.getOrDefault("ignoreAir", false)));
-                    int placed = 0;
-                    int skippedAir = 0;
-                    var blockLookup = mc.level.holderLookup(net.minecraft.core.registries.Registries.BLOCK);
-                    for (int y = 0; y < schematic.height(); y++) {
-                        for (int z = 0; z < schematic.length(); z++) {
-                            for (int x = 0; x < schematic.width(); x++) {
-                                String serialized = schematic.blockStateAt(x, y, z);
-                                if (ignoreAir && "minecraft:air".equals(serialized)) { skippedAir++; continue; }
-                                BlockState state = BlockStateParser.parseForBlock(blockLookup, serialized, true).blockState();
-                                mc.level.setBlock(new BlockPos(originX + x, originY + y, originZ + z), state, 3);
-                                placed++;
-                            }
-                        }
-                    }
-                    java.util.Map<String, Object> originResult = new java.util.LinkedHashMap<>();
-                    originResult.put("x", originX); originResult.put("y", originY); originResult.put("z", originZ);
-                    java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
-                    result.put("status", "pasted");
-                    result.put("path", path.toAbsolutePath().normalize().toString());
-                    result.put("format", "sponge-v3");
-                    result.put("origin", originResult);
-                    result.put("placedBlocks", placed);
-                    result.put("skippedAir", skippedAir);
-                    result.put("width", schematic.width());
-                    result.put("height", schematic.height());
-                    result.put("length", schematic.length());
-                    return result;
-                } catch (Exception e) {
-                    throw new IllegalArgumentException("Failed to paste Sponge v3 schematic: " + e.getMessage(), e);
-                }
-            }).join();
-        }
-
-        private static int coord(Map<?, ?> map, String key) {
-            Object value = map.get(key);
-            if (!(value instanceof Number number)) throw new IllegalArgumentException("coordinate " + key + " is required");
-            return number.intValue();
-        }
-
-        @Override
         public Map<String, Object> startPacketRecording(Map<String, Object> args) {
             Map<String, Object> result = MinecraftClientBridge.super.startPacketRecording(args);
             Map<String, Object> hook = mc.getConnection() == null ? Map.of("packetHandler", "not_connected") : PacketRecorderChannelInstaller.install(mc.getConnection().getConnection(), packetRecorder());
@@ -803,5 +711,4 @@ public final class NeoForgeMinecraftMcpClientMod {
             return new ClientSnapshot(true, playableInWorld, rawInWorld, screen, mc.player.getGameProfile().name(), mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYRot(), mc.player.getXRot());
         }
     }
-
 }

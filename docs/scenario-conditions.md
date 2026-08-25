@@ -1,6 +1,7 @@
 # Scenario condition expression syntax
 
-`mc.client.condition.wait` conditions use a small boolean expression language.
+`mc.client.condition.wait` and `mc.server.condition.wait` conditions use a small boolean expression
+language. The syntax is identical on both; only the properties in scope differ.
 
 ## Context object
 
@@ -40,22 +41,46 @@ The BNF below describes property access generically and does not reserve `client
 
 Reads are lenient, comparisons are strict: a missing member anywhere below a valid chain start is `null`, and `null` keeps propagating through deeper accesses (`world.nosuchfield.deeper` is `null`). `==`, `!=`, `exists` and `missing` handle `null` fine; the ordering operators `>` `>=` `<` `<=` refuse it with an evaluation error. That error is what surfaces a misspelled *member* name, which up-front validation cannot see.
 
-For `mc.condition.wait` these map to three outcomes:
+For the condition wait tools (`mc.client.condition.wait`, `mc.server.condition.wait`) these map to three outcomes:
 
 - static error (unknown property or function, wrong argument count, invalid literal regex): the tool call fails immediately, listing everything that is wrong with the expression;
 - the condition never evaluated successfully before the timeout (its state stayed unreadable): the tool call fails with the number of attempts and the last error;
 - the condition evaluated fine but stayed false: the tool returns `matched: false`. Waiting on a dynamic `$.` probe that never appears also ends here, by design.
 
-Common top-level properties currently provided by the evaluator:
+## Properties by side
+
+There is one registry per side, so the same name can mean the side-appropriate thing. `world` is
+deliberately shared, with a compatible shape, so an expression like `world.dimension` ports between
+`mc.client.condition.wait` and `mc.server.condition.wait`.
+
+Client endpoints (`mc.client.condition.wait`):
 
 ```text
 client       lightweight client snapshot: running, inWorld, screen, playerName, position, rotation
+             plus integratedServer (this process has a MinecraftServer) and remoteAvailable
+             (a server is reachable over the plugin channel)
 connection   multiplayer/disconnect state: disconnected, screen, title, message
 screen       current GUI screen state: hasScreen, screen, title, narration, children
 vehicle      player vehicle state: isPassenger, vehicle, passengers, ...
 world        world snapshot
 inventory    inventory snapshot
+packet       client packet-recording status: recording, count, maxPackets
 ```
+
+Server endpoints (`mc.server.condition.wait`), including a singleplayer client's integrated server:
+
+```text
+server       server state: running, dedicated, motd, players, maxPlayers, version, overworldTime
+world        overworld snapshot: inWorld, dimension, gameTime, difficulty, players, loadedChunks,
+             entityCount
+players      online players: count, names, players
+tick         tick statistics: tickCount, averageTickMs, smoothedTickMs, overloaded
+packet       reserved, not implemented -- nothing records server-side packets yet, so this always
+             reports an idle recorder. Do not write conditions against it.
+```
+
+`screen`, `connection`, `vehicle` and `inventory` have no server-side meaning and are absent there;
+naming one in a server condition is an error rather than a silent false.
 
 ## BNF
 
