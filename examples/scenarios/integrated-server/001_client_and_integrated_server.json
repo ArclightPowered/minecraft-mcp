@@ -1,6 +1,6 @@
 {
   "name": "client_endpoint_serves_both_sides",
-  "tags": ["topology-b", "full-client"],
+  "tags": ["integrated-server", "full-client"],
   "requires": { "sides": ["client"] },
   "steps": [
     {
@@ -24,7 +24,7 @@
     {
       "id": "join",
       "tool": "mc.client.world.join",
-      "args": { "name": "minecraft_mcp_topology_b", "seed": 7, "preset": "flat" },
+      "args": { "name": "minecraft_mcp_integrated_server", "seed": 7, "preset": "flat" },
       "expect": { "result.status": "joining" }
     },
     {
