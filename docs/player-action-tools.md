@@ -1,6 +1,7 @@
 # Player action tools
 
-Player action tools perform actions through the client player/game mode path. They do not add separate state-query tools; use `mc.client.state` for current player state.
+Player action tools perform actions through the client player/game mode path. They do not add
+separate state-query tools; use `mc.client.state` for current player state.
 
 Implemented actions:
 
@@ -54,7 +55,8 @@ Rotates the player toward the world coordinate and returns the target plus compu
 }
 ```
 
-`hand` accepts `main`, `mainhand`, `off`, `off_hand`, or `offhand`. The loader bridge calls the normal client game mode item-use path and swings when the interaction consumes action.
+`hand` accepts `main`, `mainhand`, `off`, `off_hand`, or `offhand`. The loader bridge calls the
+normal client game mode item-use path and swings when the interaction consumes action.
 
 ## `mc.client.player.attack.block`
 
@@ -67,7 +69,8 @@ Rotates the player toward the world coordinate and returns the target plus compu
 }
 ```
 
-Starts destroying/attacking the target block through the client game mode path and swings the main hand. `face` accepts vanilla directions: `up`, `down`, `north`, `south`, `west`, `east`.
+Starts destroying/attacking the target block through the client game mode path and swings the main
+hand. `face` accepts vanilla directions: `up`, `down`, `north`, `south`, `west`, `east`.
 
 ## `mc.client.player.destroy.block`
 
@@ -81,7 +84,10 @@ Starts destroying/attacking the target block through the client game mode path a
 }
 ```
 
-Keeps calling the normal client block destroy path until the target block becomes air. The tool returns a `FutureResult`; the registry applies the standard call-level `timeoutMs` and cancels the future when that timeout expires. Returns `status: "destroyed"` on success with `attempts` and `elapsedMs`.
+Keeps calling the normal client block destroy path until the target block becomes air. The tool
+returns a `FutureResult`; the registry applies the standard call-level `timeoutMs` and cancels the
+future when that timeout expires. Returns `status: "destroyed"` on success with `attempts` and
+`elapsedMs`.
 
 ## `mc.client.player.drop`
 

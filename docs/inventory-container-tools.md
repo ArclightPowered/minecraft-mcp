@@ -1,6 +1,8 @@
 # Inventory and container tools
 
-`minecraft-mcp` exposes inventory/container tools for client-side automation. Read tools return structured snapshots; container click tools use Minecraft's normal client interaction path instead of directly mutating item stacks.
+`minecraft-mcp` exposes inventory/container tools for client-side automation. Read tools return
+structured snapshots; container click tools use Minecraft's normal client interaction path instead
+of directly mutating item stacks.
 
 ## `mc.client.inventory.state`
 
@@ -193,6 +195,8 @@ Returns:
 ## Runtime notes
 
 - Wait for `client.inWorld == true` before inventory/container interaction after `mc.client.world.join`.
-- Container click tools require an open container/menu and use `Minecraft#gameMode.handleInventoryMouseClick(...)`.
-- Creative inventory and survival inventory have different slot layouts; scenarios that click fixed slot numbers should put the player into a known game mode first.
+- Container click tools require an open container/menu and use
+  `Minecraft#gameMode.handleInventoryMouseClick(...)`.
+- Creative inventory and survival inventory have different slot layouts; scenarios that click fixed
+  slot numbers should put the player into a known game mode first.
 - The example scenarios live under `examples/scenarios/inventory-container/`.

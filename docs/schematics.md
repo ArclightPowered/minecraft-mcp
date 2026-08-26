@@ -36,7 +36,8 @@ Example:
 }
 ```
 
-In integrated singleplayer server mode, `mc.remote.call` falls back to the local integrated server bridge when the plugin-message server bridge is not available.
+In integrated singleplayer there is no remote peer to call: `mc.remote.call` refuses with an error
+saying to use `mc.server.*` instead, which reaches the same integrated server as a same-JVM call.
 
 ## Path handling
 

@@ -27,6 +27,9 @@ registers no `mc.client.*` at all — they are absent from `tools/list`, not stu
 Read `mcp/server.json` under the game directory to tell endpoints apart; it carries `side`,
 `loader`, `minecraftVersion` and `capabilities` alongside the port and token.
 
+How the registry behind this split is put together — four registration sets, and a policy consulted
+on every lookup rather than snapshotted — is in the [tool registry](tool-registry.md) note.
+
 ### No prefix
 
 - `mc.debug.capabilities`
@@ -94,6 +97,13 @@ It says the peer *speaks* MCP, not that its endpoint has finished starting. Thos
 peer is still coming up, and a mod whose endpoint fails to start throws out of its initializer, so
 there is no window to observe in practice.
 
+One case separates them for good rather than briefly. A NeoForge client that opens its world to LAN
+registers the serverbound channel like every other NeoForge instance, but only a dedicated server
+builds the handler that answers on it, so it reports as reachable and lets the call run out its
+timeout. Fabric refuses immediately instead. The
+[plugin channel](plugin-channel.md#three-questions-three-owners) note has the mechanism and why it is
+left as it is.
+
 A server lists **every** player that joined, not just the ones running this mod, with `available`
 saying which is which. When `mc.remote.call` fails, the player you were trying to reach is the one you
 want to see in that list.
@@ -156,6 +166,10 @@ Lists are comma-separated in the property and environment layers, and native arr
 set-but-empty environment variable (`MINECRAFT_MCP_ACCESS_DISABLED_TOOLS=`) means an explicitly empty
 list — that is the only way to override a non-empty file value back to nothing. A blank *scalar*
 still counts as unset.
+
+Why the config code is shaped this way — layers rather than a snapshot, which is what makes the
+**Live** rows above need no reload plumbing on this side — is in the
+[configuration internals](configuration.md) note.
 
 ### The startup log says where everything came from
 

@@ -1,6 +1,7 @@
 # Headless support
 
-Minecraft client still needs a graphics context. The supported CI path is virtual display rather than true headless.
+Minecraft client still needs a graphics context. The supported CI path is virtual display rather
+than true headless.
 
 Recommended Linux command:
 
@@ -31,7 +32,8 @@ priority. The startup log says which one won for each, so a CI run that ignores 
 one `grep Picked` away from an answer. See [protocol.md](protocol.md#configuration) for the full
 table.
 
-If no OpenGL context can be created, only logic-level tests such as parser and JSON-RPC unit tests are expected to pass.
+If no OpenGL context can be created, only logic-level tests such as parser and JSON-RPC unit tests
+are expected to pass.
 
 ## Dedicated server: no display needed
 
@@ -47,6 +49,13 @@ A dedicated server has no graphics context to create, so it runs in a plain cont
 The batch prints its report and exits non-zero if any scenario failed, so it works as a CI gate
 directly. Scenarios are gated with `requires.sides: ["server"]`, so a mixed directory skips the
 client ones rather than failing them.
+
+Such a server needs `pause-when-empty-seconds=0` in its `server.properties`, or every tick wait in a
+server-side scenario times out at zero ticks once the vanilla pause (60 empty seconds by default)
+kicks in — the [server tools](server-tools.md#waiting-for-ticks-that-happened) note has why. That
+file and `eula.txt` are yours to put in the run directory; no Gradle task writes either for you.
+The e2e script below is the one exception — it prepares both for its throwaway server and restores
+them on exit.
 
 ## Two processes
 
