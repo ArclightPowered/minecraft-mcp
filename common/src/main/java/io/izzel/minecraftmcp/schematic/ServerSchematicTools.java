@@ -5,9 +5,11 @@ import net.minecraft.commands.arguments.blocks.BlockStateParser;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
+import net.minecraft.core.Registry;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
@@ -31,22 +33,25 @@ import java.util.Map;
 public final class ServerSchematicTools {
     private ServerSchematicTools() {}
 
+    static String serializeBlockState(BlockState state) {
+        return BlockStateParser.serialize(state);
+    }
+
     public static Map<String, Object> exportSchematic(ServerLevel level, Path gameDirectory, Map<String, Object> args) {
         try {
             Path path = SchematicPathResolver.resolve(gameDirectory, String.valueOf(args.getOrDefault("path", "")));
-            Map<?, ?> from = (Map<?, ?>) args.get("from");
-            Map<?, ?> to = (Map<?, ?>) args.get("to");
-            if (from == null || to == null) throw new IllegalArgumentException("from and to are required");
+            Map<?, ?> from = requiredMap(args, "from");
+            Map<?, ?> to = requiredMap(args, "to");
             int x1 = coord(from, "x"), y1 = coord(from, "y"), z1 = coord(from, "z");
             int x2 = coord(to, "x"), y2 = coord(to, "y"), z2 = coord(to, "z");
             int minX = Math.min(x1, x2), minY = Math.min(y1, y2), minZ = Math.min(z1, z2);
-            int maxX = Math.max(x1, x2), maxY = Math.max(y1, y2), maxZ = Math.max(z1, z2);
-            int width = maxX - minX + 1;
-            int height = maxY - minY + 1;
-            int length = maxZ - minZ + 1;
-            int volume = width * height * length;
-            int maxBlocks = ((Number) args.getOrDefault("maxBlocks", 32768)).intValue();
+            int width = Math.max(x1, x2) - minX + 1;
+            int height = Math.max(y1, y2) - minY + 1;
+            int length = Math.max(z1, z2) - minZ + 1;
+            int volume = volume(width, height, length);
+            int maxBlocks = maxBlocks(args);
             if (volume > maxBlocks) throw new IllegalArgumentException("selection volume " + volume + " exceeds maxBlocks " + maxBlocks);
+
             Map<String, Integer> paletteIndex = new LinkedHashMap<>();
             List<String> palette = new ArrayList<>();
             int[] blockData = new int[volume];
@@ -54,42 +59,33 @@ public final class ServerSchematicTools {
             List<String> biomePalette = new ArrayList<>();
             int[] biomeData = new int[volume];
             ListTag blockEntities = new ListTag();
-            var biomeRegistry = level.registryAccess().lookupOrThrow(Registries.BIOME);
+            Registry<Biome> biomeRegistry = level.registryAccess().lookupOrThrow(Registries.BIOME);
             for (int y = 0; y < height; y++) {
                 for (int z = 0; z < length; z++) {
                     for (int x = 0; x < width; x++) {
                         BlockPos pos = new BlockPos(minX + x, minY + y, minZ + z);
-                        String state = BlockStateParser.serialize(level.getBlockState(pos));
-                        int stateIndex = paletteIndex.computeIfAbsent(state, key -> { palette.add(key); return palette.size() - 1; });
-                        blockData[x + z * width + y * width * length] = stateIndex;
-                        Holder<Biome> biome = level.getBiome(pos);
-                        String biomeId = biome.unwrapKey().map(key -> key.identifier().toString()).orElseGet(() -> biomeRegistry.getKey(biome.value()).toString());
-                        int biomeIndex = biomePaletteIndex.computeIfAbsent(biomeId, key -> { biomePalette.add(key); return biomePalette.size() - 1; });
-                        biomeData[x + z * width + y * width * length] = biomeIndex;
+                        int index = index(width, length, x, y, z);
+                        String state = serializeBlockState(level.getBlockState(pos));
+                        blockData[index] = paletteIndex.computeIfAbsent(state, key -> { palette.add(key); return palette.size() - 1; });
+                        Holder<Biome> biome = level.getNoiseBiome(QuartPos.fromBlock(pos.getX()), QuartPos.fromBlock(pos.getY()), QuartPos.fromBlock(pos.getZ()));
+                        String biomeId = biome.unwrapKey().map(key -> key.identifier().toString())
+                                .orElseGet(() -> biomeRegistry.getKey(biome.value()).toString());
+                        biomeData[index] = biomePaletteIndex.computeIfAbsent(biomeId, key -> { biomePalette.add(key); return biomePalette.size() - 1; });
                         BlockEntity blockEntity = level.getBlockEntity(pos);
-                        if (blockEntity != null) {
-                            CompoundTag tag = blockEntity.saveWithFullMetadata(level.registryAccess());
-                            tag.putInt("x", x);
-                            tag.putInt("y", y);
-                            tag.putInt("z", z);
-                            blockEntities.add(tag);
-                        }
+                        if (blockEntity != null) blockEntities.add(exportBlockEntity(blockEntity, level, x, y, z));
                     }
                 }
             }
             ListTag entities = new ListTag();
-            boolean includeEntities = Boolean.parseBoolean(String.valueOf(args.getOrDefault("entities", true)));
-            if (includeEntities) {
-                AABB box = new AABB(minX, minY, minZ, maxX + 1.0D, maxY + 1.0D, maxZ + 1.0D);
+            if (booleanArg(args, "entities", true)) {
+                AABB box = new AABB(minX, minY, minZ, minX + width, minY + height, minZ + length);
                 for (Entity entity : level.getEntities((Entity) null, box, e -> !(e instanceof net.minecraft.world.entity.player.Player))) {
-                    TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, level.registryAccess());
-                    if (entity.save(output)) {
-                        entities.add(output.buildResult());
-                    }
+                    CompoundTag exported = exportEntity(entity, level, minX, minY, minZ);
+                    if (exported != null) entities.add(exported);
                 }
             }
-            Map<String, Object> metadata = metadata(args.get("metadata"));
-            Schematic schematic = new Schematic(width, height, length, new int[] {minX, minY, minZ}, palette, blockData, biomePalette, biomeData, metadata, blockEntities, entities);
+            Schematic schematic = new Schematic(width, height, length, new int[] {minX, minY, minZ}, palette, blockData,
+                    biomePalette, biomeData, metadata(args.get("metadata")), blockEntities, entities);
             SpongeSchematicV3.write(path, schematic, SharedConstants.getCurrentVersion().dataVersion().version());
             Map<String, Object> result = baseResult("exported", path, schematic);
             result.put("blockEntities", blockEntities.size());
@@ -105,17 +101,13 @@ public final class ServerSchematicTools {
         try {
             Path path = SchematicPathResolver.resolve(gameDirectory, String.valueOf(args.getOrDefault("path", "")));
             Schematic schematic = SpongeSchematicV3.read(path);
-            int maxBlocks = ((Number) args.getOrDefault("maxBlocks", 32768)).intValue();
+            int maxBlocks = maxBlocks(args);
             if (schematic.volume() > maxBlocks) throw new IllegalArgumentException("schematic volume " + schematic.volume() + " exceeds maxBlocks " + maxBlocks);
-            Map<?, ?> origin = (Map<?, ?>) args.get("origin");
-            if (origin == null) throw new IllegalArgumentException("origin is required for server-side schematic paste");
+            Map<?, ?> origin = requiredMap(args, "origin");
             int originX = coord(origin, "x"), originY = coord(origin, "y"), originZ = coord(origin, "z");
-            boolean ignoreAir = Boolean.parseBoolean(String.valueOf(args.getOrDefault("ignoreAir", false)));
-            boolean pasteBlockEntities = Boolean.parseBoolean(String.valueOf(args.getOrDefault("blockEntities", true)));
-            boolean pasteEntities = Boolean.parseBoolean(String.valueOf(args.getOrDefault("entities", true)));
-            boolean pasteBiomes = Boolean.parseBoolean(String.valueOf(args.getOrDefault("biomes", true)));
-            var blockLookup = level.holderLookup(Registries.BLOCK);
+            boolean ignoreAir = booleanArg(args, "ignoreAir", false);
             int placed = 0, skippedAir = 0;
+            var blockLookup = level.holderLookup(Registries.BLOCK);
             for (int y = 0; y < schematic.height(); y++) {
                 for (int z = 0; z < schematic.length(); z++) {
                     for (int x = 0; x < schematic.width(); x++) {
@@ -128,13 +120,12 @@ public final class ServerSchematicTools {
                 }
             }
             int blockEntityCount = 0;
-            if (pasteBlockEntities) {
-                for (int i = 0; i < schematic.blockEntities().size(); i++) {
-                    CompoundTag tag = schematic.blockEntities().getCompoundOrEmpty(i).copy();
-                    int x = tag.getIntOr("x", 0), y = tag.getIntOr("y", 0), z = tag.getIntOr("z", 0);
-                    BlockPos pos = new BlockPos(originX + x, originY + y, originZ + z);
-                    tag.putInt("x", pos.getX()); tag.putInt("y", pos.getY()); tag.putInt("z", pos.getZ());
-                    BlockEntity blockEntity = BlockEntity.loadStatic(pos, level.getBlockState(pos), tag, level.registryAccess());
+            if (booleanArg(args, "blockEntities", true)) {
+                ListTag blockEntities = schematic.blockEntities();
+                for (int i = 0; i < blockEntities.size(); i++) {
+                    CompoundTag tag = blockEntities.getCompound(i).orElse(null);
+                    if (tag == null) throw new IllegalArgumentException("BlockEntities entry " + i + " must be a compound");
+                    BlockEntity blockEntity = importBlockEntity(tag, level, originX, originY, originZ);
                     if (blockEntity != null) {
                         level.setBlockEntity(blockEntity);
                         blockEntity.setChanged();
@@ -143,29 +134,39 @@ public final class ServerSchematicTools {
                 }
             }
             int biomeCount = 0;
-            if (pasteBiomes && !schematic.biomePalette().isEmpty() && schematic.biomeData().length == schematic.volume()) {
-                var biomeRegistry = level.registryAccess().lookupOrThrow(Registries.BIOME);
+            if (booleanArg(args, "biomes", true) && !schematic.biomePalette().isEmpty()) {
+                Registry<Biome> biomeRegistry = level.registryAccess().lookupOrThrow(Registries.BIOME);
+                Map<Long, BiomePlacement> biomePlacements = new LinkedHashMap<>();
+                int[] biomeData = schematic.biomeData();
                 for (int y = 0; y < schematic.height(); y++) {
                     for (int z = 0; z < schematic.length(); z++) {
                         for (int x = 0; x < schematic.width(); x++) {
-                            String biomeId = schematic.biomePalette().get(schematic.biomeData()[schematic.index(x, y, z)]);
-                            Holder<Biome> holder = biomeRegistry.get(Identifier.parse(biomeId)).orElse(null);
-                            if (holder != null) {
-                                setBiome(level, originX + x, originY + y, originZ + z, holder);
-                                biomeCount++;
+                            Identifier biomeId = Identifier.parse(schematic.biomePalette().get(biomeData[schematic.index(x, y, z)]));
+                            Holder<Biome> holder = biomeRegistry.get(biomeId).orElseThrow(() -> new IllegalArgumentException("unknown biome " + biomeId));
+                            int worldX = originX + x, worldY = originY + y, worldZ = originZ + z;
+                            long quartKey = BlockPos.asLong(QuartPos.fromBlock(worldX), QuartPos.fromBlock(worldY), QuartPos.fromBlock(worldZ));
+                            BiomePlacement existing = biomePlacements.putIfAbsent(quartKey, new BiomePlacement(worldX, worldY, worldZ, biomeId, holder));
+                            if (existing != null && !existing.id().equals(biomeId)) {
+                                throw new IllegalArgumentException("Sponge v3 biome data assigns multiple biomes to Minecraft quart cell at " + worldX + "," + worldY + "," + worldZ + "; refusing to silently discard biome data");
                             }
                         }
                     }
                 }
+                for (BiomePlacement placement : biomePlacements.values()) {
+                    setBiome(level, placement.x(), placement.y(), placement.z(), placement.holder());
+                    biomeCount++;
+                }
             }
             int entityCount = 0;
-            if (pasteEntities) {
-                for (int i = 0; i < schematic.entities().size(); i++) {
-                    CompoundTag tag = schematic.entities().getCompoundOrEmpty(i).copy();
-                    EntityType.create(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), tag), level, EntitySpawnReason.LOAD).ifPresent(entity -> {
-                        entity.snapTo(entity.getX() + originX, entity.getY() + originY, entity.getZ() + originZ, entity.getYRot(), entity.getXRot());
-                        level.addFreshEntity(entity);
-                    });
+            if (booleanArg(args, "entities", true)) {
+                ListTag entities = schematic.entities();
+                for (int i = 0; i < entities.size(); i++) {
+                    CompoundTag tag = entities.getCompound(i).orElse(null);
+                    if (tag == null) throw new IllegalArgumentException("Entities entry " + i + " must be a compound");
+                    Entity entity = importEntity(tag, level, originX, originY, originZ);
+                    if (entity == null || !level.addFreshEntity(entity)) {
+                        throw new IllegalStateException("Failed to add schematic entity " + i);
+                    }
                     entityCount++;
                 }
             }
@@ -182,6 +183,75 @@ public final class ServerSchematicTools {
         }
     }
 
+    private static CompoundTag exportBlockEntity(BlockEntity blockEntity, ServerLevel level, int x, int y, int z) {
+        CompoundTag saved = blockEntity.saveWithFullMetadata(level.registryAccess());
+        CompoundTag entry = new CompoundTag();
+        entry.putIntArray("Pos", new int[] {x, y, z});
+        entry.putString("Id", blockEntity.getType().builtInRegistryHolder().key().identifier().toString());
+        entry.put("Data", saved);
+        return entry;
+    }
+
+    private static BlockEntity importBlockEntity(CompoundTag entry, ServerLevel level, int originX, int originY, int originZ) {
+        int[] relative = entry.getIntArray("Pos").orElseThrow(() -> new IllegalArgumentException("BlockEntity is missing Pos"));
+        if (relative.length != 3) throw new IllegalArgumentException("BlockEntity Pos must contain exactly 3 integers");
+        String id = entry.getString("Id").orElseThrow(() -> new IllegalArgumentException("BlockEntity is missing Id"));
+        BlockPos pos = new BlockPos(originX + relative[0], originY + relative[1], originZ + relative[2]);
+        CompoundTag saved = entry.getCompound("Data").orElseGet(CompoundTag::new).copy();
+        saved.putString("id", id);
+        saved.putInt("x", pos.getX());
+        saved.putInt("y", pos.getY());
+        saved.putInt("z", pos.getZ());
+        return BlockEntity.loadStatic(pos, level.getBlockState(pos), saved, level.registryAccess());
+    }
+
+    private static CompoundTag exportEntity(Entity entity, ServerLevel level, int minX, int minY, int minZ) {
+        TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, level.registryAccess());
+        return exportIfSaved(entity.save(output), () -> {
+            CompoundTag entry = new CompoundTag();
+            ListTag pos = new ListTag();
+            pos.add(DoubleTag.valueOf(entity.getX() - minX));
+            pos.add(DoubleTag.valueOf(entity.getY() - minY));
+            pos.add(DoubleTag.valueOf(entity.getZ() - minZ));
+            entry.put("Pos", pos);
+            entry.putString("Id", EntityType.getKey(entity.getType()).toString());
+            entry.put("Data", output.buildResult());
+            return entry;
+        });
+    }
+
+    static CompoundTag exportIfSaved(boolean saved, java.util.function.Supplier<CompoundTag> serializer) {
+        return saved ? serializer.get() : null;
+    }
+
+    static CompoundTag copyForEntityPlacement(CompoundTag source) {
+        CompoundTag copy = source.copy();
+        copy.remove("UUID");
+        copy.remove("UUIDMost");
+        copy.remove("UUIDLeast");
+        copy.getList("Passengers").ifPresent(passengers -> {
+            for (int i = 0; i < passengers.size(); i++) {
+                CompoundTag passenger = passengers.getCompound(i).orElseThrow();
+                passengers.set(i, copyForEntityPlacement(passenger));
+            }
+        });
+        return copy;
+    }
+
+    private static Entity importEntity(CompoundTag entry, ServerLevel level, int originX, int originY, int originZ) {
+        ListTag relative = entry.getList("Pos").orElseThrow(() -> new IllegalArgumentException("Entity is missing Pos"));
+        if (relative.size() != 3) throw new IllegalArgumentException("Entity Pos must contain exactly 3 doubles");
+        String id = entry.getString("Id").orElseThrow(() -> new IllegalArgumentException("Entity is missing Id"));
+        CompoundTag saved = copyForEntityPlacement(entry.getCompound("Data").orElseGet(CompoundTag::new));
+        saved.putString("id", id);
+        ListTag absolute = new ListTag();
+        absolute.add(DoubleTag.valueOf(relative.getDoubleOr(0, 0.0D) + originX));
+        absolute.add(DoubleTag.valueOf(relative.getDoubleOr(1, 0.0D) + originY));
+        absolute.add(DoubleTag.valueOf(relative.getDoubleOr(2, 0.0D) + originZ));
+        saved.put("Pos", absolute);
+        return EntityType.create(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), saved), level, EntitySpawnReason.LOAD).orElse(null);
+    }
+
     private static void setBiome(ServerLevel level, int x, int y, int z, Holder<Biome> biome) {
         int sectionX = SectionPos.blockToSectionCoord(x);
         int sectionZ = SectionPos.blockToSectionCoord(z);
@@ -194,9 +264,13 @@ public final class ServerSchematicTools {
         int baseQx = QuartPos.fromSection(sectionX);
         int baseQy = QuartPos.fromBlock(level.getSectionYFromSectionIndex(sectionIndex) << 4);
         int baseQz = QuartPos.fromSection(sectionZ);
-        section.fillBiomesFromNoise((qx, qy, qz, sampler) -> qx == targetQx && qy == targetQy && qz == targetQz ? biome : section.getNoiseBiome(qx - baseQx, qy - baseQy, qz - baseQz), level.getChunkSource().randomState().sampler(), baseQx, baseQy, baseQz);
+        section.fillBiomesFromNoise((qx, qy, qz, sampler) -> qx == targetQx && qy == targetQy && qz == targetQz
+                ? biome : section.getNoiseBiome(qx - baseQx, qy - baseQy, qz - baseQz),
+                level.getChunkSource().randomState().sampler(), baseQx, baseQy, baseQz);
         chunk.markUnsaved();
     }
+
+    private record BiomePlacement(int x, int y, int z, Identifier id, Holder<Biome> holder) {}
 
     private static Map<String, Object> baseResult(String status, Path path, Schematic schematic) {
         Map<String, Object> result = new LinkedHashMap<>();
@@ -218,9 +292,31 @@ public final class ServerSchematicTools {
         return result;
     }
 
+    private static Map<?, ?> requiredMap(Map<String, Object> args, String key) {
+        if (!(args.get(key) instanceof Map<?, ?> result)) throw new IllegalArgumentException(key + " is required");
+        return result;
+    }
+
+    private static boolean booleanArg(Map<String, Object> args, String key, boolean defaultValue) {
+        return Boolean.parseBoolean(String.valueOf(args.getOrDefault(key, defaultValue)));
+    }
+
+    private static int maxBlocks(Map<String, Object> args) {
+        int maxBlocks = ((Number) args.getOrDefault("maxBlocks", 32768)).intValue();
+        if (maxBlocks <= 0) throw new IllegalArgumentException("maxBlocks must be positive");
+        return maxBlocks;
+    }
+
     private static int coord(Map<?, ?> map, String key) {
         Object value = map.get(key);
         if (!(value instanceof Number number)) throw new IllegalArgumentException("coordinate " + key + " is required");
         return number.intValue();
     }
+
+    private static int volume(int width, int height, int length) {
+        try { return Math.multiplyExact(Math.multiplyExact(width, height), length); }
+        catch (ArithmeticException e) { throw new IllegalArgumentException("selection volume overflows", e); }
+    }
+
+    private static int index(int width, int length, int x, int y, int z) { return x + z * width + y * width * length; }
 }

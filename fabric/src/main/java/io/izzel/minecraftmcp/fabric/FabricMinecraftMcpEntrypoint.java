@@ -31,7 +31,6 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.input.MouseButtonInfo;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.network.chat.Component;
@@ -46,6 +45,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -71,10 +71,10 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
         } catch (Exception e) { throw new RuntimeException("Failed to start Minecraft MCP", e); }
     }
     private static void registerRemoteMcpPluginMessages() {
-        PayloadTypeRegistry.clientboundPlay().register(FabricStringPayload.RESPONSE, FabricStringPayload.codec(FabricStringPayload.RESPONSE));
-        PayloadTypeRegistry.serverboundPlay().register(FabricStringPayload.REQUEST, FabricStringPayload.codec(FabricStringPayload.REQUEST));
-        PayloadTypeRegistry.clientboundPlay().register(FabricStringPayload.CLIENT_REQUEST, FabricStringPayload.codec(FabricStringPayload.CLIENT_REQUEST));
-        PayloadTypeRegistry.serverboundPlay().register(FabricStringPayload.CLIENT_RESPONSE, FabricStringPayload.codec(FabricStringPayload.CLIENT_RESPONSE));
+        PayloadTypeRegistry.playS2C().register(FabricStringPayload.RESPONSE, FabricStringPayload.codec(FabricStringPayload.RESPONSE));
+        PayloadTypeRegistry.playC2S().register(FabricStringPayload.REQUEST, FabricStringPayload.codec(FabricStringPayload.REQUEST));
+        PayloadTypeRegistry.playS2C().register(FabricStringPayload.CLIENT_REQUEST, FabricStringPayload.codec(FabricStringPayload.CLIENT_REQUEST));
+        PayloadTypeRegistry.playC2S().register(FabricStringPayload.CLIENT_RESPONSE, FabricStringPayload.codec(FabricStringPayload.CLIENT_RESPONSE));
         ClientPlayNetworking.registerGlobalReceiver(FabricStringPayload.CLIENT_REQUEST, (payload, context) -> {
             if (clientPluginHandler == null) {
                 return;
@@ -294,10 +294,10 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             if (target.isEmpty()) return Map.of("status", "rejected", "reason", "empty address");
             String displayName = (name == null || name.isBlank()) ? target : name;
             if (mc.level != null) {
-                mc.level.disconnect(ClientLevel.DEFAULT_QUIT_MESSAGE);
-                mc.disconnectWithProgressScreen();
+                mc.level.disconnect(Component.translatable("menu.disconnect"));
+                mc.disconnect(new GenericMessageScreen(Component.translatable("menu.disconnect")), false);
             } else if (mc.getConnection() != null) {
-                mc.disconnectWithProgressScreen();
+                mc.disconnect(new GenericMessageScreen(Component.translatable("menu.disconnect")), false);
             }
             ServerData data = new ServerData(displayName, target, ServerData.Type.OTHER);
             ConnectScreen.startConnecting(new TitleScreen(), mc, ServerAddress.parseString(target), data, false, null);
@@ -392,7 +392,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             int typed = 0;
             for (int offset = 0; offset < value.length(); ) {
                 int cp = value.codePointAt(offset);
-                if (screen.charTyped(new CharacterEvent(cp))) typed++;
+                if (screen.charTyped(new CharacterEvent(cp, 0))) typed++;
                 offset += Character.charCount(cp);
             }
             boolean submitted = false;
@@ -461,13 +461,14 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
                 return;
             }
             String levelName = name == null || name.isBlank() ? "minecraft_mcp_test_world" : name;
-            LevelSettings settings = new LevelSettings(levelName, GameType.CREATIVE, new LevelSettings.DifficultySettings(Difficulty.PEACEFUL, false, false), true, WorldDataConfiguration.DEFAULT);
+            LevelSettings settings = new LevelSettings(levelName, GameType.CREATIVE, false, Difficulty.PEACEFUL, true,
+                    new GameRules(WorldDataConfiguration.DEFAULT.enabledFeatures()), WorldDataConfiguration.DEFAULT);
             long seed = options.get("seed") instanceof Number n ? n.longValue() : 0L;
             WorldOptions worldOptions = new WorldOptions(seed, false, false);
             java.util.function.Function<net.minecraft.core.HolderLookup.Provider, net.minecraft.world.level.levelgen.WorldDimensions> dimensions = registries -> {
                 String preset = String.valueOf(options.getOrDefault("preset", options.getOrDefault("generator", "normal"))).trim().toLowerCase(java.util.Locale.ROOT);
                 if (preset.equals("flat") || preset.equals("superflat")) {
-                    return registries.lookupOrThrow(net.minecraft.core.registries.Registries.WORLD_PRESET).getOrThrow(WorldPresets.FLAT).value().createWorldDimensions();
+                    return WorldPresets.createFlatWorldDimensions(registries);
                 }
                 return WorldPresets.createNormalWorldDimensions(registries);
             };
@@ -478,7 +479,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
         }
         public void leaveWorldToTitle() {
             if (mc.level != null) {
-                mc.disconnectWithSavingScreen();
+                mc.disconnectFromWorld(Component.translatable("menu.savingLevel"));
             }
         }
         public Map<String, Object> worldSnapshot() {
@@ -573,8 +574,8 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             var menu = mc.player.containerMenu;
             if (menu == null) return Map.of("status", "rejected", "reason", "no container", "slot", slot, "button", button, "clickType", clickType);
             if (slot >= menu.slots.size()) return Map.of("status", "rejected", "reason", "slot out of range", "slot", slot, "button", button, "clickType", clickType, "containerId", menu.containerId);
-            net.minecraft.world.inventory.ContainerInput type = net.minecraft.world.inventory.ContainerInput.valueOf(clickType);
-            mc.gameMode.handleContainerInput(menu.containerId, slot, button, type, mc.player);
+            net.minecraft.world.inventory.ClickType type = net.minecraft.world.inventory.ClickType.valueOf(clickType);
+            mc.gameMode.handleInventoryMouseClick(menu.containerId, slot, button, type, mc.player);
             return Map.of("status", "clicked", "slot", slot, "button", button, "clickType", clickType, "containerId", menu.containerId);
         }
         public Map<String, Object> closeContainer() {

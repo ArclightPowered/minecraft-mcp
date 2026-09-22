@@ -50,6 +50,7 @@ processResources {
     from(configurations.commonResources)
     inputs.property 'version', project.version
     inputs.property 'minecraft_version', rootProject.property('minecraft_version')
+    ['neoforge_version_range', 'mod_id', 'mod_name', 'mod_description', 'mod_author', 'mod_license'].each { key -> inputs.property key, rootProject.property(key) }
     filesMatching('META-INF/neoforge.mods.toml') {
         expand version: project.version,
                 minecraft_version: rootProject.property('minecraft_version'),

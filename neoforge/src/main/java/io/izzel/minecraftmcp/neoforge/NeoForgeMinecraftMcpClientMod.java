@@ -19,8 +19,10 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.lifecycle.ClientStartedEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.network.registration.NetworkRegistry;
 
 import java.nio.file.Path;
 import java.util.Map;
@@ -40,6 +42,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.ConnectionProtocol;
 import net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.InteractionHand;
@@ -58,21 +61,25 @@ import net.minecraft.world.level.levelgen.WorldOptions;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.gamerules.GameRules;
 
-@Mod(value = "minecraft_mcp", dist = Dist.CLIENT)
+@Mod(value = "minecraft_mcp", dist = {Dist.CLIENT})
 public final class NeoForgeMinecraftMcpClientMod {
     private static volatile MinecraftMcpBootstrap.McpEndpoint clientEndpoint;
     private static volatile McpPluginMessageHandler clientPluginHandler;
 
     public NeoForgeMinecraftMcpClientMod(IEventBus modBus) {
-        modBus.addListener(this::onClientSetup);
+        // The earlier mod-lifecycle setup phase runs before Minecraft has constructed its singleton on 1.21.11.
+        // Starting there gives NeoForgeBridge a permanently cached null client. ClientStartedEvent
+        // is posted on the game bus after construction and supplies the live instance directly.
+        NeoForge.EVENT_BUS.addListener(this::onClientStarted);
         NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut.class,
                 event -> RemoteMcpProxies.toServer().failPending());
     }
 
-    private void onClientSetup(net.neoforged.fml.event.lifecycle.FMLClientSetupEvent event) {
+    private void onClientStarted(ClientStartedEvent event) {
         try {
-            clientEndpoint = MinecraftMcpBootstrap.start(new NeoForgeBridge());
+            clientEndpoint = MinecraftMcpBootstrap.start(new NeoForgeBridge(event.getClient()));
             clientPluginHandler = new McpPluginMessageHandler(clientEndpoint.registry(),
                     McpConfigs::current, clientEndpoint.workers());
             ClientPayloadRouter.set(
@@ -86,7 +93,11 @@ public final class NeoForgeMinecraftMcpClientMod {
     }
 
     static final class NeoForgeBridge implements MinecraftClientBridge {
-        private final Minecraft mc = Minecraft.getInstance();
+        private final Minecraft mc;
+
+        NeoForgeBridge(Minecraft mc) {
+            this.mc = java.util.Objects.requireNonNull(mc, "Minecraft client must be available at ClientStartedEvent");
+        }
         public String loader() { return "neoforge"; }
         public String minecraftVersion() { return SharedConstants.getCurrentVersion().name(); }
         public Path gameDirectory() { return FMLPaths.GAMEDIR.get(); }
@@ -94,12 +105,37 @@ public final class NeoForgeMinecraftMcpClientMod {
         public void execute(Runnable runnable) { mc.execute(runnable); }
         public void pressKey(String key) {
             var keyMapping = InputConstants.getKey(KeyAliases.normalize(key));
-            if (mc.screen != null) {
-                mc.screen.keyPressed(new KeyEvent(keyMapping.getValue(), 0, 0));
+            if (keyMapping.getType() == InputConstants.Type.MOUSE) {
+                dispatchNativeMousePress(keyMapping, InputConstants.PRESS);
+                dispatchNativeMousePress(keyMapping, InputConstants.RELEASE);
             } else {
-                KeyMapping.set(keyMapping, true);
-                KeyMapping.click(keyMapping);
-                KeyMapping.set(keyMapping, false);
+                dispatchNativeKeyPress(keyMapping, InputConstants.PRESS);
+                dispatchNativeKeyPress(keyMapping, InputConstants.RELEASE);
+            }
+        }
+        private void dispatchNativeMousePress(InputConstants.Key key, int action) {
+            try {
+                var method = mc.mouseHandler.getClass().getDeclaredMethod(
+                        "onButton", long.class, MouseButtonInfo.class, int.class);
+                method.setAccessible(true);
+                method.invoke(mc.mouseHandler, mc.getWindow().handle(),
+                        new MouseButtonInfo(key.getValue(), 0), action);
+            } catch (ReflectiveOperationException e) {
+                throw new IllegalStateException("Failed to dispatch native mouse input", e);
+            }
+        }
+        private void dispatchNativeKeyPress(InputConstants.Key key, int action) {
+            try {
+                // NeoForge's KeyMapping lookup filters by the active conflict context and modifier.
+                // Go through the vanilla keyboard handler so press/release use that same lookup and
+                // run the normal NeoForge screen/input hooks before Minecraft consumes the click.
+                var method = mc.keyboardHandler.getClass().getDeclaredMethod(
+                        "keyPress", long.class, int.class, KeyEvent.class);
+                method.setAccessible(true);
+                method.invoke(mc.keyboardHandler, mc.getWindow().handle(), action,
+                        new KeyEvent(key.getValue(), 0, 0));
+            } catch (ReflectiveOperationException e) {
+                throw new IllegalStateException("Failed to dispatch native key input", e);
             }
         }
         public void setKeyDown(String key, boolean down) {
@@ -304,7 +340,8 @@ public final class NeoForgeMinecraftMcpClientMod {
         }
         public boolean remoteMcpAvailable() {
             var listener = mc.getConnection();
-            return listener != null && listener.hasChannel(NeoForgeStringPayload.REQUEST);
+            return listener != null && NetworkRegistry.hasChannel(listener.getConnection(), ConnectionProtocol.PLAY,
+                    NeoForgeStringPayload.REQUEST.id());
         }
         public Object serverMcpCall(String tool, Map<String, Object> arguments, long timeoutMs) throws Exception {
             requireOffGameThread("waiting for a server MCP response");
@@ -387,7 +424,7 @@ public final class NeoForgeMinecraftMcpClientMod {
             int typed = 0;
             for (int offset = 0; offset < value.length(); ) {
                 int cp = value.codePointAt(offset);
-                if (screen.charTyped(new CharacterEvent(cp))) typed++;
+                if (screen.charTyped(new CharacterEvent(cp, 0))) typed++;
                 offset += Character.charCount(cp);
             }
             boolean submitted = false;
@@ -456,7 +493,8 @@ public final class NeoForgeMinecraftMcpClientMod {
                 return;
             }
             String levelName = name == null || name.isBlank() ? "minecraft_mcp_test_world" : name;
-            LevelSettings settings = new LevelSettings(levelName, GameType.CREATIVE, new LevelSettings.DifficultySettings(Difficulty.PEACEFUL, false, false), true, WorldDataConfiguration.DEFAULT);
+            LevelSettings settings = new LevelSettings(levelName, GameType.CREATIVE, false, Difficulty.PEACEFUL,
+                    true, new GameRules(net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS), WorldDataConfiguration.DEFAULT);
             long seed = options.get("seed") instanceof Number n ? n.longValue() : 0L;
             WorldOptions worldOptions = new WorldOptions(seed, false, false);
             java.util.function.Function<net.minecraft.core.HolderLookup.Provider, net.minecraft.world.level.levelgen.WorldDimensions> dimensions = registries -> {
@@ -568,8 +606,8 @@ public final class NeoForgeMinecraftMcpClientMod {
             var menu = mc.player.containerMenu;
             if (menu == null) return Map.of("status", "rejected", "reason", "no container", "slot", slot, "button", button, "clickType", clickType);
             if (slot >= menu.slots.size()) return Map.of("status", "rejected", "reason", "slot out of range", "slot", slot, "button", button, "clickType", clickType, "containerId", menu.containerId);
-            net.minecraft.world.inventory.ContainerInput type = net.minecraft.world.inventory.ContainerInput.valueOf(clickType);
-            mc.gameMode.handleContainerInput(menu.containerId, slot, button, type, mc.player);
+            net.minecraft.world.inventory.ClickType type = net.minecraft.world.inventory.ClickType.valueOf(clickType);
+            mc.gameMode.handleInventoryMouseClick(menu.containerId, slot, button, type, mc.player);
             return Map.of("status", "clicked", "slot", slot, "button", button, "clickType", clickType, "containerId", menu.containerId);
         }
         public Map<String, Object> closeContainer() {

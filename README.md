@@ -1,12 +1,12 @@
 # Minecraft MCP
 
-Java-only Minecraft 26.1 mod exposing a local MCP-style JSON-RPC endpoint for AI agents, on both
+Java-only Minecraft 1.21.11 mod exposing a local MCP-style JSON-RPC endpoint for AI agents, on both
 the client and a dedicated server.
 
 Supported loaders:
 
-- Fabric 26.1
-- NeoForge 26.1
+- Fabric 1.21.11
+- NeoForge 1.21.11
 
 Default transport is local HTTP JSON-RPC at `/mcp`. The mod writes discovery data to
 `mcp/server.json` under the game directory. It binds to `127.0.0.1` by default and requires a

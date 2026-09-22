@@ -238,7 +238,7 @@ public final class ServerWorldTools {
         result.put("chunkZ", chunkZ);
         result.put("loaded", source.hasChunk(chunkX, chunkZ));
         result.put("present", source.getChunkNow(chunkX, chunkZ) != null);
-        result.put("ticking", source.isPositionTicking(pos.pack()));
+        result.put("ticking", source.isPositionTicking(pos.toLong()));
         result.put("loadedChunks", source.getLoadedChunksCount());
         result.put("hasActiveTickets", source.hasActiveTickets());
         return result;

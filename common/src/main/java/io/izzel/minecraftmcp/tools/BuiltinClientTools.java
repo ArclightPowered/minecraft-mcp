@@ -20,7 +20,7 @@ public final class BuiltinClientTools {
 
     public static void register(ToolRegistry registry, MinecraftClientBridge bridge) {
         registry.register(simple("mc.client.state", "Get Minecraft client state", args -> bridge.submit(() -> bridge.snapshot().toMap()).get(10, TimeUnit.SECONDS)));
-        registry.register(simple("mc.client.screen.current", "Get current screen", args -> Map.of("screen", bridge.submit(() -> bridge.snapshot().screen()).get(10, TimeUnit.SECONDS))));
+        registry.register(simple("mc.client.screen.current", "Get current screen", args -> java.util.Collections.singletonMap("screen", bridge.submit(() -> bridge.snapshot().screen()).get(10, TimeUnit.SECONDS))));
         registry.register(simple("mc.client.ticks.wait", "Wait client ticks", args -> {
             long ticks = ((Number) args.getOrDefault("ticks", 1)).longValue();
             bridge.waitTicks(ticks);

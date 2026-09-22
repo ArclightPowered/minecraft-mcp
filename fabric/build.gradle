@@ -1,5 +1,5 @@
 plugins {
-    id 'net.fabricmc.fabric-loom'
+    id 'fabric-loom'
 }
 
 base {
@@ -27,9 +27,11 @@ loom {
 }
 
 dependencies {
+    include(modImplementation("me.lucko:fabric-permissions-api:0.6.1"))
     minecraft "com.mojang:minecraft:${rootProject.property('minecraft_version')}"
-    implementation "net.fabricmc:fabric-loader:${rootProject.property('fabric_loader_version')}"
-    implementation "net.fabricmc.fabric-api:fabric-api:${rootProject.property('fabric_api_version')}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${rootProject.property('fabric_loader_version')}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${rootProject.property('fabric_api_version')}"
     commonJava project(path: ':common', configuration: 'commonJava')
     commonResources project(path: ':common', configuration: 'commonResources')
     implementation project(':common')
@@ -45,6 +47,7 @@ processResources {
     from(configurations.commonResources)
     inputs.property 'version', project.version
     inputs.property 'minecraft_version', rootProject.property('minecraft_version')
+    ['fabric_loader_version', 'mod_id', 'mod_name', 'mod_description', 'mod_author', 'mod_license'].each { key -> inputs.property key, rootProject.property(key) }
     filesMatching('fabric.mod.json') {
         expand version: project.version,
                 minecraft_version: rootProject.property('minecraft_version'),

@@ -1,5 +1,5 @@
 plugins {
-    id 'net.fabricmc.fabric-loom'
+    id 'fabric-loom'
 }
 
 base {
@@ -17,6 +17,12 @@ configurations {
     }
 }
 
+tasks.named('test') {
+    inputs.dir(rootProject.file('examples/scenarios'))
+        .withPropertyName('scenarioLibrary')
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
 artifacts {
     commonJava sourceSets.main.java.sourceDirectories.singleFile
     commonResources sourceSets.main.resources.sourceDirectories.singleFile
@@ -24,6 +30,7 @@ artifacts {
 
 dependencies {
     minecraft "com.mojang:minecraft:${rootProject.property('minecraft_version')}"
+    mappings loom.officialMojangMappings()
     testImplementation 'org.junit.jupiter:junit-jupiter:6.1.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:6.1.2'
 }

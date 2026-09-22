@@ -5,8 +5,7 @@ import io.izzel.minecraftmcp.config.McpConfigDocument;
 import io.izzel.minecraftmcp.config.McpConfigs;
 import io.izzel.minecraftmcp.config.McpOptions;
 import io.izzel.minecraftmcp.config.McpPermissions;
-import net.fabricmc.fabric.api.permission.v1.PermissionNode;
-import net.fabricmc.fabric.api.permission.v1.PermissionPredicates;
+import me.lucko.fabric.api.permissions.v0.Permissions;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
@@ -24,10 +23,8 @@ final class FabricMcpConfig {
     static final Identifier REMOTE_CALL_ID =
         Identifier.fromNamespaceAndPath(McpPermissions.NAMESPACE, McpPermissions.REMOTE_CALL_PATH);
 
-    static final PermissionNode<Boolean> REMOTE_CALL = PermissionNode.of(REMOTE_CALL_ID);
-
     private static final Predicate<ServerPlayer> MAY_REMOTE_CALL =
-        PermissionPredicates.require(REMOTE_CALL, PermissionLevel.OWNERS);
+        player -> Permissions.check(player, McpPermissions.REMOTE_CALL_FABRIC, 4);
 
     private static boolean loaded;
 

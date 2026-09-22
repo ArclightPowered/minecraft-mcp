@@ -21,6 +21,8 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.NetworkRegistry;
+import net.neoforged.neoforge.common.extensions.ICommonPacketListener;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -107,7 +109,8 @@ public final class NeoForgeMinecraftMcpMod {
                             return null;
                         }
                         return new BuiltinRemoteTools.ClientPeer(callerFor(target),
-                                target.connection.hasChannel(NeoForgeStringPayload.CLIENT_REQUEST));
+                                NetworkRegistry.hasChannel((ICommonPacketListener) target.connection,
+                                        NeoForgeStringPayload.CLIENT_REQUEST.id()));
                     });
             event.getServer().getPlayerList().getPlayers().forEach(player ->
                     RemoteMcpProxies.rememberClientName(player.getUUID(), player.getGameProfile().name()));

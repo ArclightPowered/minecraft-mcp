@@ -1,6 +1,10 @@
 package io.izzel.minecraftmcp.schematic;
 
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtAccounter;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.StringTag;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
@@ -51,5 +55,88 @@ class SpongeSchematicV3Test {
         SpongeSchematicV3.forceVersionForTest(file, 2);
 
         assertThrows(IllegalArgumentException.class, () -> SpongeSchematicV3.info(file));
+    }
+
+    @Test
+    void writesReadsAndReportsUnsignedShortDimensionsAtTheBoundary() throws Exception {
+        for (int width : List.of(32768, 65535)) {
+            Path file = Files.createTempFile("minecraft-mcp-schematic-unsigned-dimension", ".schem");
+            Schematic schematic = new Schematic(width, 1, 1, new int[] {0, 0, 0}, List.of("minecraft:stone"), new int[width], List.of(), new int[0], Map.of(), new ListTag(), new ListTag());
+
+            SpongeSchematicV3.write(file, schematic, 3955);
+
+            assertEquals(width, SpongeSchematicV3.read(file).width());
+            assertEquals(width, SpongeSchematicV3.info(file).width());
+        }
+    }
+
+    @Test
+    void rejectsDimensionAboveUnsignedShortMaximum() throws Exception {
+        Path file = Files.createTempFile("minecraft-mcp-schematic-dimension-overflow", ".schem");
+        Schematic schematic = new Schematic(65536, 1, 1, new int[] {0, 0, 0}, List.of("minecraft:stone"), new int[65536], List.of(), new int[0], Map.of(), new ListTag(), new ListTag());
+
+        assertThrows(IllegalArgumentException.class, () -> SpongeSchematicV3.write(file, schematic, 3955));
+    }
+
+    @Test
+    void preservesCompleteNbtForMetadataBlockEntitiesAndEntitiesAcrossReadWrite() throws Exception {
+        Path source = Files.createTempFile("minecraft-mcp-schematic-source", ".schem");
+        Path roundTrip = Files.createTempFile("minecraft-mcp-schematic-roundtrip", ".schem");
+        CompoundTag metadata = new CompoundTag();
+        metadata.putInt("NumericMetadata", 42);
+        CompoundTag nestedMetadata = new CompoundTag();
+        nestedMetadata.putString("author", "unit");
+        metadata.put("Nested", nestedMetadata);
+        ListTag authors = new ListTag();
+        authors.add(StringTag.valueOf("one"));
+        authors.add(StringTag.valueOf("two"));
+        metadata.put("Authors", authors);
+
+        CompoundTag blockEntity = new CompoundTag();
+        blockEntity.putString("id", "minecraft:chest");
+        blockEntity.putInt("x", 0);
+        blockEntity.putInt("y", 0);
+        blockEntity.putInt("z", 0);
+        CompoundTag item = new CompoundTag();
+        item.putString("id", "minecraft:diamond");
+        item.putInt("count", 3);
+        ListTag items = new ListTag();
+        items.add(item);
+        blockEntity.put("Items", items);
+        ListTag blockEntities = new ListTag();
+        blockEntities.add(blockEntity);
+
+        CompoundTag entity = new CompoundTag();
+        entity.putString("id", "minecraft:armor_stand");
+        entity.putBoolean("Invisible", true);
+        ListTag entities = new ListTag();
+        entities.add(entity);
+
+        CompoundTag root = new CompoundTag();
+        root.putInt("Version", 3);
+        root.putInt("DataVersion", 4550);
+        root.putShort("Width", (short) 1);
+        root.putShort("Height", (short) 1);
+        root.putShort("Length", (short) 1);
+        root.put("BlockPalette", palette("minecraft:chest"));
+        root.putByteArray("BlockData", new byte[] {0});
+        root.put("Metadata", metadata);
+        root.put("BlockEntities", blockEntities);
+        root.put("Entities", entities);
+        NbtIo.writeCompressed(root, source);
+
+        Schematic schematic = SpongeSchematicV3.read(source);
+        SpongeSchematicV3.write(roundTrip, schematic, 4550);
+        CompoundTag written = NbtIo.readCompressed(roundTrip, NbtAccounter.unlimitedHeap());
+
+        assertEquals(metadata, written.getCompoundOrEmpty("Metadata"));
+        assertEquals(blockEntities, written.getListOrEmpty("BlockEntities"));
+        assertEquals(entities, written.getListOrEmpty("Entities"));
+    }
+
+    private static CompoundTag palette(String state) {
+        CompoundTag palette = new CompoundTag();
+        palette.putInt(state, 0);
+        return palette;
     }
 }

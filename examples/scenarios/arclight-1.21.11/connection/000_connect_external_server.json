@@ -1,0 +1,33 @@
+{
+  "name": "Arclight 1.21.11 connect to externally provisioned server",
+  "tags": [
+    "arclight-1.21.11",
+    "external-server",
+    "connection",
+    "full-client"
+  ],
+  "steps": [
+    {
+      "id": "connect",
+      "tool": "mc.client.connection.connect",
+      "args": {
+        "address": "__SERVER_ADDRESS__",
+        "name": "Arclight 1.21.11 remote"
+      },
+      "expect": {
+        "result.status": "connecting"
+      }
+    },
+    {
+      "id": "wait_playable_world",
+      "tool": "mc.client.condition.wait",
+      "args": {
+        "condition": "client.inWorld == true && client.screen == null",
+        "timeoutMs": 120000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,205 @@
+{
+  "name": "arclight_1_21_11_remote_real_bucket_fill_cancel",
+  "status": "PARENT_HARNESS_REQUIRED",
+  "tags": [
+    "arclight-1.21.11",
+    "entities",
+    "bucket",
+    "external-server",
+    "real-client-action",
+    "observer-jsonl",
+    "cancel",
+    "parent-harness-required"
+  ],
+  "requires": {
+    "loaders": [
+      "fabric",
+      "neoforge"
+    ],
+    "sides": [
+      "client"
+    ]
+  },
+  "notes": [
+    "前置条件由父 harness 建立：受控 OP 玩家站在可触及水源 (34,81,34) 的位置，主手槽 0 是一个 minecraft:bucket；不得用命令填桶、替换背包结果或伪造 Bukkit 事件。",
+    "父 harness 在本文件动作前记录 observer JSONL 起始偏移，并经真实客户端聊天路径执行 /mcpobserve arm arclight-1.21.11-bucket-fill-cancel cancel bucketfill。仅收到 chat 的 status=sent 或 JSONL 的 armed 记录均不代表事件已发生。",
+    "setup 命令只建造固定夹具；真正测试动作是 mc.client.block.interact 的客户端 GameMode useItemOn 右键水源。mc.client.player.use_item 是无目标 useItem，不能证明桶对准了该水源。",
+    "本 JSON 的普通步骤只能验证客户端/远端 MCP 可见状态；父 harness 必须额外解析本次时间窗内的 MCPOBSERVE JSONL event 记录，并在 finally 中执行 /mcpobserve clear。"
+  ],
+  "parentAssertions": {
+    "observerLog": {
+      "marker": "MCPOBSERVE ",
+      "window": "从 arm 命令之前的日志偏移开始，到 clear 命令之后；按 scenario、playerId 和 eventKind 过滤，不能复用旧 run 的记录。",
+      "requiredRecords": [
+        {
+          "record": "armed",
+          "scenario": "arclight-1.21.11-bucket-fill-cancel",
+          "behavior": "cancel",
+          "eventKind": "bucketfill",
+          "count": 0
+        },
+        {
+          "record": "event",
+          "scenario": "arclight-1.21.11-bucket-fill-cancel",
+          "eventKind": "bucketfill",
+          "count": 1,
+          "mutation": "cancelled",
+          "cancel": true,
+          "prepost.afterPolicyCancelled": true,
+          "prepost.postCancelled": true,
+          "event.bucket": "BUCKET",
+          "event.block.type": "WATER",
+          "event.afterPolicy.cancelled": true
+        }
+      ],
+      "forbidden": [
+        "第二条同 scenario/eventKind 的 event 记录（本场景只允许一次实际右键）。",
+        "以 armed、state、chat status=sent、或命令输出替代 event 记录作为通过依据。"
+      ]
+    },
+    "authoritativeOutcome": [
+      "动作后 server block.state(34,81,34) 仍为 minecraft:water。",
+      "动作后 client inventory.selected 与 server player.inventory 的 selectedSlot=0 均仍为 minecraft:bucket，count=1；不得只相信客户端预测库存。"
+    ]
+  },
+  "steps": [
+    {
+      "id": "confirm_remote_server_mcp",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.server.state",
+        "arguments": {},
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.running": true,
+        "result.dedicated": true
+      }
+    },
+    {
+      "id": "prepare_only_the_water_fixture",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.server.command.run",
+        "arguments": {
+          "command": "setblock 34 81 34 minecraft:water"
+        },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "succeeded",
+        "result.command": "setblock 34 81 34 minecraft:water",
+        "result.success": true,
+        "result.completed": true
+      }
+    },
+    {
+      "id": "sync_before_real_right_click",
+      "tool": "mc.client.connection.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "select_empty_bucket",
+      "tool": "mc.client.hotbar.select",
+      "args": {
+        "slot": 0
+      },
+      "expect": {
+        "result.status": "selected",
+        "result.slot": 0,
+        "result.item.item": "minecraft:bucket",
+        "result.item.count": 1
+      }
+    },
+    {
+      "id": "aim_at_water_source",
+      "tool": "mc.client.player.look_at",
+      "args": {
+        "x": 34.5,
+        "y": 81.5,
+        "z": 34.5
+      },
+      "expect": {
+        "result.status": "looked_at",
+        "result.x": 34.5,
+        "result.y": 81.5,
+        "result.z": 34.5
+      }
+    },
+    {
+      "id": "fill_by_real_client_block_interaction",
+      "tool": "mc.client.block.interact",
+      "args": {
+        "x": 34,
+        "y": 81,
+        "z": 34,
+        "face": "up",
+        "hand": "main"
+      },
+      "expect": {
+        "result.status": "interacted",
+        "result.x": 34,
+        "result.y": 81,
+        "result.z": 34,
+        "result.face": "up",
+        "result.hand": "main",
+        "result.consumesAction": true
+      }
+    },
+    {
+      "id": "wait_for_server_cancel_and_inventory_sync",
+      "tool": "mc.client.ticks.wait",
+      "args": {
+        "ticks": 10
+      },
+      "expect": {
+        "result.waitedTicks": 10
+      }
+    },
+    {
+      "id": "client_water_still_present",
+      "tool": "mc.client.block.state",
+      "args": {
+        "x": 34,
+        "y": 81,
+        "z": 34
+      },
+      "expect": {
+        "result.inWorld": true,
+        "result.block": "minecraft:water"
+      }
+    },
+    {
+      "id": "server_water_still_present",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.server.block.state",
+        "arguments": {
+          "x": 34,
+          "y": 81,
+          "z": 34
+        },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.block": "minecraft:water"
+      }
+    },
+    {
+      "id": "client_selected_bucket_after_cancel",
+      "tool": "mc.client.inventory.selected",
+      "args": {},
+      "expect": {
+        "result.selected": 0,
+        "result.item": "minecraft:bucket",
+        "result.count": 1,
+        "result.empty": false
+      }
+    }
+  ]
+}
