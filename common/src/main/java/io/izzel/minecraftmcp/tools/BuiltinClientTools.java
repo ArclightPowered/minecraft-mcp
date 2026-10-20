@@ -234,7 +234,12 @@ public final class BuiltinClientTools {
                 long deadline = System.currentTimeMillis() + Math.max(0, TIMEOUT.get(args));
                 Map<String, Object> state;
                 do {
-                    state = bridge.submit(bridge::disconnectState).get(10, TimeUnit.SECONDS);
+                    try {
+                        state = bridge.submit(bridge::disconnectState).get(10, TimeUnit.SECONDS);
+                    } catch (java.util.concurrent.TimeoutException busy) {
+                        // the client thread can stall for seconds while it tears the connection down; keep waiting
+                        continue;
+                    }
                     Object msg = state.get("message");
                     if (Boolean.TRUE.equals(state.get("disconnected")) && (needle.isBlank() || (msg != null && String.valueOf(msg).contains(needle))))
                         return state;
