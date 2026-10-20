@@ -16,13 +16,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Minecraft 1.21.x builds on Java 21, 26.x on Java 25; Gradle picks each node's toolchain.
+      # Gradle runs on Java 21 (the last one listed becomes JAVA_HOME); 26.x nodes compile with the Java 25 toolchain.
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: |
-            21
             25
+            21
 
       - uses: gradle/actions/setup-gradle@v4
 

@@ -8,6 +8,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.SectionPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.DoubleTag;
@@ -197,7 +198,7 @@ public final class ServerSchematicTools {
         CompoundTag saved = blockEntity.saveWithFullMetadata(level.registryAccess());
         CompoundTag entry = new CompoundTag();
         entry.putIntArray("Pos", new int[] {x, y, z});
-        entry.putString("Id", MinecraftCompat.id(blockEntity.getType().builtInRegistryHolder().key()));
+        entry.putString("Id", BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(blockEntity.getType()).toString());
         entry.put("Data", saved);
         return entry;
     }

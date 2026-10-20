@@ -28,13 +28,19 @@ import java.util.Optional;
 final class NeoForgeMcpConfig {
     static final String FILE_NAME = "minecraft-mcp.toml";
 
-    static final PermissionNode<Boolean> REMOTE_CALL = new PermissionNode<>(
-        McpPermissions.NAMESPACE, McpPermissions.REMOTE_CALL_PATH, PermissionTypes.BOOLEAN,
-        (player, uuid, context) -> player != null && MinecraftCompat.isOwner(player))
-        .setInformation(
+    static final PermissionNode<Boolean> REMOTE_CALL = remoteCallNode();
+
+    // setInformation returns a raw PermissionNode, so it is called for its effect rather than chained.
+    private static PermissionNode<Boolean> remoteCallNode() {
+        PermissionNode<Boolean> node = new PermissionNode<>(
+            McpPermissions.NAMESPACE, McpPermissions.REMOTE_CALL_PATH, PermissionTypes.BOOLEAN,
+            (player, uuid, context) -> player != null && MinecraftCompat.isOwner(player));
+        node.setInformation(
             Component.literal("Minecraft MCP remote call"),
             Component.literal("Exchange MCP tool calls with this server over the plugin channel, "
                 + "in either direction."));
+        return node;
+    }
 
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
     private static final Map<List<String>, ModConfigSpec.ConfigValue<?>> VALUES = new LinkedHashMap<>();

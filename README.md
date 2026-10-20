@@ -17,8 +17,8 @@ Supported, each as a Fabric and a NeoForge jar built from the same sources:
 
 ## Building
 
-`./gradlew build` builds every version for both loaders (Gradle 9.8, JDK 21 and 25 installed or
-downloaded by the toolchain resolver). Jars land in `<loader>/versions/<minecraft>/build/libs/`, named
+`./gradlew build` builds every version for both loaders. Gradle runs on JDK 21; the 26.x nodes compile
+with a Java 25 toolchain, found locally or downloaded by the toolchain resolver. Jars land in `<loader>/versions/<minecraft>/build/libs/`, named
 `minecraft_mcp-<loader>-<version>+<minecraft>.jar`; `./gradlew :neoforge:1.21.8:build` builds one.
 
 The versions are [Stonecutter](https://stonecutter.kikugie.dev) nodes: `common/`, `fabric/` and

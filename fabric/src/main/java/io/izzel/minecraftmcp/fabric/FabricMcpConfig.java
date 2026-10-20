@@ -27,10 +27,14 @@ final class FabricMcpConfig {
     private static final Predicate<ServerPlayer> MAY_REMOTE_CALL =
         net.fabricmc.fabric.api.permission.v1.PermissionPredicates.require(REMOTE_CALL,
             net.minecraft.server.permissions.PermissionLevel.OWNERS);
-    *///?} else {
+    *///?} else if >=1.21.11 {
     private static final Predicate<ServerPlayer> MAY_REMOTE_CALL =
+        player -> me.lucko.fabric.api.permissions.v0.Permissions.check(player, McpPermissions.REMOTE_CALL_FABRIC,
+            net.minecraft.server.permissions.PermissionLevel.OWNERS);
+    //?} else {
+    /*private static final Predicate<ServerPlayer> MAY_REMOTE_CALL =
         player -> me.lucko.fabric.api.permissions.v0.Permissions.check(player, McpPermissions.REMOTE_CALL_FABRIC, 4);
-    //?}
+    *///?}
 
     private static boolean loaded;
 
