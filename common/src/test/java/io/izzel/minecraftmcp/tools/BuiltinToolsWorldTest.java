@@ -1,16 +1,12 @@
 package io.izzel.minecraftmcp.tools;
 
+import io.izzel.minecraftmcp.bridge.FakeClientBridge;
 import io.izzel.minecraftmcp.bridge.ClientSnapshot;
-import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
 import net.minecraft.world.phys.Vec3;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
-import io.izzel.minecraftmcp.scenario.ScenarioEngine;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,22 +15,22 @@ class BuiltinToolsWorldTest {
     void worldToolsDelegateToBridgeAndReturnStructuredState() throws Exception {
         RecordingBridge bridge = new RecordingBridge();
         ToolRegistry registry = new ToolRegistry();
-        BuiltinTools.register(registry, bridge, new ScenarioEngine(registry));
+        BuiltinClientTools.register(registry, bridge);
 
-        Object join = registry.call("mc.world.join", Map.of("name", "mcp_world", "seed", 123, "preset", "flat"));
-        Object wait = registry.call("mc.condition.wait", Map.of("condition", "client.inWorld == true", "timeoutMs", 100));
-        Object snapshot = registry.call("mc.world.snapshot", Map.of());
-        Object inventory = registry.call("mc.inventory.state", Map.of());
-        Object select = registry.call("mc.hotbar.select", Map.of("slot", 3));
-        Object chat = registry.call("mc.chat.send", Map.of("message", "hello"));
-        Object screenState = registry.call("mc.screen.state", Map.of());
-        Object typeText = registry.call("mc.screen.text.type", Map.of("text", "abc", "submit", true));
-        Object click = registry.call("mc.screen.click.at", Map.of("x", 10, "y", 20, "button", 0));
-        Object clickWidget = registry.call("mc.screen.widget.click", Map.of("id", "widget-1", "button", 0));
-        Object disconnect = registry.call("mc.server.disconnect.state", Map.of());
-        Object interact = registry.call("mc.block.interact", Map.of("x", 1, "y", 2, "z", 3, "face", "up"));
-        Object block = registry.call("mc.block.state", Map.of("x", 1, "y", 2, "z", 3));
-        Object move = registry.call("mc.movement.waypoints", Map.of(
+        Object join = registry.call("mc.client.world.join", Map.of("name", "mcp_world", "seed", 123, "preset", "flat"));
+        Object wait = registry.call("mc.client.condition.wait", Map.of("condition", "client.inWorld == true", "timeoutMs", 100));
+        Object snapshot = registry.call("mc.client.world.snapshot", Map.of());
+        Object inventory = registry.call("mc.client.inventory.state", Map.of());
+        Object select = registry.call("mc.client.hotbar.select", Map.of("slot", 3));
+        Object chat = registry.call("mc.client.chat.send", Map.of("message", "hello"));
+        Object screenState = registry.call("mc.client.screen.state", Map.of());
+        Object typeText = registry.call("mc.client.screen.text.type", Map.of("text", "abc", "submit", true));
+        Object click = registry.call("mc.client.screen.click.at", Map.of("x", 10, "y", 20, "button", 0));
+        Object clickWidget = registry.call("mc.client.screen.widget.click", Map.of("id", "widget-1", "button", 0));
+        Object disconnect = registry.call("mc.client.connection.state", Map.of());
+        Object interact = registry.call("mc.client.block.interact", Map.of("x", 1, "y", 2, "z", 3, "face", "up"));
+        Object block = registry.call("mc.client.block.state", Map.of("x", 1, "y", 2, "z", 3));
+        Object move = registry.call("mc.client.movement.waypoints", Map.of(
                 "waypoints", List.of(Map.of("x", 1, "y", 64, "z", 2), Map.of("x", 3, "y", 64, "z", 4)),
                 "loop", true,
                 "maxLoops", 2,
@@ -44,13 +40,13 @@ class BuiltinToolsWorldTest {
                 "sneak", true,
                 "controlView", false
         ));
-        Object leave = registry.call("mc.world.leave", Map.of());
+        Object leave = registry.call("mc.client.world.leave", Map.of());
 
         assertEquals("mcp_world", bridge.createdWorldName);
         assertEquals("flat", bridge.createdWorldOptions.get("preset"));
-        assertEquals(123, bridge.createdWorldOptions.get("seed"));
+        assertEquals(123L, bridge.createdWorldOptions.get("seed"));
         assertEquals(Map.of("status", "joining", "created", true, "name", "mcp_world"), join);
-        assertEquals(Map.of("condition", "client.inWorld == true", "matched", true), wait);
+        assertEquals(Map.of("condition", "client.inWorld == true", "matched", true, "intervalTicks", 1L), wait);
         assertTrue(((Map<?, ?>) snapshot).containsKey("dimension"));
         assertEquals(9, ((List<?>) ((Map<?, ?>) inventory).get("hotbar")).size());
         assertEquals(Map.of("status", "selected", "slot", 3), select);
@@ -76,7 +72,7 @@ class BuiltinToolsWorldTest {
         assertTrue(bridge.leftWorld);
     }
 
-    static final class RecordingBridge implements MinecraftClientBridge {
+    static final class RecordingBridge extends FakeClientBridge {
         String createdWorldName;
         Map<String, Object> createdWorldOptions;
         boolean inWorld;
@@ -96,67 +92,58 @@ class BuiltinToolsWorldTest {
         boolean moveSneak;
         boolean moveControlView;
 
-        public String loader() { return "test"; }
-        public String minecraftVersion() { return "1.21.1"; }
-        public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnClientThread() { return true; }
-        public void execute(Runnable runnable) { runnable.run(); }
-        public <T> CompletableFuture<T> submit(Supplier<T> supplier) {
-            try { return CompletableFuture.completedFuture(supplier.get()); }
-            catch (Throwable t) { CompletableFuture<T> f = new CompletableFuture<>(); f.completeExceptionally(t); return f; }
-        }
-        public ClientSnapshot snapshot() {
+        @Override public ClientSnapshot snapshot() {
             return new ClientSnapshot(true, inWorld, null, inWorld ? "Player" : null, inWorld ? 1 : 0, inWorld ? 64 : 0, inWorld ? 1 : 0, 0, 0);
         }
-        public void createTestWorld(String name, Map<String, Object> options) {
+        @Override public void createTestWorld(String name, long seed, boolean flat) {
             createdWorldName = name;
-            createdWorldOptions = options;
+            createdWorldOptions = Map.of("seed", seed, "preset", flat ? "flat" : "normal");
             inWorld = true;
         }
-        public void leaveWorldToTitle() {
+        @Override public void leaveWorldToTitle() {
             leftWorld = true;
             inWorld = false;
         }
-        public Map<String, Object> worldSnapshot() {
+        @Override public Map<String, Object> worldSnapshot() {
             return Map.of("inWorld", inWorld, "dimension", "minecraft:overworld", "gameTime", 42L, "difficulty", "peaceful");
         }
-        public Map<String, Object> inventorySnapshot() {
+        @Override public Map<String, Object> inventorySnapshot() {
             return Map.of("selected", selectedSlot, "hotbar", Collections.nCopies(9, Map.of("item", "minecraft:air", "count", 0)));
         }
-        public Map<String, Object> selectHotbarSlot(int slot) {
+        @Override public Map<String, Object> selectHotbarSlot(int slot) {
             selectedSlot = slot;
             return Map.of("status", "selected", "slot", slot);
         }
-        public Map<String, Object> sendChat(String message) {
+        @Override public Map<String, Object> sendChat(String message) {
             chatMessage = message;
             return Map.of("status", "sent", "kind", message.startsWith("/") ? "command" : "chat", "message", message);
         }
-        public Map<String, Object> screenState() {
+        @Override public Map<String, Object> screenState() {
             return Map.of("hasScreen", true, "screen", "test.Screen", "title", "Test Screen");
         }
-        public Map<String, Object> typeText(String text, boolean submit) {
+        @Override public Map<String, Object> typeText(String text, boolean submit) {
             typedText = text;
             submitted = submit;
             return Map.of("status", "typed", "chars", text.length(), "submitted", submit);
         }
-        public Map<String, Object> clickScreen(double x, double y, int button) {
+        @Override public Map<String, Object> clickScreen(double x, double y, int button) {
             clickX = x;
             clickY = y;
             return Map.of("status", "clicked", "handled", true, "x", x, "y", y, "button", button);
         }
-        public Map<String, Object> clickWidget(String id, String message, int button) {
+        @Override public Map<String, Object> clickWidget(String id, String message, int button) {
             return Map.of("status", "clicked", "handled", true, "id", id, "message", "OK", "button", button);
         }
-        public Map<String, Object> disconnectState() {
+        @Override public Map<String, Object> disconnectState() {
             return Map.of("disconnected", false, "message", "");
         }
-        public Map<String, Object> interactBlock(int x, int y, int z, String face, String hand) {
+        @Override public Map<String, Object> interactBlock(int x, int y, int z, String face, String hand) {
             return Map.of("status", "interacted", "x", x, "y", y, "z", z, "face", face, "hand", hand);
         }
-        public Map<String, Object> blockAt(int x, int y, int z) {
+        @Override public Map<String, Object> blockAt(int x, int y, int z) {
             return Map.of("x", x, "y", y, "z", z, "block", "minecraft:stone");
         }
-        public Map<String, Object> moveWaypoints(List<Vec3> waypoints, boolean loop, int maxLoops, double tolerance, long timeoutMs, boolean sprint, boolean sneak, boolean controlView) {
+        @Override public Map<String, Object> moveWaypoints(List<Vec3> waypoints, boolean loop, int maxLoops, double tolerance, long timeoutMs, boolean sprint, boolean sneak, boolean controlView) {
             this.moveWaypoints = waypoints;
             this.moveLoop = loop;
             this.moveMaxLoops = maxLoops;

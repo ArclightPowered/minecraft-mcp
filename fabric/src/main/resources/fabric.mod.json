@@ -8,6 +8,7 @@
   "license": "${mod_license}",
   "environment": "*",
   "entrypoints": {
+    "main": ["io.izzel.minecraftmcp.fabric.FabricMinecraftMcpCommonEntrypoint"],
     "client": ["io.izzel.minecraftmcp.fabric.FabricMinecraftMcpEntrypoint"],
     "server": ["io.izzel.minecraftmcp.fabric.FabricMinecraftMcpServerEntrypoint"]
   },
@@ -15,6 +16,6 @@
     "fabricloader": ">=${fabric_loader_version}",
     "fabric-api": "*",
     "minecraft": "${minecraft_version}",
-    "java": ">=21"
+    "java": ">=${java_version}"
   }
 }

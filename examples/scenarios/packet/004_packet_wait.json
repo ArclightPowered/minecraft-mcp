@@ -4,7 +4,7 @@
   "steps": [
     {
       "id": "start_recording",
-      "tool": "mc.packet.recording.start",
+      "tool": "mc.client.packet.recording.start",
       "args": {
         "clear": true,
         "maxPackets": 200,
@@ -19,7 +19,7 @@
     },
     {
       "id": "swing",
-      "tool": "mc.player.swing",
+      "tool": "mc.client.player.swing",
       "args": {
         "hand": "main"
       },
@@ -30,7 +30,7 @@
     },
     {
       "id": "wait_packet",
-      "tool": "mc.packet.wait",
+      "tool": "mc.client.packet.wait",
       "args": {
         "nameContains": "Swing",
         "direction": "serverbound",
@@ -44,7 +44,7 @@
     },
     {
       "id": "stop_recording",
-      "tool": "mc.packet.recording.stop",
+      "tool": "mc.client.packet.recording.stop",
       "args": {},
       "expect": {
         "result.status": "stopped",

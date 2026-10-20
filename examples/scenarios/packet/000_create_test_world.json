@@ -3,7 +3,7 @@
   "tags": ["packet", "world"],
   "steps": [
     {
-      "tool": "mc.world.join",
+      "tool": "mc.client.world.join",
       "args": {
         "name": "minecraft_mcp_packet_world",
         "seed": 0,
@@ -14,13 +14,13 @@
       }
     },
     {
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 120
       }
     },
     {
-      "tool": "mc.condition.wait",
+      "tool": "mc.client.condition.wait",
       "args": {
         "condition": "client.inWorld == true",
         "timeoutMs": 60000

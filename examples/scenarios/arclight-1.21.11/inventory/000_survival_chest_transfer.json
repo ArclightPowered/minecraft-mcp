@@ -1,0 +1,41 @@
+{
+  "name": "Arclight 1.21.11 survival chest transfer",
+  "tags": ["arclight-1.21.11", "external-server", "inventory", "container", "chest", "survival", "requires-op", "full-client", "remote-mcp"],
+  "requires": {"loaders": ["fabric", "neoforge"]},
+  "notes": [
+    "Prerequisite: connect the client, then run entities/000_connect_remote_arclight.json.",
+    "The connected test player must be named McpProbe. Fixture commands deliberately target @a[name=McpProbe], never server-command @s.",
+    "The target chunk is force-loaded before construction, but client block reads occur only after the player is teleported onto the completed platform so the client chunk is loaded."
+  ],
+  "steps": [
+    {"id":"assert_playable_world","tool":"mc.client.condition.wait","args":{"condition":"client.inWorld == true && client.screen == null","timeoutMs":30000},"expect":{"result.matched":true}},
+    {"id":"confirm_remote_server_mcp","tool":"mc.remote.call","args":{"tool":"mc.server.state","arguments":{},"timeoutMs":30000},"expect":{"result.running":true,"result.dedicated":true}},
+    {"id":"remove_fixture_forceload","tool":"mc.remote.call","args":{"tool":"mc.server.command.run","arguments":{"command":"forceload remove 0 -1 2 1"},"timeoutMs":30000}},
+    {"id":"forceload_fixture_chunk","tool":"mc.remote.call","args":{"tool":"mc.server.command.run","arguments":{"command":"forceload add 0 -1 2 1"},"timeoutMs":30000},"expect":{"result.status":"succeeded","result.command":"forceload add 0 -1 2 1","result.success":true,"result.completed":true}},
+    {"id":"fixture_chunk_authoritatively_loaded","tool":"mc.remote.call","args":{"tool":"mc.server.chunk.state","arguments":{"dimension":"minecraft:overworld","chunkX":0,"chunkZ":-1},"timeoutMs":30000},"expect":{"result.loaded":true,"result.present":true}},
+    {"id":"fixture_chunk_authoritatively_loaded_second","tool":"mc.remote.call","args":{"tool":"mc.server.chunk.state","arguments":{"dimension":"minecraft:overworld","chunkX":0,"chunkZ":0},"timeoutMs":30000},"expect":{"result.loaded":true,"result.present":true}},
+    {"id":"seed_clear_volume_marker","tool":"mc.remote.call","args":{"tool":"mc.server.command.run","arguments":{"command":"setblock 0 83 1 minecraft:stone"},"timeoutMs":30000}},
+    {"id":"clear_test_volume","tool":"mc.remote.call","args":{"tool":"mc.server.command.run","arguments":{"command":"fill 0 79 -1 2 83 1 minecraft:air"},"timeoutMs":30000},"expect":{"result.status":"succeeded","result.command":"fill 0 79 -1 2 83 1 minecraft:air","result.success":true,"result.completed":true}},
+    {"id":"place_safe_platform","tool":"mc.remote.call","args":{"tool":"mc.server.command.run","arguments":{"command":"fill 0 79 -1 2 79 1 minecraft:stone"},"timeoutMs":30000},"expect":{"result.status":"succeeded","result.command":"fill 0 79 -1 2 79 1 minecraft:stone","result.success":true,"result.completed":true}},
+    {"id":"place_chest","tool":"mc.remote.call","args":{"tool":"mc.server.command.run","arguments":{"command":"setblock 1 80 0 minecraft:chest"},"timeoutMs":30000},"expect":{"result.status":"succeeded","result.command":"setblock 1 80 0 minecraft:chest","result.success":true,"result.completed":true}},
+    {"id":"seed_chest_item","tool":"mc.remote.call","args":{"tool":"mc.server.command.run","arguments":{"command":"item replace block 1 80 0 container.0 with minecraft:emerald 7"},"timeoutMs":30000},"expect":{"result.status":"succeeded","result.command":"item replace block 1 80 0 container.0 with minecraft:emerald 7","result.success":true,"result.completed":true}},
+    {"id":"teleport_probe_to_completed_platform","tool":"mc.remote.call","args":{"tool":"mc.server.command.run","arguments":{"command":"tp @a[name=McpProbe] 0 80 0"},"timeoutMs":30000},"expect":{"result.status":"succeeded","result.command":"tp @a[name=McpProbe] 0 80 0","result.success":true,"result.completed":true}},
+    {"id":"sync_after_teleport","tool":"mc.client.connection.sync","args":{"timeoutMs":30000},"expect":{"result.status":"synced"}},
+    {"id":"wait_for_client_chunk","tool":"mc.client.ticks.wait","args":{"ticks":10},"expect":{"result.waitedTicks":10}},
+    {"id":"client_floor_confirmed_after_tp","tool":"mc.client.block.state","args":{"x":0,"y":79,"z":0},"expect":{"result.inWorld":true,"result.block":"minecraft:stone"}},
+    {"id":"client_chest_confirmed_after_tp","tool":"mc.client.block.state","args":{"x":1,"y":80,"z":0},"expect":{"result.inWorld":true,"result.block":"minecraft:chest"}},
+    {"id":"seed_clear_inventory_marker","tool":"mc.remote.call","args":{"tool":"mc.server.command.run","arguments":{"command":"item replace entity @a[name=McpProbe] hotbar.8 with minecraft:stick 1"},"timeoutMs":30000}},
+    {"id":"clear_probe_inventory","tool":"mc.remote.call","args":{"tool":"mc.server.command.run","arguments":{"command":"clear @a[name=McpProbe]"},"timeoutMs":30000},"expect":{"result.status":"succeeded","result.command":"clear @a[name=McpProbe]","result.success":true,"result.completed":true}},
+    {"id":"ensure_probe_creative_before_survival","tool":"mc.remote.call","args":{"tool":"mc.server.command.run","arguments":{"command":"execute unless entity @a[name=McpProbe,gamemode=creative] run gamemode creative @a[name=McpProbe]"},"timeoutMs":30000}},
+    {"id":"set_probe_survival","tool":"mc.remote.call","args":{"tool":"mc.server.command.run","arguments":{"command":"gamemode survival @a[name=McpProbe]"},"timeoutMs":30000},"expect":{"result.status":"succeeded","result.command":"gamemode survival @a[name=McpProbe]","result.success":true,"result.completed":true}},
+    {"id":"probe_survival_authoritatively_confirmed","tool":"mc.remote.call","args":{"tool":"mc.server.player.state","arguments":{"player":"McpProbe"},"timeoutMs":30000},"expect":{"result.gameMode":"survival"}},
+    {"id":"sync_before_open_chest","tool":"mc.client.connection.sync","args":{"timeoutMs":30000},"expect":{"result.status":"synced"}},
+    {"id":"wait_for_inventory_update","tool":"mc.client.ticks.wait","args":{"ticks":5},"expect":{"result.waitedTicks":5}},
+    {"id":"open_chest","tool":"mc.client.block.interact","args":{"x":1,"y":80,"z":0,"face":"up","hand":"main"},"expect":{"result.status":"interacted"}},
+    {"id":"wait_open","tool":"mc.client.ticks.wait","args":{"ticks":2},"expect":{"result.waitedTicks":2}},
+    {"id":"chest_menu_and_seed_confirmed","tool":"mc.client.container.state","args":{},"expect":{"result.hasContainer":true,"result.hasScreen":true,"result.menuType":"minecraft:generic_9x3","result.slots.0.item":"minecraft:emerald","result.slots.0.count":7}},
+    {"id":"move_emeralds_to_inventory","tool":"mc.client.container.quick_move","args":{"slot":0},"expect":{"result.status":"clicked","result.clickType":"QUICK_MOVE","result.slot":0}},
+    {"id":"find_emeralds","tool":"mc.client.inventory.find","args":{"item":"minecraft:emerald"},"expect":{"result.found":true,"result.totalCount":7}},
+    {"id":"close_container","tool":"mc.client.container.close","args":{},"expect":{"result.status":"closed"}}
+  ]
+}

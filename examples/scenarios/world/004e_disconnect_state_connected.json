@@ -1,1 +1,1 @@
-{"name":"client_disconnect_state_connected","tags":["world","disconnect","client-tools"],"requires":{"loaders":["fabric","neoforge"]},"steps":[{"id":"disconnect_state","tool":"mc.server.disconnect.state","args":{},"expect":{"result.disconnected":false}}]}
+{"name":"client_disconnect_state_connected","tags":["world","disconnect","client-tools"],"requires":{"loaders":["fabric","neoforge"]},"steps":[{"id":"disconnect_state","tool":"mc.client.connection.state","args":{},"expect":{"result.disconnected":false}}]}

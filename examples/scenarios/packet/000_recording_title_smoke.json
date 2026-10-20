@@ -3,7 +3,7 @@
   "tags": ["packet", "smoke"],
   "steps": [
     {
-      "tool": "mc.packet.recording.start",
+      "tool": "mc.client.packet.recording.start",
       "args": {
         "clear": true,
         "maxPackets": 20,
@@ -14,7 +14,7 @@
       }
     },
     {
-      "tool": "mc.condition.wait",
+      "tool": "mc.client.condition.wait",
       "args": {
         "condition": "packet.recording == true",
         "timeoutMs": 1000
@@ -24,7 +24,7 @@
       }
     },
     {
-      "tool": "mc.packet.recording.stop",
+      "tool": "mc.client.packet.recording.stop",
       "args": {},
       "expect": {
         "result.recording": false

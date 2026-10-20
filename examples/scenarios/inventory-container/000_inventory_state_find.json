@@ -8,7 +8,7 @@
   "steps": [
     {
       "id": "join_world",
-      "tool": "mc.world.join",
+      "tool": "mc.client.world.join",
       "args": {
         "name": "minecraft_mcp_inventory_container",
         "seed": 24680,
@@ -20,7 +20,7 @@
     },
     {
       "id": "wait_world_attached",
-      "tool": "mc.condition.wait",
+      "tool": "mc.client.condition.wait",
       "args": {
         "condition": "client.rawInWorld == true",
         "timeoutMs": 300000
@@ -31,7 +31,7 @@
     },
     {
       "id": "wait_world_playable",
-      "tool": "mc.condition.wait",
+      "tool": "mc.client.condition.wait",
       "args": {
         "condition": "client.inWorld == true && client.screen == null",
         "timeoutMs": 300000
@@ -42,7 +42,7 @@
     },
     {
       "id": "give_diamond",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/give @s minecraft:diamond 3"
       },
@@ -53,7 +53,7 @@
     },
     {
       "id": "sync_after_give_diamond",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -63,7 +63,7 @@
     },
     {
       "id": "wait_inventory_sync",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 5
       },
@@ -73,7 +73,7 @@
     },
     {
       "id": "inventory_state",
-      "tool": "mc.inventory.state",
+      "tool": "mc.client.inventory.state",
       "expect": {
         "result.inWorld": true,
         "result.selected": 0
@@ -81,7 +81,7 @@
     },
     {
       "id": "find_diamond",
-      "tool": "mc.inventory.find",
+      "tool": "mc.client.inventory.find",
       "args": {
         "item": "minecraft:diamond",
         "limit": 5
@@ -93,7 +93,7 @@
     },
     {
       "id": "count_diamond",
-      "tool": "mc.inventory.count",
+      "tool": "mc.client.inventory.count",
       "args": {
         "item": "minecraft:diamond"
       },
@@ -103,7 +103,7 @@
     },
     {
       "id": "selected_item",
-      "tool": "mc.inventory.selected",
+      "tool": "mc.client.inventory.selected",
       "expect": {
         "result.inWorld": true
       }

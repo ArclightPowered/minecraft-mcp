@@ -1,0 +1,230 @@
+{
+  "name": "arclight_1_21_11_remote_world_server_schematic_roundtrip",
+  "tags": [
+    "arclight-1.21.11",
+    "world",
+    "external-server",
+    "remote-mcp",
+    "server-schematic"
+  ],
+  "requires": {
+    "loaders": [
+      "fabric",
+      "neoforge"
+    ]
+  },
+  "notes": [
+    "Prerequisite: run entities/000_connect_remote_arclight.json first.",
+    "All remote operations use mc.remote.call after a dedicated remote-server assertion; no integrated-server fallback is permitted.",
+    "Fixture setup uses mc.server.command.run; export and paste use the registered mc.server.schematic.export and mc.server.schematic.paste tools; metadata reads use common mc.schematic.info."
+  ],
+  "steps": [
+    {
+      "id": "confirm_remote_server_mcp",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.server.state",
+        "arguments": {},
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.running": true,
+        "result.dedicated": true
+      }
+    },
+    {
+      "id": "prepare_schematic_fixture",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.server.command.run",
+        "arguments": {
+          "command": "fill 48 80 48 55 84 55 minecraft:air"
+        },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "succeeded",
+        "result.command": "fill 48 80 48 55 84 55 minecraft:air",
+        "result.success": true,
+        "result.completed": true
+      }
+    },
+    {
+      "id": "place_fixture_stone",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.server.command.run",
+        "arguments": {
+          "command": "setblock 48 80 48 minecraft:stone"
+        },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "succeeded",
+        "result.command": "setblock 48 80 48 minecraft:stone",
+        "result.success": true,
+        "result.completed": true
+      }
+    },
+    {
+      "id": "place_fixture_oak_planks",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.server.command.run",
+        "arguments": {
+          "command": "setblock 49 80 48 minecraft:oak_planks"
+        },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "succeeded",
+        "result.command": "setblock 49 80 48 minecraft:oak_planks",
+        "result.success": true,
+        "result.completed": true
+      }
+    },
+    {
+      "id": "export_remote_fixture",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.server.schematic.export",
+        "arguments": {
+          "from": {
+            "x": 48,
+            "y": 80,
+            "z": 48
+          },
+          "to": {
+            "x": 49,
+            "y": 80,
+            "z": 48
+          },
+          "path": "arclight-1.21.11-remote-roundtrip.schem",
+          "maxBlocks": 16,
+          "entities": false,
+          "metadata": {
+            "name": "arclight-1.21.11-remote-roundtrip"
+          }
+        },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "exported",
+        "result.format": "sponge-v3",
+        "result.width": 2,
+        "result.height": 1,
+        "result.length": 1,
+        "result.volume": 2,
+        "result.entities": 0
+      }
+    },
+    {
+      "id": "verify_exported_remote_fixture",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.schematic.info",
+        "arguments": {
+          "path": "arclight-1.21.11-remote-roundtrip.schem"
+        },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "ok",
+        "result.format": "sponge-v3",
+        "result.version": 3,
+        "result.width": 2,
+        "result.height": 1,
+        "result.length": 1,
+        "result.volume": 2,
+        "result.paletteSize": 2,
+        "result.hasEntities": false
+      }
+    },
+    {
+      "id": "paste_remote_fixture",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.server.schematic.paste",
+        "arguments": {
+          "path": "arclight-1.21.11-remote-roundtrip.schem",
+          "origin": {
+            "x": 52,
+            "y": 80,
+            "z": 48
+          },
+          "maxBlocks": 16,
+          "blockEntities": true,
+          "entities": false,
+          "biomes": false
+        },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "pasted",
+        "result.format": "sponge-v3",
+        "result.width": 2,
+        "result.height": 1,
+        "result.length": 1,
+        "result.placedBlocks": 2,
+        "result.entities": 0
+      }
+    },
+    {
+      "id": "export_pasted_remote_fixture",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.server.schematic.export",
+        "arguments": {
+          "from": {
+            "x": 52,
+            "y": 80,
+            "z": 48
+          },
+          "to": {
+            "x": 53,
+            "y": 80,
+            "z": 48
+          },
+          "path": "arclight-1.21.11-remote-pasted.schem",
+          "maxBlocks": 16,
+          "entities": false,
+          "metadata": {
+            "name": "arclight-1.21.11-remote-pasted"
+          }
+        },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "exported",
+        "result.format": "sponge-v3",
+        "result.width": 2,
+        "result.height": 1,
+        "result.length": 1,
+        "result.volume": 2,
+        "result.entities": 0
+      }
+    },
+    {
+      "id": "verify_pasted_remote_fixture",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.schematic.info",
+        "arguments": {
+          "path": "arclight-1.21.11-remote-pasted.schem"
+        },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "ok",
+        "result.format": "sponge-v3",
+        "result.version": 3,
+        "result.width": 2,
+        "result.height": 1,
+        "result.length": 1,
+        "result.volume": 2,
+        "result.paletteSize": 2,
+        "result.hasEntities": false
+      }
+    }
+  ]
+}

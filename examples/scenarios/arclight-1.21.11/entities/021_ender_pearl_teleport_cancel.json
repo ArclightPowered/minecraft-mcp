@@ -1,0 +1,205 @@
+{
+  "name": "arclight_1_21_11_remote_real_ender_pearl_teleport_cancel",
+  "status": "PARENT_HARNESS_REQUIRED",
+  "tags": [
+    "arclight-1.21.11",
+    "entities",
+    "ender-pearl",
+    "teleport",
+    "external-server",
+    "real-client-action",
+    "observer-jsonl",
+    "cancel",
+    "parent-harness-required"
+  ],
+  "requires": {
+    "loaders": [
+      "fabric",
+      "neoforge"
+    ],
+    "sides": [
+      "client"
+    ]
+  },
+  "notes": [
+    "前置条件由父 harness 建立：受控 OP 玩家在 (48.5,81,48.5) 的平坦石台上，主手槽 0 只有一个 minecraft:ender_pearl，前方没有可碰撞方块；不得用 /tp、/teleport、/spreadplayers 或插件 API 制造通过结果。",
+    "父 harness 在动作前记录 observer JSONL 起始偏移，并经 mc.client.chat.send 真实聊天命令执行 /mcpobserve arm arclight-1.21.11-ender-pearl-teleport-cancel cancel teleport。arm 回执不是 teleport 已发生的证据。",
+    "真正输入必须是 mc.client.player.use_item 的主手末影珍珠使用；之后的实体查询、health 读取和位置比对只用于验证后果。",
+    "父 harness 必须在 finally 中运行 /mcpobserve state 与 /mcpobserve clear，且仅从本次 JSONL 窗口按 playerId/scenario 取证。"
+  ],
+  "parentAssertions": {
+    "observerLog": {
+      "marker": "MCPOBSERVE ",
+      "window": "从 arm 命令之前的日志偏移开始，到 clear 命令之后；匹配本 scenario、同一 playerId 与 eventKind=teleport。",
+      "requiredRecords": [
+        {
+          "record": "armed",
+          "scenario": "arclight-1.21.11-ender-pearl-teleport-cancel",
+          "behavior": "cancel",
+          "eventKind": "teleport",
+          "count": 0
+        },
+        {
+          "record": "event",
+          "scenario": "arclight-1.21.11-ender-pearl-teleport-cancel",
+          "eventKind": "teleport",
+          "count": 1,
+          "mutation": "cancelled",
+          "cancel": true,
+          "prepost.afterPolicyCancelled": true,
+          "prepost.postCancelled": true,
+          "event.cause": "ENDER_PEARL",
+          "event.afterPolicy.cancelled": true
+        }
+      ],
+      "forbidden": [
+        "第二条同 scenario/eventKind 的 event 记录。",
+        "以 arm/state/clear 记录、chat status=sent、服务器命令回执或任何命令 teleport 当作 event 成功证据。"
+      ]
+    },
+    "authoritativeOutcome": [
+      "父 harness 在 use 前和观察窗口末尾调用 mc.server.player.state，并比较 position；末态 x/z 与起点差绝对值都不得超过 1.0，末态 y 与起点差绝对值不得超过 1.0。",
+      "末态 health 必须与起始 health 相同（容许浮点精度 0.001）；父 harness 还必须解析 /mcpobserve state JSONL 的 health，二者一致。",
+      "use 后应在 (48..80, 80..96, 40..56) 查询 minecraft:ender_pearl；允许瞬态实体已在窗口内消失，但不得用“没有投射物”取代 TELEPORT event JSONL。"
+    ]
+  },
+  "steps": [
+    {
+      "id": "confirm_remote_server_mcp",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.server.state",
+        "arguments": {},
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.running": true,
+        "result.dedicated": true
+      }
+    },
+    {
+      "id": "prepare_only_the_landing_fixture",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.server.command.run",
+        "arguments": {
+          "command": "fill 46 80 40 82 80 56 minecraft:stone"
+        },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "succeeded",
+        "result.command": "fill 46 80 40 82 80 56 minecraft:stone",
+        "result.success": true,
+        "result.completed": true
+      }
+    },
+    {
+      "id": "sync_before_real_pearl_use",
+      "tool": "mc.client.connection.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "select_ender_pearl",
+      "tool": "mc.client.hotbar.select",
+      "args": {
+        "slot": 0
+      },
+      "expect": {
+        "result.status": "selected",
+        "result.slot": 0,
+        "result.item.item": "minecraft:ender_pearl",
+        "result.item.count": 1
+      }
+    },
+    {
+      "id": "aim_downrange_for_real_throw",
+      "tool": "mc.client.player.look_at",
+      "args": {
+        "x": 64.5,
+        "y": 82.0,
+        "z": 48.5
+      },
+      "expect": {
+        "result.status": "looked_at",
+        "result.x": 64.5,
+        "result.y": 82.0,
+        "result.z": 48.5
+      }
+    },
+    {
+      "id": "throw_by_real_client_item_use",
+      "tool": "mc.client.player.use_item",
+      "args": {
+        "hand": "main"
+      },
+      "expect": {
+        "result.status": "used",
+        "result.hand": "main",
+        "result.consumesAction": true
+      }
+    },
+    {
+      "id": "wait_for_real_projectile_landing_path",
+      "tool": "mc.client.ticks.wait",
+      "args": {
+        "ticks": 50
+      },
+      "expect": {
+        "result.waitedTicks": 50
+      }
+    },
+    {
+      "id": "query_real_ender_pearl_window",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.server.entity.query",
+        "arguments": {
+          "type": "minecraft:ender_pearl",
+          "from": {
+            "x": 48,
+            "y": 80,
+            "z": 40
+          },
+          "to": {
+            "x": 80,
+            "y": 96,
+            "z": 56
+          },
+          "limit": 8
+        },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.type": "minecraft:ender_pearl",
+        "result.limit": 8
+      }
+    },
+    {
+      "id": "sync_after_cancelled_teleport",
+      "tool": "mc.client.connection.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "client_still_in_playable_world",
+      "tool": "mc.client.condition.wait",
+      "args": {
+        "condition": "client.inWorld == true && client.screen == null",
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    }
+  ]
+}

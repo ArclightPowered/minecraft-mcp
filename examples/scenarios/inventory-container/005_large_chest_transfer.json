@@ -9,7 +9,7 @@
   "steps": [
     {
       "id": "join_world",
-      "tool": "mc.world.join",
+      "tool": "mc.client.world.join",
       "args": {
         "name": "minecraft_mcp_inventory_large_chest",
         "seed": 31103,
@@ -21,7 +21,7 @@
     },
     {
       "id": "wait_world_attached",
-      "tool": "mc.condition.wait",
+      "tool": "mc.client.condition.wait",
       "args": {
         "condition": "client.rawInWorld == true",
         "timeoutMs": 300000
@@ -32,7 +32,7 @@
     },
     {
       "id": "wait_world_playable",
-      "tool": "mc.condition.wait",
+      "tool": "mc.client.condition.wait",
       "args": {
         "condition": "client.inWorld == true && client.screen == null",
         "timeoutMs": 300000
@@ -43,7 +43,7 @@
     },
     {
       "id": "wait_after_world_ready",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 40
       },
@@ -53,7 +53,7 @@
     },
     {
       "id": "prepare_area",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/tp @s 0 80 0"
       },
@@ -64,7 +64,7 @@
     },
     {
       "id": "sync_after_prepare_area",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -74,7 +74,7 @@
     },
     {
       "id": "wait_after_prepare_area",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 5
       },
@@ -84,7 +84,7 @@
     },
     {
       "id": "clear_test_volume",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/fill 0 80 -1 3 83 1 minecraft:air"
       },
@@ -95,7 +95,7 @@
     },
     {
       "id": "sync_after_clear_test_volume",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -105,7 +105,7 @@
     },
     {
       "id": "wait_after_clear_test_volume",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 5
       },
@@ -115,7 +115,7 @@
     },
     {
       "id": "place_floor",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/fill 0 79 0 2 79 0 minecraft:stone"
       },
@@ -126,7 +126,7 @@
     },
     {
       "id": "sync_after_place_floor",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -136,7 +136,7 @@
     },
     {
       "id": "wait_after_place_floor",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 5
       },
@@ -146,7 +146,7 @@
     },
     {
       "id": "place_large_chest",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/setblock 1 80 0 minecraft:chest[type=right,facing=south]"
       },
@@ -157,7 +157,7 @@
     },
     {
       "id": "sync_after_place_large_chest",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -167,7 +167,7 @@
     },
     {
       "id": "wait_after_place_large_chest",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 5
       },
@@ -177,7 +177,7 @@
     },
     {
       "id": "place_large_chest_pair",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/setblock 2 80 0 minecraft:chest[type=left,facing=south]"
       },
@@ -188,7 +188,7 @@
     },
     {
       "id": "sync_after_place_large_chest_pair",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -198,7 +198,7 @@
     },
     {
       "id": "wait_after_place_large_chest_pair",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 5
       },
@@ -208,7 +208,7 @@
     },
     {
       "id": "prepare_area_after_blocks",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/tp @s 0 80 0"
       },
@@ -219,7 +219,7 @@
     },
     {
       "id": "sync_after_prepare_area_after_blocks",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -229,7 +229,7 @@
     },
     {
       "id": "wait_after_prepare_area_after_blocks",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 20
       },
@@ -239,7 +239,7 @@
     },
     {
       "id": "large_chest_left_placed",
-      "tool": "mc.block.state",
+      "tool": "mc.client.block.state",
       "args": {
         "x": 1,
         "y": 80,
@@ -251,7 +251,7 @@
     },
     {
       "id": "large_chest_right_placed",
-      "tool": "mc.block.state",
+      "tool": "mc.client.block.state",
       "args": {
         "x": 2,
         "y": 80,
@@ -263,7 +263,7 @@
     },
     {
       "id": "seed_chest_item",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/item replace block 1 80 0 container.0 with minecraft:emerald 7"
       },
@@ -274,7 +274,7 @@
     },
     {
       "id": "sync_after_seed_chest_item",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -284,7 +284,7 @@
     },
     {
       "id": "wait_after_seed_chest_item",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 5
       },
@@ -294,7 +294,7 @@
     },
     {
       "id": "clear_inventory",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/clear @s"
       },
@@ -305,7 +305,7 @@
     },
     {
       "id": "sync_after_clear_inventory",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -315,7 +315,7 @@
     },
     {
       "id": "wait_after_clear_inventory",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 5
       },
@@ -325,7 +325,7 @@
     },
     {
       "id": "set_survival",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/gamemode survival"
       },
@@ -336,7 +336,7 @@
     },
     {
       "id": "sync_after_set_survival",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -346,7 +346,7 @@
     },
     {
       "id": "wait_after_set_survival",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 5
       },
@@ -356,7 +356,7 @@
     },
     {
       "id": "open_chest",
-      "tool": "mc.block.interact",
+      "tool": "mc.client.block.interact",
       "args": {
         "x": 1,
         "y": 80,
@@ -370,7 +370,7 @@
     },
     {
       "id": "wait_open",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 2
       },
@@ -380,7 +380,7 @@
     },
     {
       "id": "large_chest_open",
-      "tool": "mc.container.state",
+      "tool": "mc.client.container.state",
       "expect": {
         "result.hasContainer": true,
         "result.screen": {
@@ -393,7 +393,7 @@
     },
     {
       "id": "move_emeralds_to_inventory",
-      "tool": "mc.container.quick_move",
+      "tool": "mc.client.container.quick_move",
       "args": {
         "slot": 0
       },
@@ -404,7 +404,7 @@
     },
     {
       "id": "find_emeralds",
-      "tool": "mc.inventory.find",
+      "tool": "mc.client.inventory.find",
       "args": {
         "item": "minecraft:emerald"
       },
@@ -415,7 +415,7 @@
     },
     {
       "id": "close_container",
-      "tool": "mc.container.close",
+      "tool": "mc.client.container.close",
       "expect": {
         "result.status": "closed"
       }

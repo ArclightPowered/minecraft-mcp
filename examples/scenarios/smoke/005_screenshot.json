@@ -4,7 +4,7 @@
   "steps": [
     {
       "id": "wait_playable_world_or_title",
-      "tool": "mc.condition.wait",
+      "tool": "mc.client.condition.wait",
       "args": {
         "condition": "client.rawInWorld == false || client.inWorld == true",
         "timeoutMs": 30000
@@ -15,7 +15,7 @@
     },
     {
       "id": "take_screenshot",
-      "tool": "mc.screenshot.take",
+      "tool": "mc.client.screenshot.take",
       "args": {
         "name": "mcp-screenshot-smoke.png"
       },

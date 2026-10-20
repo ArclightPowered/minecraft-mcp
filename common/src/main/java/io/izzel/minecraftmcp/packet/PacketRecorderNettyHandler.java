@@ -9,6 +9,7 @@ public final class PacketRecorderNettyHandler extends ChannelDuplexHandler {
     public static final String NAME = "minecraft_mcp_packet_recorder";
 
     private final PacketRecorder recorder;
+    private boolean recorderErrorLogged;
 
     public PacketRecorderNettyHandler(PacketRecorder recorder) {
         this.recorder = recorder;
@@ -17,7 +18,7 @@ public final class PacketRecorderNettyHandler extends ChannelDuplexHandler {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof Packet<?> packet) {
-            recorder.record(PacketDirection.CLIENTBOUND, packet);
+            record(PacketDirection.CLIENTBOUND, packet);
         }
         super.channelRead(ctx, msg);
     }
@@ -25,8 +26,19 @@ public final class PacketRecorderNettyHandler extends ChannelDuplexHandler {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof Packet<?> packet) {
-            recorder.record(PacketDirection.SERVERBOUND, packet);
+            record(PacketDirection.SERVERBOUND, packet);
         }
         super.write(ctx, msg, promise);
+    }
+
+    private void record(PacketDirection direction, Packet<?> packet) {
+        try {
+            recorder.record(direction, packet);
+        } catch (RuntimeException e) {
+            if (!recorderErrorLogged) {
+                recorderErrorLogged = true;
+                System.err.println("[Minecraft MCP] packet recorder failed (suppressed, packets keep flowing): " + e);
+            }
+        }
     }
 }

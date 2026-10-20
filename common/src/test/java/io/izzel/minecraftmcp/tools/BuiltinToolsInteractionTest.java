@@ -1,15 +1,10 @@
 package io.izzel.minecraftmcp.tools;
 
-import io.izzel.minecraftmcp.bridge.ClientSnapshot;
-import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
+import io.izzel.minecraftmcp.bridge.FakeClientBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
-import io.izzel.minecraftmcp.scenario.ScenarioEngine;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -18,9 +13,9 @@ class BuiltinToolsInteractionTest {
     void swingToolDelegatesToBridgeAndReturnsStructuredResult() throws Exception {
         RecordingBridge bridge = new RecordingBridge();
         ToolRegistry registry = new ToolRegistry();
-        BuiltinTools.register(registry, bridge, new ScenarioEngine(registry));
+        BuiltinClientTools.register(registry, bridge);
 
-        Object result = registry.call("mc.player.swing", Map.of("hand", "main"));
+        Object result = registry.call("mc.client.player.swing", Map.of("hand", "main"));
 
         assertEquals("main", bridge.swingHand);
         assertEquals(Map.of("status", "swung", "hand", "main"), result);
@@ -30,9 +25,9 @@ class BuiltinToolsInteractionTest {
     void vehicleStateToolExposesPassengerAndTrackingInformation() throws Exception {
         RecordingBridge bridge = new RecordingBridge();
         ToolRegistry registry = new ToolRegistry();
-        BuiltinTools.register(registry, bridge, new ScenarioEngine(registry));
+        BuiltinClientTools.register(registry, bridge);
 
-        Object result = registry.call("mc.vehicle.state", Map.of());
+        Object result = registry.call("mc.client.vehicle.state", Map.of());
 
         assertEquals(Map.of(
             "inWorld", true,
@@ -45,9 +40,9 @@ class BuiltinToolsInteractionTest {
     void commandToolDelegatesToBridgeAndReturnsCommandResult() throws Exception {
         RecordingBridge bridge = new RecordingBridge();
         ToolRegistry registry = new ToolRegistry();
-        BuiltinTools.register(registry, bridge, new ScenarioEngine(registry));
+        BuiltinClientTools.register(registry, bridge);
 
-        Object result = registry.call("mc.command.run", Map.of("command", "summon minecraft:boat 0 64 0"));
+        Object result = registry.call("mc.client.command.run", Map.of("command", "summon minecraft:boat 0 64 0"));
 
         assertEquals("summon minecraft:boat 0 64 0", bridge.command);
         assertEquals(Map.of("status", "sent", "command", "summon minecraft:boat 0 64 0"), result);
@@ -57,9 +52,9 @@ class BuiltinToolsInteractionTest {
     void serverConnectToolDelegatesToBridge() throws Exception {
         RecordingBridge bridge = new RecordingBridge();
         ToolRegistry registry = new ToolRegistry();
-        BuiltinTools.register(registry, bridge, new ScenarioEngine(registry));
+        BuiltinClientTools.register(registry, bridge);
 
-        Object result = registry.call("mc.server.connect", Map.of("address", "127.0.0.1:25565", "name", "local"));
+        Object result = registry.call("mc.client.connection.connect", Map.of("address", "127.0.0.1:25565", "name", "local"));
 
         assertEquals("127.0.0.1:25565", bridge.address);
         assertEquals("local", bridge.serverName);
@@ -76,37 +71,25 @@ class BuiltinToolsInteractionTest {
         assertTrue(bridge.waitUntil("vehicle.isPassenger == false", 100));
     }
 
-    static final class RecordingBridge implements MinecraftClientBridge {
+    static final class RecordingBridge extends FakeClientBridge {
         String swingHand;
         String command;
         String address;
         String serverName;
         boolean passenger = true;
-        public String loader() { return "test"; }
-        public String minecraftVersion() { return "1.21.1"; }
-        public Path gameDirectory() { return Path.of("."); }
-        public boolean isOnClientThread() { return true; }
-        public void execute(Runnable runnable) { runnable.run(); }
-        public <T> CompletableFuture<T> submit(Supplier<T> supplier) {
-            try { return CompletableFuture.completedFuture(supplier.get()); }
-            catch (Throwable t) { CompletableFuture<T> f = new CompletableFuture<>(); f.completeExceptionally(t); return f; }
-        }
-        public ClientSnapshot snapshot() {
-            return new ClientSnapshot(true, true, null, "Player", 0, 64, 0, 0, 0);
-        }
-        public void swing(String hand) { swingHand = hand; }
-        public Map<String, Object> vehicleState() {
+        @Override public void swing(String hand) { swingHand = hand; }
+        @Override public Map<String, Object> vehicleState() {
             java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
             result.put("inWorld", true);
             result.put("isPassenger", passenger);
             result.put("vehicle", passenger ? "minecraft:boat" : null);
             return result;
         }
-        public Map<String, Object> runCommand(String command) {
+        @Override public Map<String, Object> runCommand(String command) {
             this.command = command;
             return Map.of("status", "sent", "command", command);
         }
-        public Map<String, Object> connectServer(String address, String name) {
+        @Override public Map<String, Object> connectServer(String address, String name) {
             this.address = address;
             this.serverName = name;
             return Map.of("status", "connecting", "address", address, "name", name);

@@ -7,7 +7,7 @@
   "steps": [
     {
       "id": "screen",
-      "tool": "mc.screen.state",
+      "tool": "mc.client.screen.state",
       "args": {},
       "expect": {
         "result.hasScreen": false

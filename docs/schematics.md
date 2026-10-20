@@ -16,14 +16,14 @@ Schematic tools are server tools:
 
 ```text
 mc.schematic.info
-mc.schematic.export
-mc.schematic.paste
+mc.server.schematic.export
+mc.server.schematic.paste
 ```
 
 From the client MCP endpoint, call them through:
 
 ```text
-mc.server.call
+mc.remote.call
 ```
 
 Example:
@@ -36,7 +36,8 @@ Example:
 }
 ```
 
-In integrated singleplayer server mode, `mc.server.call` falls back to the local integrated server bridge when the plugin-message server bridge is not available.
+In integrated singleplayer there is no remote peer to call: `mc.remote.call` refuses with an error
+saying to use `mc.server.*` instead, which reaches the same integrated server as a same-JVM call.
 
 ## Path handling
 
@@ -82,7 +83,7 @@ Output includes:
 }
 ```
 
-## `mc.schematic.export`
+## `mc.server.schematic.export`
 
 Exports a cuboid from the current server world to a Sponge v3 `.schem` file.
 
@@ -110,7 +111,7 @@ Notes:
 - Block states, block entities, entities, and biomes are exported.
 - Player entities are excluded from entity export.
 
-## `mc.schematic.paste`
+## `mc.server.schematic.paste`
 
 Pastes a Sponge v3 `.schem` into the current server world.
 

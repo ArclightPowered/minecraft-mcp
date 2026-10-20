@@ -9,7 +9,7 @@
   "steps": [
     {
       "id": "join_world",
-      "tool": "mc.world.join",
+      "tool": "mc.client.world.join",
       "args": {
         "name": "minecraft_mcp_inventory_furnace",
         "seed": 31102,
@@ -21,7 +21,7 @@
     },
     {
       "id": "wait_world_attached",
-      "tool": "mc.condition.wait",
+      "tool": "mc.client.condition.wait",
       "args": {
         "condition": "client.rawInWorld == true",
         "timeoutMs": 300000
@@ -32,7 +32,7 @@
     },
     {
       "id": "wait_world_playable",
-      "tool": "mc.condition.wait",
+      "tool": "mc.client.condition.wait",
       "args": {
         "condition": "client.inWorld == true && client.screen == null",
         "timeoutMs": 300000
@@ -43,7 +43,7 @@
     },
     {
       "id": "wait_after_world_ready",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 40
       },
@@ -53,7 +53,7 @@
     },
     {
       "id": "prepare_area",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/tp @s 0 65 0"
       },
@@ -64,7 +64,7 @@
     },
     {
       "id": "sync_after_prepare_area",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -74,7 +74,7 @@
     },
     {
       "id": "wait_after_prepare_area",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 5
       },
@@ -84,7 +84,7 @@
     },
     {
       "id": "place_floor",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/setblock 0 64 0 minecraft:stone"
       },
@@ -95,7 +95,7 @@
     },
     {
       "id": "sync_after_place_floor",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -105,7 +105,7 @@
     },
     {
       "id": "wait_after_place_floor",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 5
       },
@@ -115,7 +115,7 @@
     },
     {
       "id": "place_furnace",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/setblock 1 65 0 minecraft:furnace"
       },
@@ -126,7 +126,7 @@
     },
     {
       "id": "sync_after_place_furnace",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -136,7 +136,7 @@
     },
     {
       "id": "wait_after_place_furnace",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 5
       },
@@ -146,7 +146,7 @@
     },
     {
       "id": "prepare_area_after_blocks",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/tp @s 0 65 0"
       },
@@ -157,7 +157,7 @@
     },
     {
       "id": "sync_after_prepare_area_after_blocks",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -167,7 +167,7 @@
     },
     {
       "id": "wait_after_prepare_area_after_blocks",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 20
       },
@@ -177,7 +177,7 @@
     },
     {
       "id": "furnace_placed",
-      "tool": "mc.block.state",
+      "tool": "mc.client.block.state",
       "args": {
         "x": 1,
         "y": 65,
@@ -189,7 +189,7 @@
     },
     {
       "id": "clear_inventory",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/clear @s"
       },
@@ -200,7 +200,7 @@
     },
     {
       "id": "sync_after_clear_inventory",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -210,7 +210,7 @@
     },
     {
       "id": "wait_after_clear_inventory",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 5
       },
@@ -220,7 +220,7 @@
     },
     {
       "id": "give_ore",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/give @s minecraft:raw_iron 1"
       },
@@ -231,7 +231,7 @@
     },
     {
       "id": "sync_after_give_ore",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -241,7 +241,7 @@
     },
     {
       "id": "wait_after_give_ore",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 5
       },
@@ -251,7 +251,7 @@
     },
     {
       "id": "give_fuel",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/give @s minecraft:coal 1"
       },
@@ -262,7 +262,7 @@
     },
     {
       "id": "sync_after_give_fuel",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -272,7 +272,7 @@
     },
     {
       "id": "wait_after_give_fuel",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 5
       },
@@ -282,7 +282,7 @@
     },
     {
       "id": "set_survival",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/gamemode survival"
       },
@@ -293,7 +293,7 @@
     },
     {
       "id": "sync_after_set_survival",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -303,7 +303,7 @@
     },
     {
       "id": "wait_after_set_survival",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 5
       },
@@ -313,7 +313,7 @@
     },
     {
       "id": "select_empty_hand",
-      "tool": "mc.hotbar.select",
+      "tool": "mc.client.hotbar.select",
       "args": {
         "slot": 8
       },
@@ -323,7 +323,7 @@
     },
     {
       "id": "open_furnace",
-      "tool": "mc.block.interact",
+      "tool": "mc.client.block.interact",
       "args": {
         "x": 1,
         "y": 65,
@@ -337,7 +337,7 @@
     },
     {
       "id": "wait_open",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 2
       },
@@ -347,7 +347,7 @@
     },
     {
       "id": "furnace_menu_open",
-      "tool": "mc.container.state",
+      "tool": "mc.client.container.state",
       "expect": {
         "result.hasContainer": true,
         "result.screen": {
@@ -357,7 +357,7 @@
     },
     {
       "id": "pick_raw_iron",
-      "tool": "mc.container.click",
+      "tool": "mc.client.container.click",
       "args": {
         "slot": 30,
         "button": 0,
@@ -370,7 +370,7 @@
     },
     {
       "id": "place_raw_iron_input",
-      "tool": "mc.container.click",
+      "tool": "mc.client.container.click",
       "args": {
         "slot": 0,
         "button": 0,
@@ -383,7 +383,7 @@
     },
     {
       "id": "pick_coal",
-      "tool": "mc.container.click",
+      "tool": "mc.client.container.click",
       "args": {
         "slot": 31,
         "button": 0,
@@ -396,7 +396,7 @@
     },
     {
       "id": "place_coal_fuel",
-      "tool": "mc.container.click",
+      "tool": "mc.client.container.click",
       "args": {
         "slot": 1,
         "button": 0,
@@ -409,7 +409,7 @@
     },
     {
       "id": "wait_smelt",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 220
       },
@@ -419,7 +419,7 @@
     },
     {
       "id": "output_ready",
-      "tool": "mc.container.state",
+      "tool": "mc.client.container.state",
       "expect": {
         "result.slots.2.item": "minecraft:iron_ingot",
         "result.slots.2.count": 1
@@ -427,7 +427,7 @@
     },
     {
       "id": "take_result",
-      "tool": "mc.container.quick_move",
+      "tool": "mc.client.container.quick_move",
       "args": {
         "slot": 2
       },
@@ -438,7 +438,7 @@
     },
     {
       "id": "find_ingot",
-      "tool": "mc.inventory.find",
+      "tool": "mc.client.inventory.find",
       "args": {
         "item": "minecraft:iron_ingot"
       },
@@ -449,7 +449,7 @@
     },
     {
       "id": "close_container",
-      "tool": "mc.container.close",
+      "tool": "mc.client.container.close",
       "expect": {
         "result.status": "closed"
       }

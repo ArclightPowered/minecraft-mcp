@@ -1,1 +1,1 @@
-{"name":"input_key_hold_shift","tags":["input","keyboard"],"steps":[{"id":"hold_shift","tool":"mc.keyboard.hold","args":{"key":"LEFT_SHIFT","ticks":2},"expect":{"result.status":"held","result.key":"LEFT_SHIFT","result.ticks":2}}]}
+{"name":"input_key_hold_shift","tags":["input","keyboard"],"steps":[{"id":"hold_shift","tool":"mc.client.keyboard.hold","args":{"key":"LEFT_SHIFT","ticks":2},"expect":{"result.status":"held","result.key":"LEFT_SHIFT","result.ticks":2}}]}

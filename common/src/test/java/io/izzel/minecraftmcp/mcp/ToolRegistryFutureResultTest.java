@@ -22,7 +22,8 @@ class ToolRegistryFutureResultTest {
         ToolRegistry registry = new ToolRegistry();
         AtomicBoolean cancelled = new AtomicBoolean(false);
         registry.register(simple("never", args -> {
-            FutureResult<Object> result = new FutureResult<>(r -> {}, Runnable::run);
+            FutureResult<Object> result = new FutureResult<>(r -> {
+            }, Runnable::run);
             result.toCompletableFuture().whenComplete((value, throwable) -> cancelled.set(result.toCompletableFuture().isCancelled()));
             return result;
         }));
@@ -31,14 +32,25 @@ class ToolRegistryFutureResultTest {
         assertTrue(cancelled.get());
     }
 
-    private static McpTool simple(String name, McpToolBody body) {
-        return new McpTool() {
-            public String name() { return name; }
-            public String description() { return name; }
-            public Map<String, Object> inputSchema() { return Map.of("type", "object"); }
-            public Object call(Map<String, Object> arguments) throws Exception { return body.call(arguments); }
-        };
+    @Test
+    void duplicateRegistrationIsRejected() {
+        ToolRegistry registry = new ToolRegistry();
+        registry.register(simple("mc.dup", args -> Map.of()));
+
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+            () -> registry.register(simple("mc.dup", args -> Map.of())));
+        assertTrue(error.getMessage().contains("mc.dup"), error.getMessage());
     }
 
-    interface McpToolBody { Object call(Map<String, Object> args) throws Exception; }
+    @Test
+    void unknownToolCarriesItsName() {
+        ToolRegistry registry = new ToolRegistry();
+        ToolRegistry.UnknownToolException error = assertThrows(ToolRegistry.UnknownToolException.class,
+            () -> registry.call("mc.nope", Map.of()));
+        assertEquals("mc.nope", error.toolName());
+    }
+
+    private static McpTool simple(String name, McpTools.ToolBody body) {
+        return McpTools.simple(name, name, body);
+    }
 }

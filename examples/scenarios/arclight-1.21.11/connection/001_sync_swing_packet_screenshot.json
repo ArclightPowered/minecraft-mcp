@@ -1,0 +1,109 @@
+{
+  "name": "Arclight 1.21.11 connection sync, real swing transport recording, and screenshot",
+  "tags": [
+    "arclight-1.21.11",
+    "external-server",
+    "connection",
+    "packet",
+    "screenshot",
+    "full-client"
+  ],
+  "steps": [
+    {
+      "id": "assert_playable_world",
+      "tool": "mc.client.condition.wait",
+      "args": {
+        "condition": "client.inWorld == true && client.screen == null",
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "sync_before_actions",
+      "tool": "mc.client.connection.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "start_swing_packet_recording",
+      "tool": "mc.client.packet.recording.start",
+      "args": {
+        "clear": true,
+        "maxPackets": 200,
+        "parseBundlePackets": true
+      },
+      "expect": {
+        "result.status": "started",
+        "result.recording": true
+      }
+    },
+    {
+      "id": "swing_main_hand",
+      "tool": "mc.client.player.swing",
+      "args": {
+        "hand": "main"
+      },
+      "expect": {
+        "result.status": "swung",
+        "result.hand": "main"
+      }
+    },
+    {
+      "id": "wait_for_serverbound_packet_after_real_swing",
+      "tool": "mc.client.packet.wait",
+      "args": {
+        "direction": "serverbound",
+        "count": 1,
+        "timeoutMs": 10000
+      },
+      "expect": {
+        "result.matched": true,
+        "result.required": 1
+      }
+    },
+    {
+      "id": "dump_transport_packets_for_mapping_audit",
+      "tool": "mc.client.packet.dump",
+      "args": {
+        "direction": "serverbound",
+        "limit": 200
+      },
+      "expect": {
+        "result.recording": true
+      }
+    },
+    {
+      "id": "screenshot_after_real_swing",
+      "tool": "mc.client.screenshot.take",
+      "args": {
+        "name": "arclight-1.21.11-connected.png"
+      },
+      "expect": {
+        "result.status": "saved",
+        "result.path": {
+          "contains": "screenshots/arclight-1.21.11-connected.png"
+        }
+      }
+    },
+    {
+      "id": "stop_packet_recording",
+      "tool": "mc.client.packet.recording.stop",
+      "args": {},
+      "expect": {
+        "result.status": "stopped",
+        "result.recording": false
+      }
+    }
+  ],
+  "notes": [
+    "This scenario asserts a real client swing followed by at least one recorded serverbound transport packet.",
+    "It deliberately does not assert packetSimpleName contains Swing: Fabric production captures may expose the actual runtime/intermediary class name rather than a stable named class.",
+    "Retain result.packets[].packetClass and packetSimpleName from dump_transport_packets_for_mapping_audit when classifying the packet; do not relabel an intermediary capture as a named Swing packet without mapping evidence."
+  ]
+}

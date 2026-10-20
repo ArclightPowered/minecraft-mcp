@@ -23,6 +23,21 @@ class ScenarioExpectTest {
     }
 
     @Test
+    void stepExpectStartsWithMatcherPassesAndFails() throws Exception {
+        Path dir = Files.createTempDirectory("scenario-expect-starts-with");
+        Files.writeString(dir.resolve("pass.json"), """
+                {"name":"starts_with_pass","steps":[{"id":"state","tool":"mc.state","args":{},"expect":{"result.screen":{"startsWith":"Example"}}}]}
+                """);
+        Files.writeString(dir.resolve("fail.json"), """
+                {"name":"starts_with_fail","steps":[{"id":"state","tool":"mc.state","args":{},"expect":{"result.screen":{"startsWith":"Screen"}}}]}
+                """);
+        ScenarioReport report = new ScenarioEngine(registry()).runBatch(dir.toString());
+        assertEquals(1, report.passed());
+        assertEquals(1, report.failed());
+        assertTrue(String.valueOf(report.toMap()).contains("startsWith"));
+    }
+
+    @Test
     void stepExpectMismatchFailsScenarioWithReadableError() throws Exception {
         Path dir = Files.createTempDirectory("scenario-expect-fail");
         Files.writeString(dir.resolve("expect.json"), """

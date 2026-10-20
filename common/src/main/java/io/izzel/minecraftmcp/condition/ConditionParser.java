@@ -15,18 +15,25 @@ public final class ConditionParser {
         ConditionParser parser = new ConditionParser(input);
         ConditionExpression expression = parser.parseExpression();
         parser.skipWhitespace();
-        if (!parser.isEnd()) throw parser.error("Unexpected token");
+        if (!parser.isEnd()) {
+            throw parser.error("Unexpected token");
+        }
         return expression;
     }
 
-    private ConditionExpression parseExpression() { return parseOr(); }
+    private ConditionExpression parseExpression() {
+        return parseOr();
+    }
 
     private ConditionExpression parseOr() {
         ConditionExpression left = parseAnd();
         while (true) {
             skipWhitespace();
-            if (match("||")) left = new ConditionExpression.Binary("||", left, parseAnd());
-            else return left;
+            if (match("||")) {
+                left = new ConditionExpression.Binary("||", left, parseAnd());
+            } else {
+                return left;
+            }
         }
     }
 
@@ -34,14 +41,19 @@ public final class ConditionParser {
         ConditionExpression left = parseUnary();
         while (true) {
             skipWhitespace();
-            if (match("&&")) left = new ConditionExpression.Binary("&&", left, parseUnary());
-            else return left;
+            if (match("&&")) {
+                left = new ConditionExpression.Binary("&&", left, parseUnary());
+            } else {
+                return left;
+            }
         }
     }
 
     private ConditionExpression parseUnary() {
         skipWhitespace();
-        if (match("!")) return new ConditionExpression.Unary("!", parseUnary());
+        if (match("!")) {
+            return new ConditionExpression.Unary("!", parseUnary());
+        }
         return parseComparison();
     }
 
@@ -49,14 +61,18 @@ public final class ConditionParser {
         ConditionExpression left = parsePrimary();
         skipWhitespace();
         for (String op : List.of("==", "!=", ">=", "<=", ">", "<")) {
-            if (match(op)) return new ConditionExpression.Binary(op, left, parsePrimary());
+            if (match(op)) {
+                return new ConditionExpression.Binary(op, left, parsePrimary());
+            }
         }
         return left;
     }
 
     private ConditionExpression parsePrimary() {
         skipWhitespace();
-        if (isEnd()) throw error("Expected expression");
+        if (isEnd()) {
+            throw error("Expected expression");
+        }
         char c = peek();
         if (c == '(') {
             pos++;
@@ -65,8 +81,12 @@ public final class ConditionParser {
             expect(')');
             return expression;
         }
-        if (c == '"' || c == '\'') return new ConditionExpression.Literal(parseString());
-        if (c == '-' || Character.isDigit(c)) return parseNumber();
+        if (c == '"' || c == '\'') {
+            return new ConditionExpression.Literal(parseString());
+        }
+        if (c == '-' || Character.isDigit(c)) {
+            return parseNumber();
+        }
         if (isIdentifierStart(c)) {
             String ident = parseIdentifier();
             skipWhitespace();
@@ -97,31 +117,45 @@ public final class ConditionParser {
     }
 
     private ConditionExpression parsePathFrom(String first) {
-        List<String> properties = new ArrayList<>();
-        properties.add(first);
+        // "." is just the highest-precedence (left-associative) operator: a.b.c parses as
+        // Access(Access(Name(a), b), c). Only the chain's start is a Name; "$" is the built-in
+        // root rather than a registry lookup.
+        ConditionExpression current = "$".equals(first) ? new ConditionExpression.Root() : new ConditionExpression.Name(first);
         while (match(".")) {
-            if (isEnd()) throw error("Expected property");
-            properties.add(parseProperty());
+            if (isEnd()) {
+                throw error("Expected property");
+            }
+            current = new ConditionExpression.Access(current, parseProperty());
         }
-        return new ConditionExpression.Path("", List.copyOf(properties));
+        return current;
     }
 
     private String parseProperty() {
         skipWhitespace();
-        if (isEnd()) throw error("Expected property");
-        if (Character.isDigit(peek())) return parseUnsignedInt();
+        if (isEnd()) {
+            throw error("Expected property");
+        }
+        if (Character.isDigit(peek())) {
+            return parseUnsignedInt();
+        }
         return parseIdentifier();
     }
 
     private ConditionExpression parseNumber() {
         int start = pos;
-        if (peek() == '-') pos++;
-        while (!isEnd() && Character.isDigit(peek())) pos++;
+        if (peek() == '-') {
+            pos++;
+        }
+        while (!isEnd() && Character.isDigit(peek())) {
+            pos++;
+        }
         boolean decimal = false;
         if (!isEnd() && peek() == '.') {
             decimal = true;
             pos++;
-            while (!isEnd() && Character.isDigit(peek())) pos++;
+            while (!isEnd() && Character.isDigit(peek())) {
+                pos++;
+            }
         }
         String text = input.substring(start, pos);
         try {
@@ -137,9 +171,13 @@ public final class ConditionParser {
         StringBuilder sb = new StringBuilder();
         while (!isEnd()) {
             char c = input.charAt(pos++);
-            if (c == quote) return sb.toString();
+            if (c == quote) {
+                return sb.toString();
+            }
             if (c == '\\') {
-                if (isEnd()) throw error("Unterminated escape sequence");
+                if (isEnd()) {
+                    throw error("Unterminated escape sequence");
+                }
                 char e = input.charAt(pos++);
                 sb.append(switch (e) {
                     case 'n' -> '\n';
@@ -159,24 +197,62 @@ public final class ConditionParser {
 
     private String parseIdentifier() {
         skipWhitespace();
-        if (isEnd() || !isIdentifierStart(peek())) throw error("Expected identifier");
+        if (isEnd() || !isIdentifierStart(peek())) {
+            throw error("Expected identifier");
+        }
         int start = pos++;
-        while (!isEnd() && isIdentifierPart(peek())) pos++;
+        while (!isEnd() && isIdentifierPart(peek())) {
+            pos++;
+        }
         return input.substring(start, pos);
     }
 
     private String parseUnsignedInt() {
         int start = pos;
-        while (!isEnd() && Character.isDigit(peek())) pos++;
+        while (!isEnd() && Character.isDigit(peek())) {
+            pos++;
+        }
         return input.substring(start, pos);
     }
 
-    private boolean isIdentifierStart(char c) { return Character.isLetter(c) || c == '_' || c == '$'; }
-    private boolean isIdentifierPart(char c) { return Character.isLetterOrDigit(c) || c == '_' || c == '-' || c == '$'; }
-    private void skipWhitespace() { while (!isEnd() && Character.isWhitespace(peek())) pos++; }
-    private boolean match(String s) { if (input.startsWith(s, pos)) { pos += s.length(); return true; } return false; }
-    private void expect(char c) { if (isEnd() || input.charAt(pos) != c) throw error("Expected '" + c + "'"); pos++; }
-    private char peek() { return input.charAt(pos); }
-    private boolean isEnd() { return pos >= input.length(); }
-    private ConditionSyntaxException error(String message) { return new ConditionSyntaxException(message + " at offset " + pos + " in: " + input); }
+    private boolean isIdentifierStart(char c) {
+        return Character.isLetter(c) || c == '_' || c == '$';
+    }
+
+    private boolean isIdentifierPart(char c) {
+        return Character.isLetterOrDigit(c) || c == '_' || c == '-' || c == '$';
+    }
+
+    private void skipWhitespace() {
+        while (!isEnd() && Character.isWhitespace(peek())) {
+            pos++;
+        }
+    }
+
+    private boolean match(String s) {
+        if (input.startsWith(s, pos)) {
+            pos += s.length();
+            return true;
+        }
+        return false;
+    }
+
+    private void expect(char c) {
+        if (isEnd() || input.charAt(pos) != c) {
+            throw error("Expected '" + c + "'");
+        }
+        pos++;
+    }
+
+    private char peek() {
+        return input.charAt(pos);
+    }
+
+    private boolean isEnd() {
+        return pos >= input.length();
+    }
+
+    private ConditionSyntaxException error(String message) {
+        return new ConditionSyntaxException(message + " at offset " + pos + " in: " + input);
+    }
 }

@@ -1,9 +1,10 @@
 package io.izzel.minecraftmcp.condition.property;
 
-import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
+import io.izzel.minecraftmcp.bridge.MinecraftBridge;
 
 public interface ConditionPropertyContext {
-    MinecraftClientBridge bridge();
+    MinecraftBridge bridge();
+
     <T> T cached(String key, ThrowingSupplier<T> supplier) throws Exception;
 
     @FunctionalInterface

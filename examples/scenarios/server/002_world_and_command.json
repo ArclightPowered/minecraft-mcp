@@ -1,0 +1,160 @@
+{
+  "name": "server_world_command_and_tick_tools",
+  "tags": [
+    "server",
+    "world"
+  ],
+  "requires": {
+    "sides": [
+      "server"
+    ]
+  },
+  "steps": [
+    {
+      "id": "worlds",
+      "tool": "mc.server.world.list",
+      "args": {},
+      "expect": {
+        "result.count": 3
+      }
+    },
+    {
+      "id": "snapshot",
+      "tool": "mc.server.world.snapshot",
+      "args": {},
+      "expect": {
+        "result.inWorld": true,
+        "result.dimension": "minecraft:overworld"
+      }
+    },
+    {
+      "id": "clear_block",
+      "tool": "mc.server.block.set",
+      "args": {
+        "x": 8,
+        "y": 70,
+        "z": 8,
+        "block": "minecraft:air"
+      },
+      "expect": {
+        "result.block": "minecraft:air"
+      }
+    },
+    {
+      "id": "set_block",
+      "tool": "mc.server.block.set",
+      "args": {
+        "x": 8,
+        "y": 70,
+        "z": 8,
+        "block": "minecraft:gold_block"
+      },
+      "expect": {
+        "result.status": "set",
+        "result.block": "minecraft:gold_block"
+      }
+    },
+    {
+      "id": "read_block",
+      "tool": "mc.server.block.state",
+      "args": {
+        "x": 8,
+        "y": 70,
+        "z": 8
+      },
+      "expect": {
+        "result.block": "minecraft:gold_block",
+        "result.air": false
+      }
+    },
+    {
+      "id": "command_output",
+      "tool": "mc.server.command.run",
+      "args": {
+        "command": "/difficulty"
+      },
+      "expect": {
+        "result.success": true,
+        "result.completed": true
+      }
+    },
+    {
+      "id": "command_failure",
+      "tool": "mc.server.command.run",
+      "args": {
+        "command": "/thisisnotacommand"
+      },
+      "expect": {
+        "result.success": false
+      }
+    },
+    {
+      "id": "players",
+      "tool": "mc.server.players",
+      "args": {}
+    },
+    {
+      "id": "chunk",
+      "tool": "mc.server.chunk.state",
+      "args": {
+        "chunkX": 0,
+        "chunkZ": 0
+      },
+      "expect": {
+        "result.dimension": "minecraft:overworld",
+        "result.chunkX": 0,
+        "result.chunkZ": 0
+      }
+    },
+    {
+      "id": "ticks",
+      "tool": "mc.server.tick.stats",
+      "args": {},
+      "expect": {
+        "result.targetTickMs": 50.0
+      }
+    },
+    {
+      "id": "real_ticks",
+      "tool": "mc.server.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5,
+        "result.complete": true
+      }
+    },
+    {
+      "id": "condition",
+      "tool": "mc.server.condition.wait",
+      "args": {
+        "condition": "server.running == true && world.dimension == \"minecraft:overworld\"",
+        "timeoutMs": 5000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "entities",
+      "tool": "mc.server.entity.query",
+      "args": {
+        "limit": 5
+      },
+      "expect": {
+        "result.dimension": "minecraft:overworld"
+      }
+    },
+    {
+      "id": "log",
+      "tool": "mc.server.log.tail",
+      "args": {
+        "lines": 5
+      },
+      "expect": {
+        "result.status": "ok"
+      }
+    }
+  ]
+}

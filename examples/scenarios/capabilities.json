@@ -6,7 +6,7 @@
       "tool": "mc.debug.capabilities",
       "args": {},
       "expect": {
-        "result.minecraftVersion": "1.21.1",
+        "result.minecraftVersion": {"contains": "."},
         "result.clientThreadScheduling": true
       }
     }

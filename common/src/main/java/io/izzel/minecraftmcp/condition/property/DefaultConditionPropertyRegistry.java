@@ -40,19 +40,37 @@ public final class DefaultConditionPropertyRegistry implements ConditionProperty
 
     private static void register(Map<String, ConditionProperty> target, String kind, String name, ConditionProperty property) {
         validateName(name);
-        if (property == null) throw new IllegalArgumentException("Condition " + kind + " " + name + " has null loader");
+        if ("$".equals(name)) {
+            throw new IllegalArgumentException("'$' is the built-in root and cannot be registered as a condition " + kind);
+        }
+        if (property == null) {
+            throw new IllegalArgumentException("Condition " + kind + " " + name + " has null loader");
+        }
         ConditionProperty previous = target.putIfAbsent(name, property);
-        if (previous != null) throw new IllegalArgumentException("Duplicate condition " + kind + ": " + name);
-    }
-
-    private static void validateName(String name) {
-        if (name == null || name.isEmpty()) throw new IllegalArgumentException("Condition property name must not be empty");
-        if (!isIdentifierStart(name.charAt(0))) throw new IllegalArgumentException("Invalid condition property name: " + name);
-        for (int i = 1; i < name.length(); i++) {
-            if (!isIdentifierPart(name.charAt(i))) throw new IllegalArgumentException("Invalid condition property name: " + name);
+        if (previous != null) {
+            throw new IllegalArgumentException("Duplicate condition " + kind + ": " + name);
         }
     }
 
-    private static boolean isIdentifierStart(char c) { return Character.isLetter(c) || c == '_' || c == '$'; }
-    private static boolean isIdentifierPart(char c) { return Character.isLetterOrDigit(c) || c == '_' || c == '-' || c == '$'; }
+    private static void validateName(String name) {
+        if (name == null || name.isEmpty()) {
+            throw new IllegalArgumentException("Condition property name must not be empty");
+        }
+        if (!isIdentifierStart(name.charAt(0))) {
+            throw new IllegalArgumentException("Invalid condition property name: " + name);
+        }
+        for (int i = 1; i < name.length(); i++) {
+            if (!isIdentifierPart(name.charAt(i))) {
+                throw new IllegalArgumentException("Invalid condition property name: " + name);
+            }
+        }
+    }
+
+    private static boolean isIdentifierStart(char c) {
+        return Character.isLetter(c) || c == '_' || c == '$';
+    }
+
+    private static boolean isIdentifierPart(char c) {
+        return Character.isLetterOrDigit(c) || c == '_' || c == '-' || c == '$';
+    }
 }

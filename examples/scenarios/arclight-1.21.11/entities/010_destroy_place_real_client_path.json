@@ -1,0 +1,211 @@
+{
+  "name": "arclight_1_21_11_remote_real_player_destroy_and_place",
+  "tags": [
+    "arclight-1.21.11",
+    "entities",
+    "world",
+    "external-server",
+    "real-player-action",
+    "requires-command-permission"
+  ],
+  "requires": {
+    "loaders": [
+      "fabric",
+      "neoforge"
+    ]
+  },
+  "notes": [
+    "Prerequisite: run 000_connect_remote_arclight.json first.",
+    "Setup and observation use server MCP; the tested break/place operations use only real client paths.",
+    "The player needs command permission on the remote test server."
+  ],
+  "steps": [
+    {
+      "id": "confirm_remote_server_mcp",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.server.state",
+        "arguments": {},
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.running": true,
+        "result.dedicated": true
+      }
+    },
+    {
+      "id": "setup_remote_fixture",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.server.command.run",
+        "arguments": {
+          "command": "fill 32 80 32 36 84 36 minecraft:air"
+        },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "succeeded",
+        "result.command": "fill 32 80 32 36 84 36 minecraft:air",
+        "result.success": true,
+        "result.completed": true
+      }
+    },
+    {
+      "id": "place_break_target_server_side",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.server.command.run",
+        "arguments": {
+          "command": "setblock 34 81 34 minecraft:stone"
+        },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "succeeded",
+        "result.command": "setblock 34 81 34 minecraft:stone",
+        "result.success": true,
+        "result.completed": true
+      }
+    },
+    {
+      "id": "place_real_player_block_server_side",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.server.command.run",
+        "arguments": {
+          "command": "give @p minecraft:oak_planks 1"
+        },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "succeeded",
+        "result.command": "give @p minecraft:oak_planks 1",
+        "result.success": true,
+        "result.completed": true
+      }
+    },
+    {
+      "id": "teleport_and_select_planks",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.server.command.run",
+        "arguments": {
+          "command": "tp @p 34 81 31"
+        },
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "succeeded",
+        "result.command": "tp @p 34 81 31",
+        "result.success": true,
+        "result.completed": true
+      }
+    },
+    {
+      "id": "wait_after_remote_setup",
+      "tool": "mc.client.connection.sync",
+      "args": {
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.status": "synced"
+      }
+    },
+    {
+      "id": "select_oak_planks",
+      "tool": "mc.client.hotbar.select",
+      "args": {
+        "slot": 0
+      },
+      "expect": {
+        "result.status": "selected",
+        "result.slot": 0,
+        "result.item.item": "minecraft:oak_planks",
+        "result.item.count": 1
+      }
+    },
+    {
+      "id": "break_target_with_real_client_destroy",
+      "tool": "mc.client.player.destroy.block",
+      "args": {
+        "x": 34,
+        "y": 81,
+        "z": 34,
+        "face": "north",
+        "timeoutMs": 10000
+      },
+      "expect": {
+        "result.status": "destroyed",
+        "result.x": 34,
+        "result.y": 81,
+        "result.z": 34,
+        "result.face": "north"
+      }
+    },
+    {
+      "id": "wait_after_real_destroy",
+      "tool": "mc.client.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "observe_destroy_result",
+      "tool": "mc.client.block.state",
+      "args": {
+        "x": 34,
+        "y": 81,
+        "z": 34
+      },
+      "expect": {
+        "result.inWorld": true,
+        "result.block": "minecraft:air"
+      }
+    },
+    {
+      "id": "place_block_with_real_client_interaction",
+      "tool": "mc.client.block.interact",
+      "args": {
+        "x": 34,
+        "y": 80,
+        "z": 34,
+        "face": "up",
+        "hand": "main"
+      },
+      "expect": {
+        "result.status": "interacted",
+        "result.x": 34,
+        "result.y": 80,
+        "result.z": 34,
+        "result.face": "up",
+        "result.hand": "main"
+      }
+    },
+    {
+      "id": "wait_after_real_place",
+      "tool": "mc.client.ticks.wait",
+      "args": {
+        "ticks": 5
+      },
+      "expect": {
+        "result.waitedTicks": 5
+      }
+    },
+    {
+      "id": "observe_place_result",
+      "tool": "mc.client.block.state",
+      "args": {
+        "x": 34,
+        "y": 81,
+        "z": 34
+      },
+      "expect": {
+        "result.inWorld": true,
+        "result.block": "minecraft:oak_planks"
+      }
+    }
+  ]
+}

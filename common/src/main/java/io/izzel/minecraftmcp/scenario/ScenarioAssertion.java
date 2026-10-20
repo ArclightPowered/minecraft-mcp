@@ -18,6 +18,11 @@ public final class ScenarioAssertion {
                     if (actual == null || !String.valueOf(actual).contains(needle)) {
                         throw new AssertionError("Expectation failed at " + entry.getKey() + ": expected contains " + needle + " but was " + actual);
                     }
+                } else if (matcher.containsKey("startsWith")) {
+                    String prefix = String.valueOf(matcher.get("startsWith"));
+                    if (actual == null || !String.valueOf(actual).startsWith(prefix)) {
+                        throw new AssertionError("Expectation failed at " + entry.getKey() + ": expected startsWith " + prefix + " but was " + actual);
+                    }
                 } else if (matcher.containsKey("equals")) {
                     assertEquals(entry.getKey(), matcher.get("equals"), actual);
                 } else {

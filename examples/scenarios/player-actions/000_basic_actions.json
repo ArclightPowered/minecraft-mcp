@@ -8,7 +8,7 @@
   "steps": [
     {
       "id": "join_world",
-      "tool": "mc.world.join",
+      "tool": "mc.client.world.join",
       "args": {
         "name": "minecraft_mcp_player_actions",
         "seed": 424242,
@@ -20,7 +20,7 @@
     },
     {
       "id": "wait_world_attached",
-      "tool": "mc.condition.wait",
+      "tool": "mc.client.condition.wait",
       "args": {
         "condition": "client.rawInWorld == true",
         "timeoutMs": 300000
@@ -31,7 +31,7 @@
     },
     {
       "id": "wait_world_playable",
-      "tool": "mc.condition.wait",
+      "tool": "mc.client.condition.wait",
       "args": {
         "condition": "client.inWorld == true && client.screen == null",
         "timeoutMs": 300000
@@ -42,7 +42,7 @@
     },
     {
       "id": "look",
-      "tool": "mc.player.look",
+      "tool": "mc.client.player.look",
       "args": {
         "yaw": 45,
         "pitch": 10
@@ -54,7 +54,7 @@
     },
     {
       "id": "look_at",
-      "tool": "mc.player.look_at",
+      "tool": "mc.client.player.look_at",
       "args": {
         "x": 1,
         "y": 65,
@@ -67,7 +67,7 @@
     },
     {
       "id": "jump",
-      "tool": "mc.player.jump",
+      "tool": "mc.client.player.jump",
       "args": {},
       "expect": {
         "result.status": "jumped"
@@ -75,7 +75,7 @@
     },
     {
       "id": "use_item",
-      "tool": "mc.player.use_item",
+      "tool": "mc.client.player.use_item",
       "args": {
         "hand": "main"
       },
@@ -85,7 +85,7 @@
     },
     {
       "id": "attack_block",
-      "tool": "mc.player.attack.block",
+      "tool": "mc.client.player.attack.block",
       "args": {
         "x": 0,
         "y": -61,
@@ -98,7 +98,7 @@
     },
     {
       "id": "tp_destroy_area",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/tp @s 0 -59 0"
       },
@@ -109,7 +109,7 @@
     },
     {
       "id": "sync_after_tp_destroy",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -119,7 +119,7 @@
     },
     {
       "id": "creative_for_destroy",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/gamemode creative"
       },
@@ -130,7 +130,7 @@
     },
     {
       "id": "sync_after_creative_destroy",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -140,7 +140,7 @@
     },
     {
       "id": "place_destroy_target",
-      "tool": "mc.chat.send",
+      "tool": "mc.client.chat.send",
       "args": {
         "message": "/setblock 0 -59 2 minecraft:stone"
       },
@@ -151,7 +151,7 @@
     },
     {
       "id": "sync_after_place_destroy_target",
-      "tool": "mc.server.sync",
+      "tool": "mc.client.connection.sync",
       "args": {
         "timeoutMs": 30000
       },
@@ -161,7 +161,7 @@
     },
     {
       "id": "look_at_destroy_target",
-      "tool": "mc.player.look_at",
+      "tool": "mc.client.player.look_at",
       "args": {
         "x": 0.5,
         "y": -58.5,
@@ -173,7 +173,7 @@
     },
     {
       "id": "destroy_block",
-      "tool": "mc.player.destroy.block",
+      "tool": "mc.client.player.destroy.block",
       "args": {
         "x": 0,
         "y": -59,
@@ -190,7 +190,7 @@
     },
     {
       "id": "wait_after_destroy_block",
-      "tool": "mc.ticks.wait",
+      "tool": "mc.client.ticks.wait",
       "args": {
         "ticks": 10
       },
@@ -200,7 +200,7 @@
     },
     {
       "id": "destroy_target_gone",
-      "tool": "mc.block.state",
+      "tool": "mc.client.block.state",
       "args": {
         "x": 0,
         "y": -59,
@@ -212,7 +212,7 @@
     },
     {
       "id": "drop",
-      "tool": "mc.player.drop",
+      "tool": "mc.client.player.drop",
       "args": {
         "all": false
       },

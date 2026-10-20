@@ -3,7 +3,7 @@
   "steps": [
     {
       "id": "join_world",
-      "tool": "mc.world.join",
+      "tool": "mc.client.world.join",
       "args": {
         "name": "minecraft_mcp_schematic_test",
         "seed": 12345,
@@ -15,7 +15,7 @@
     },
     {
       "id": "wait_world",
-      "tool": "mc.condition.wait",
+      "tool": "mc.client.condition.wait",
       "args": {
         "condition": "client.inWorld == true",
         "timeoutMs": 120000,
@@ -44,7 +44,7 @@
     },
     {
       "id": "paste_fixture",
-      "tool": "mc.schematic.paste",
+      "tool": "mc.server.schematic.paste",
       "args": {
         "path": "fixture.schem",
         "origin": { "x": 3, "y": 80, "z": 0 },
@@ -58,7 +58,7 @@
     },
     {
       "id": "verify_stone",
-      "tool": "mc.block.state",
+      "tool": "mc.client.block.state",
       "args": {
         "x": 3,
         "y": 80,
@@ -71,7 +71,7 @@
     },
     {
       "id": "verify_log",
-      "tool": "mc.block.state",
+      "tool": "mc.client.block.state",
       "args": {
         "x": 4,
         "y": 80,
@@ -84,7 +84,7 @@
     },
     {
       "id": "export_region",
-      "tool": "mc.schematic.export",
+      "tool": "mc.server.schematic.export",
       "args": {
         "from": { "x": 3, "y": 80, "z": 0 },
         "to": { "x": 4, "y": 80, "z": 0 },

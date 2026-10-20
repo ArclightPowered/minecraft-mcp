@@ -1,0 +1,70 @@
+{
+  "name": "arclight_1_21_11_remote_entity_connect",
+  "tags": [
+    "arclight-1.21.11",
+    "entities",
+    "external-server",
+    "remote-mcp",
+    "full-client"
+  ],
+  "requires": {
+    "loaders": [
+      "fabric",
+      "neoforge"
+    ]
+  },
+  "notes": [
+    "Parent replaces __SERVER_ADDRESS__ with the externally provisioned Arclight endpoint.",
+    "No mc.client.world.join: this scenario attaches only to the remote server.",
+    "client.remoteAvailable is supplied by ClientConditionProperties and proves the plugin-message remote MCP channel is available; a remote client has no integrated-server fallback."
+  ],
+  "steps": [
+    {
+      "id": "connect_remote",
+      "tool": "mc.client.connection.connect",
+      "args": {
+        "address": "__SERVER_ADDRESS__",
+        "name": "Arclight 1.21.11 remote"
+      },
+      "expect": {
+        "result.status": "connecting",
+        "result.address": "__SERVER_ADDRESS__"
+      }
+    },
+    {
+      "id": "wait_playable_remote_world",
+      "tool": "mc.client.condition.wait",
+      "args": {
+        "condition": "client.inWorld == true && client.screen == null",
+        "timeoutMs": 120000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "wait_remote_mcp_hello",
+      "tool": "mc.client.condition.wait",
+      "args": {
+        "condition": "client.remoteAvailable == true",
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.matched": true
+      }
+    },
+    {
+      "id": "confirm_remote_server_mcp",
+      "tool": "mc.remote.call",
+      "args": {
+        "tool": "mc.server.state",
+        "arguments": {},
+        "timeoutMs": 30000
+      },
+      "expect": {
+        "result.running": true,
+        "result.dedicated": true
+      }
+    }
+  ]
+}
