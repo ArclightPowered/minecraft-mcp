@@ -1,0 +1,193 @@
+JVM info: Homebrew - 25.0.4.1 - 25.0.4.1
+java.net.preferIPv4Stack=true
+Current Time: 21/10/2026 01:31:36
+Host: maven.neoforged.net [79.127.216.203, 195.181.170.18, 79.127.211.90, 37.19.194.81, 195.181.175.40, 212.102.56.179]
+Host: libraries.minecraft.net [150.171.109.106]
+Host: launchermeta.mojang.com [150.171.109.106]
+Host: piston-meta.mojang.com [150.171.109.106]
+Host: sessionserver.mojang.com [150.171.109.100]
+Found java version 25.0.4.1
+Target Directory: /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2
+Following redirect: https://neoforged.net/mirrorlist.json
+Considering Minecraft server jar
+Downloading library from https://piston-meta.mojang.com/v1/packages/bdfd9856166b7171857c491f15479762f3abda99/26.2.json
+	Download completed: Checksum validated.
+Downloading library from https://piston-data.mojang.com/v1/objects/823e2250d24b3ddac457a60c92a6a941943fcd6a/server.jar
+	Download completed: Checksum validated.
+Downloading libraries
+Found 2 additional library directories
+Considering library net.neoforged.fancymodloader:earlydisplay:11.0.16
+Downloading library from https://maven.neoforged.net/releases/net/neoforged/fancymodloader/earlydisplay/11.0.16/earlydisplay-11.0.16.jar
+	Download completed: Checksum validated.
+Considering library net.neoforged.fancymodloader:loader:11.0.16
+Downloading library from https://maven.neoforged.net/releases/net/neoforged/fancymodloader/loader/11.0.16/loader-11.0.16.jar
+	Download completed: Checksum validated.
+Considering library net.neoforged:accesstransformers:11.0.2
+Downloading library from https://maven.neoforged.net/releases/net/neoforged/accesstransformers/11.0.2/accesstransformers-11.0.2.jar
+	Download completed: Checksum validated.
+Considering library org.ow2.asm:asm-commons:9.10.1
+Downloading library from https://maven.neoforged.net/releases/org/ow2/asm/asm-commons/9.10.1/asm-commons-9.10.1.jar
+	Download completed: Checksum validated.
+Considering library net.neoforged:mergetool:2.0.7:api
+Downloading library from https://maven.neoforged.net/releases/net/neoforged/mergetool/2.0.7/mergetool-2.0.7-api.jar
+	Download completed: Checksum validated.
+Considering library org.ow2.asm:asm-util:9.10.1
+Downloading library from https://maven.neoforged.net/releases/org/ow2/asm/asm-util/9.10.1/asm-util-9.10.1.jar
+	Download completed: Checksum validated.
+Considering library org.ow2.asm:asm-analysis:9.10.1
+Downloading library from https://maven.neoforged.net/releases/org/ow2/asm/asm-analysis/9.10.1/asm-analysis-9.10.1.jar
+	Download completed: Checksum validated.
+Considering library org.ow2.asm:asm-tree:9.10.1
+Downloading library from https://maven.neoforged.net/releases/org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar
+	Download completed: Checksum validated.
+Considering library net.neoforged:bus:8.0.5
+Downloading library from https://maven.neoforged.net/releases/net/neoforged/bus/8.0.5/bus-8.0.5.jar
+	Download completed: Checksum validated.
+Considering library org.ow2.asm:asm:9.10.1
+Downloading library from https://maven.neoforged.net/releases/org/ow2/asm/asm/9.10.1/asm-9.10.1.jar
+	Download completed: Checksum validated.
+Considering library com.electronwill.night-config:toml:3.9.0
+Downloading library from https://maven.neoforged.net/releases/com/electronwill/night-config/toml/3.9.0/toml-3.9.0.jar
+	Download completed: Checksum validated.
+Considering library com.electronwill.night-config:core:3.9.0
+Downloading library from https://maven.neoforged.net/releases/com/electronwill/night-config/core/3.9.0/core-3.9.0.jar
+	Download completed: Checksum validated.
+Considering library net.neoforged:JarJarSelector:0.5.1
+Downloading library from https://maven.neoforged.net/releases/net/neoforged/JarJarSelector/0.5.1/JarJarSelector-0.5.1.jar
+	Download completed: Checksum validated.
+Considering library net.neoforged:JarJarMetadata:0.5.1
+Downloading library from https://maven.neoforged.net/releases/net/neoforged/JarJarMetadata/0.5.1/JarJarMetadata-0.5.1.jar
+	Download completed: Checksum validated.
+Considering library org.apache.maven:maven-artifact:3.9.16
+Downloading library from https://maven.neoforged.net/releases/org/apache/maven/maven-artifact/3.9.16/maven-artifact-3.9.16.jar
+	Download completed: Checksum validated.
+Considering library net.jodah:typetools:0.6.3
+Downloading library from https://maven.neoforged.net/releases/net/jodah/typetools/0.6.3/typetools-0.6.3.jar
+	Download completed: Checksum validated.
+Considering library net.minecrell:terminalconsoleappender:1.3.0
+Downloading library from https://maven.neoforged.net/releases/net/minecrell/terminalconsoleappender/1.3.0/terminalconsoleappender-1.3.0.jar
+	Download completed: Checksum validated.
+Considering library net.fabricmc:sponge-mixin:0.17.4+mixin.0.8.7
+Downloading library from https://maven.neoforged.net/releases/net/fabricmc/sponge-mixin/0.17.4+mixin.0.8.7/sponge-mixin-0.17.4+mixin.0.8.7.jar
+	Download completed: Checksum validated.
+Considering library net.neoforged.accesstransformers:at-parser:11.0.2
+Downloading library from https://maven.neoforged.net/releases/net/neoforged/accesstransformers/at-parser/11.0.2/at-parser-11.0.2.jar
+	Download completed: Checksum validated.
+Considering library net.neoforged:srgutils:1.0.10
+Downloading library from https://maven.neoforged.net/releases/net/neoforged/srgutils/1.0.10/srgutils-1.0.10.jar
+	Download completed: Checksum validated.
+Considering library org.codehaus.plexus:plexus-utils:3.6.1
+Downloading library from https://maven.neoforged.net/releases/org/codehaus/plexus/plexus-utils/3.6.1/plexus-utils-3.6.1.jar
+	Download completed: Checksum validated.
+Considering library org.jline:jline-reader:3.20.0
+Downloading library from https://maven.neoforged.net/releases/org/jline/jline-reader/3.20.0/jline-reader-3.20.0.jar
+	Download completed: Checksum validated.
+Considering library com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava
+Downloaded file locally from /Users/s00d/.m2/repository/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar, valid checksum.
+Considering library com.google.errorprone:error_prone_annotations:2.48.0
+Downloading library from https://libraries.minecraft.net/com/google/errorprone/error_prone_annotations/2.48.0/error_prone_annotations-2.48.0.jar
+	Download completed: Checksum validated.
+Considering library com.google.j2objc:j2objc-annotations:3.1
+Downloaded file locally from /Users/s00d/.m2/repository/com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar, valid checksum.
+Considering library org.jline:jline-terminal:3.20.0
+Downloading library from https://maven.neoforged.net/releases/org/jline/jline-terminal/3.20.0/jline-terminal-3.20.0.jar
+	Download completed: Checksum validated.
+Considering library net.neoforged.fancymodloader:earlydisplay:11.0.16
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/neoforged/fancymodloader/earlydisplay/11.0.16/earlydisplay-11.0.16.jar exists. Checksum valid.
+Considering library net.neoforged.fancymodloader:loader:11.0.16
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/neoforged/fancymodloader/loader/11.0.16/loader-11.0.16.jar exists. Checksum valid.
+Considering library net.neoforged:accesstransformers:11.0.2
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/neoforged/accesstransformers/11.0.2/accesstransformers-11.0.2.jar exists. Checksum valid.
+Considering library org.ow2.asm:asm-commons:9.10.1
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/org/ow2/asm/asm-commons/9.10.1/asm-commons-9.10.1.jar exists. Checksum valid.
+Considering library net.neoforged:mergetool:2.0.7:api
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/neoforged/mergetool/2.0.7/mergetool-2.0.7-api.jar exists. Checksum valid.
+Considering library org.ow2.asm:asm-util:9.10.1
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/org/ow2/asm/asm-util/9.10.1/asm-util-9.10.1.jar exists. Checksum valid.
+Considering library org.ow2.asm:asm-analysis:9.10.1
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/org/ow2/asm/asm-analysis/9.10.1/asm-analysis-9.10.1.jar exists. Checksum valid.
+Considering library org.ow2.asm:asm-tree:9.10.1
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar exists. Checksum valid.
+Considering library net.neoforged:bus:8.0.5
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/neoforged/bus/8.0.5/bus-8.0.5.jar exists. Checksum valid.
+Considering library org.ow2.asm:asm:9.10.1
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/org/ow2/asm/asm/9.10.1/asm-9.10.1.jar exists. Checksum valid.
+Considering library com.electronwill.night-config:toml:3.9.0
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/com/electronwill/night-config/toml/3.9.0/toml-3.9.0.jar exists. Checksum valid.
+Considering library com.electronwill.night-config:core:3.9.0
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/com/electronwill/night-config/core/3.9.0/core-3.9.0.jar exists. Checksum valid.
+Considering library net.neoforged:JarJarSelector:0.5.1
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/neoforged/JarJarSelector/0.5.1/JarJarSelector-0.5.1.jar exists. Checksum valid.
+Considering library net.neoforged:JarJarMetadata:0.5.1
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/neoforged/JarJarMetadata/0.5.1/JarJarMetadata-0.5.1.jar exists. Checksum valid.
+Considering library org.apache.maven:maven-artifact:3.9.16
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/org/apache/maven/maven-artifact/3.9.16/maven-artifact-3.9.16.jar exists. Checksum valid.
+Considering library net.jodah:typetools:0.6.3
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/jodah/typetools/0.6.3/typetools-0.6.3.jar exists. Checksum valid.
+Considering library net.minecrell:terminalconsoleappender:1.3.0
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/minecrell/terminalconsoleappender/1.3.0/terminalconsoleappender-1.3.0.jar exists. Checksum valid.
+Considering library net.fabricmc:sponge-mixin:0.17.4+mixin.0.8.7
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/fabricmc/sponge-mixin/0.17.4+mixin.0.8.7/sponge-mixin-0.17.4+mixin.0.8.7.jar exists. Checksum valid.
+Considering library org.lwjgl:lwjgl-tinyfd:3.4.1
+Downloaded file locally from /Users/s00d/Library/Application Support/minecraft/libraries/org/lwjgl/lwjgl-tinyfd/3.4.1/lwjgl-tinyfd-3.4.1.jar, valid checksum.
+Considering library net.neoforged.accesstransformers:at-parser:11.0.2
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/neoforged/accesstransformers/at-parser/11.0.2/at-parser-11.0.2.jar exists. Checksum valid.
+Considering library net.neoforged:srgutils:1.0.10
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/neoforged/srgutils/1.0.10/srgutils-1.0.10.jar exists. Checksum valid.
+Considering library org.codehaus.plexus:plexus-utils:3.6.1
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/org/codehaus/plexus/plexus-utils/3.6.1/plexus-utils-3.6.1.jar exists. Checksum valid.
+Considering library org.jline:jline-reader:3.20.0
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/org/jline/jline-reader/3.20.0/jline-reader-3.20.0.jar exists. Checksum valid.
+Considering library com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar exists. Checksum valid.
+Considering library com.google.errorprone:error_prone_annotations:2.48.0
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/com/google/errorprone/error_prone_annotations/2.48.0/error_prone_annotations-2.48.0.jar exists. Checksum valid.
+Considering library com.google.j2objc:j2objc-annotations:3.1
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar exists. Checksum valid.
+Considering library org.jline:jline-terminal:3.20.0
+File /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/org/jline/jline-terminal/3.20.0/jline-terminal-3.20.0.jar exists. Checksum valid.
+Considering library net.neoforged.installertools:installertools:4.0.17:fatjar
+Downloading library from https://maven.neoforged.net/releases/net/neoforged/installertools/installertools/4.0.17/installertools-4.0.17-fatjar.jar
+	Download completed: Checksum validated.
+Considering library net.neoforged:neoforge:26.2.0.93:universal
+Downloading library from https://maven.neoforged.net/releases/net/neoforged/neoforge/26.2.0.93/neoforge-26.2.0.93-universal.jar
+	Download completed: Checksum validated.
+Created Temporary Directory: /var/folders/1v/nhthc1qd2k77fztd_scxffc40000gp/T/neoforge_installer6241387830410574479
+  Extracting: /data/client.lzma
+Building Processors
+===============================================================================
+Processor: net.neoforged.installertools:installertools -> EXTRACT_FILES
+  MainClass: net.neoforged.installertools.ConsoleTool
+  Classpath:
+    /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/neoforged/installertools/installertools/4.0.17/installertools-4.0.17-fatjar.jar
+    /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/neoforged/installertools/installertools/4.0.17/installertools-4.0.17-fatjar.jar
+  Args: --task, EXTRACT_FILES, --archive, /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/dl/neoforge-26.2.0.93-installer.jar, --from, data/run.sh, --to, /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/run.sh, --exec, /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/run.sh, --from, data/run.bat, --to, /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/run.bat, --from, data/user_jvm_args.txt, --to, /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/user_jvm_args.txt, --optional, /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/user_jvm_args.txt, --from, data/win_args.txt, --to, /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/neoforged/neoforge/26.2.0.93/win_args.txt, --from, data/unix_args.txt, --to, /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/neoforged/neoforge/26.2.0.93/unix_args.txt
+Task: EXTRACT_FILES
+Archive: /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/dl/neoforge-26.2.0.93-installer.jar
+Extract: data/run.sh
+         /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/run.sh
+Extract: data/run.bat
+         /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/run.bat
+Extract: data/user_jvm_args.txt
+         /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/user_jvm_args.txt
+Extract: data/win_args.txt
+         /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/neoforged/neoforge/26.2.0.93/win_args.txt
+Extract: data/unix_args.txt
+         /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/neoforged/neoforge/26.2.0.93/unix_args.txt
+Exec:    /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/run.sh
+===============================================================================
+Processor: net.neoforged.installertools:installertools -> PROCESS_MINECRAFT_JAR
+  MainClass: net.neoforged.installertools.ConsoleTool
+  Classpath:
+    /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/neoforged/installertools/installertools/4.0.17/installertools-4.0.17-fatjar.jar
+    /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/neoforged/installertools/installertools/4.0.17/installertools-4.0.17-fatjar.jar
+  Args: --task, PROCESS_MINECRAFT_JAR, --no-mod-manifest, --input, /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/minecraft/server/26.2/server-26.2.jar, --output, /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/net/neoforged/minecraft-server-patched/26.2.0.93/minecraft-server-patched-26.2.0.93.jar, --extract-libraries-to, /private/tmp/claude-502/-Users-s00d-Downloads-FireShot-minecraft-mcp/4bf0eb2d-0c50-4319-ab0f-9c07c16a301a/scratchpad/srv-neoforge-26.2/libraries/, --apply-patches, /var/folders/1v/nhthc1qd2k77fztd_scxffc40000gp/T/neoforge_installer6241387830410574479/data/client.lzma
+Task: PROCESS_MINECRAFT_JAR
+Using common thread-pool with parallelism 9
+load patch bundle [458ms]
+load input zip [1475ms]
+applying patches [220ms]
+write output file [1547ms]
+overall work [3252ms]
+The server installed successfully
+You can delete this installer file now if you wish

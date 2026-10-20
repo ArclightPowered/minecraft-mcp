@@ -1,0 +1,54 @@
+name: Build
+
+# One job builds every Minecraft version for both loaders (Stonecutter nodes) and runs the tests.
+# A pushed tag also publishes the jars as a GitHub release named after the tag.
+on:
+  push:
+    branches: ['**']
+    tags: ['*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Minecraft 1.21.x builds on Java 21, 26.x on Java 25; Gradle picks each node's toolchain.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            21
+            25
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build and test
+        run: >
+          ./gradlew build
+          -Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64
+          ${{ startsWith(github.ref, 'refs/tags/') && format('-Pversion={0}', github.ref_name) || '' }}
+
+      - name: Collect jars
+        run: |
+          mkdir dist
+          cp fabric/versions/*/build/libs/*+*.jar neoforge/versions/*/build/libs/*+*.jar dist/
+          rm -f dist/*-sources.jar
+          ls -l dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: minecraft-mcp
+          path: dist/*.jar
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.jar
+          generate_release_notes: true

@@ -1,12 +1,47 @@
 # Minecraft MCP
 
-Java-only Minecraft 1.21.11 mod exposing a local MCP-style JSON-RPC endpoint for AI agents, on both
+Java-only Minecraft mod exposing a local MCP-style JSON-RPC endpoint for AI agents, on both
 the client and a dedicated server.
 
-Supported loaders:
+Supported, each as a Fabric and a NeoForge jar built from the same sources:
 
-- Fabric 1.21.11
-- NeoForge 1.21.11
+| Minecraft | NeoForge | Fabric API | Java |
+|---|---|---|---|
+| 1.21.1 | 21.1 | 0.116.1 | 21 |
+| 1.21.4 | 21.4 | 0.119.4 | 21 |
+| 1.21.8 | 21.8 | 0.136.1 | 21 |
+| 1.21.11 | 21.11 | 0.141.6 | 21 |
+| 26.1.2 | 26.1 | 0.155.2 | 25 |
+| 26.2 | 26.2 | 0.161.0 | 25 |
+| 26.3 | 26.3 | 0.164.0 | 25 |
+
+## Building
+
+`./gradlew build` builds every version for both loaders (Gradle 9.8, JDK 21 and 25 installed or
+downloaded by the toolchain resolver). Jars land in `<loader>/versions/<minecraft>/build/libs/`, named
+`minecraft_mcp-<loader>-<version>+<minecraft>.jar`; `./gradlew :neoforge:1.21.8:build` builds one.
+
+The versions are [Stonecutter](https://stonecutter.kikugie.dev) nodes: `common/`, `fabric/` and
+`neoforge/` are branches, and the sources in git are written for 1.21.11 (`stonecutter.gradle`). What
+differs between Minecraft versions lives in `common/.../compat/MinecraftCompat` and `ClientCompat`,
+whose bodies switch per version with `//? if` blocks; per-version dependency versions are in
+`versions/<minecraft>.properties`. A pushed tag builds all jars and publishes them as a release
+(`.github/workflows/build.yml`).
+
+## Tools for agents
+
+Every tool lists its arguments with types, defaults and descriptions in `tools/list`; an unknown or
+malformed argument is refused with the list of valid ones. Some that save an agent round trips:
+
+- `mc.client.world.join` / `world.leave` / `connection.connect` with `wait: true` return once the client
+  is in the world (or out of it, or disconnected) instead of needing a polling loop.
+- `mc.client.chat.read` (with a `since` cursor) and `mc.client.chat.wait` (by `contains` or `regex`)
+  return chat and system messages, which is where command feedback arrives.
+- `mc.client.screenshot.take` with `inline: true` returns the picture as MCP image content.
+- `mc.client.state` reports the screen title, which also names the screen on Fabric (its class names
+  are intermediary there).
+- `mc.client.entities.nearby`, `mc.client.target` (what the crosshair hits) and `mc.client.blocks.find`
+  describe what the client sees, on any server.
 
 Default transport is local HTTP JSON-RPC at `/mcp`. The mod writes discovery data to
 `mcp/server.json` under the game directory. It binds to `127.0.0.1` by default and requires a

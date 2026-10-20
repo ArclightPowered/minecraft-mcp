@@ -30,7 +30,7 @@ Step-level `expect` supports dot-path equality and small `contains` / `startsWit
   "expect": {
     "result.running": true,
     "result.screen": {"contains": "Screen"},
-    "result.minecraftVersion": {"startsWith": "26.1"}
+    "result.minecraftVersion": {"startsWith": "1.21"}
   }
 }
 ```
