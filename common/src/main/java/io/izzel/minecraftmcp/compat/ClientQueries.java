@@ -50,10 +50,8 @@ public final class ClientQueries {
             result.put("block", BuiltInRegistries.BLOCK.getKey(mc.level.getBlockState(pos).getBlock()).toString());
             return result;
         }
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("type", "entity");
-        result.putAll(entity(mc, ((EntityHitResult) hit).getEntity()));
-        return result;
+        // nested, since the entity's own fields include its "type" (an entity type id)
+        return Map.of("type", "entity", "entity", entity(mc, ((EntityHitResult) hit).getEntity()));
     }
 
     /** Positions of {@code block} (an id such as minecraft:diamond_ore) within a cube around the player, nearest first. */
