@@ -17,6 +17,6 @@
     "fabric-api": "*",
     "fabric-permissions-api-v0": ">=0.6.1",
     "minecraft": "${minecraft_version}",
-    "java": ">=21"
+    "java": ">=${java_version}"
   }
 }

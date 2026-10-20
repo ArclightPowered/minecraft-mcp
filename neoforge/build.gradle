@@ -1,18 +1,16 @@
-plugins {
-    id 'net.neoforged.moddev'
-}
+apply from: rootProject.file('gradle/node.gradle')
+// common's node for this Minecraft version; its sources are compiled into this jar
+def commonNode = stonecutter.node.sibling('common').project
+evaluationDependsOn(commonNode.path)
+apply plugin: 'net.neoforged.moddev'
 
 base {
     archivesName = "${rootProject.property('mod_id')}-neoforge"
 }
 
-configurations {
-    commonJava { canBeResolved = true; canBeConsumed = false }
-    commonResources { canBeResolved = true; canBeConsumed = false }
-}
 
 neoForge {
-    version = rootProject.property('neoforge_version')
+    version = neoforge_version
 
     runs {
         // One directory per side: both sides write mcp/server.json, and sharing a run dir means
@@ -35,26 +33,26 @@ neoForge {
 }
 
 dependencies {
-    commonJava project(path: ':common', configuration: 'commonJava')
-    commonResources project(path: ':common', configuration: 'commonResources')
-    implementation project(':common')
 }
 
+// The last source dir of common's node is the copy Stonecutter processed for this version.
+def commonGenerate = commonNode.tasks.matching { it.name == 'stonecutterGenerate' }
 tasks.named('compileJava', JavaCompile) {
-    dependsOn configurations.commonJava
-    source configurations.commonJava
+    dependsOn commonGenerate
+    source commonNode.sourceSets.main.java.srcDirs.toList().last()
 }
 
 processResources {
-    dependsOn configurations.commonResources
-    from(configurations.commonResources)
+    dependsOn commonGenerate
+    from(commonNode.sourceSets.main.resources.srcDirs.toList().last())
     inputs.property 'version', project.version
-    inputs.property 'minecraft_version', rootProject.property('minecraft_version')
-    ['neoforge_version_range', 'mod_id', 'mod_name', 'mod_description', 'mod_author', 'mod_license'].each { key -> inputs.property key, rootProject.property(key) }
+    inputs.property 'minecraft_version', minecraft_version
+    inputs.property 'neoforge_version_range', neoforge_version_range
+    ['mod_id', 'mod_name', 'mod_description', 'mod_author', 'mod_license'].each { key -> inputs.property key, rootProject.property(key) }
     filesMatching('META-INF/neoforge.mods.toml') {
         expand version: project.version,
-                minecraft_version: rootProject.property('minecraft_version'),
-                neoforge_version_range: rootProject.property('neoforge_version_range'),
+                minecraft_version: minecraft_version,
+                neoforge_version_range: neoforge_version_range,
                 mod_id: rootProject.property('mod_id'),
                 mod_name: rootProject.property('mod_name'),
                 mod_description: rootProject.property('mod_description'),

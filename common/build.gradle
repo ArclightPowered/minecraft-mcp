@@ -1,20 +1,8 @@
-plugins {
-    id 'fabric-loom'
-}
+apply from: rootProject.file('gradle/node.gradle')
+apply plugin: unobfuscated ? 'net.fabricmc.fabric-loom' : 'net.fabricmc.fabric-loom-remap'
 
 base {
     archivesName = "${rootProject.property('mod_id')}-common"
-}
-
-configurations {
-    commonJava {
-        canBeResolved = false
-        canBeConsumed = true
-    }
-    commonResources {
-        canBeResolved = false
-        canBeConsumed = true
-    }
 }
 
 tasks.named('test') {
@@ -23,14 +11,9 @@ tasks.named('test') {
         .withPathSensitivity(PathSensitivity.RELATIVE)
 }
 
-artifacts {
-    commonJava sourceSets.main.java.sourceDirectories.singleFile
-    commonResources sourceSets.main.resources.sourceDirectories.singleFile
-}
-
 dependencies {
-    minecraft "com.mojang:minecraft:${rootProject.property('minecraft_version')}"
-    mappings loom.officialMojangMappings()
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    if (!unobfuscated) mappings loom.officialMojangMappings()
     testImplementation 'org.junit.jupiter:junit-jupiter:6.1.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:6.1.2'
 }

@@ -1,0 +1,35 @@
+// Applied by every Stonecutter node (common/fabric/neoforge × Minecraft version).
+apply plugin: 'java-library'
+
+def mc = stonecutter.current.version
+def props = new Properties()
+rootProject.file("versions/${mc}.properties").withInputStream { props.load(it) }
+props.each { key, value -> ext.set(key as String, value) }
+ext.minecraft_version = mc
+// 26.1 dropped obfuscation: no mappings and no remapping from there on.
+ext.unobfuscated = stonecutter.eval(mc, '>=26.1')
+
+group = rootProject.group
+version = "${rootProject.version}+${mc}"
+
+repositories {
+    mavenCentral()
+    maven { name = 'Fabric'; url = 'https://maven.fabricmc.net' }
+    maven { name = 'NeoForge'; url = 'https://maven.neoforged.net/releases' }
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(java_version as int)
+    withSourcesJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = java_version as int
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+}
+
+apply from: rootProject.file('gradle/replacements.gradle')

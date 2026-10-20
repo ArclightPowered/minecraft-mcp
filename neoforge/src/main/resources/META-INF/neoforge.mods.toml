@@ -1,3 +1,6 @@
+# FML 4 (Minecraft 1.21.1 and 1.21.4) refuses a mods.toml without modLoader; later FML defaults it.
+modLoader="javafml"
+loaderVersion="[1,)"
 license="${mod_license}"
 
 [[mods]]

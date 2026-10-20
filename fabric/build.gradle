@@ -1,15 +1,13 @@
-plugins {
-    id 'fabric-loom'
-}
+apply from: rootProject.file('gradle/node.gradle')
+// common's node for this Minecraft version; its sources are compiled into this jar
+def commonNode = stonecutter.node.sibling('common').project
+evaluationDependsOn(commonNode.path)
+apply plugin: unobfuscated ? 'net.fabricmc.fabric-loom' : 'net.fabricmc.fabric-loom-remap'
 
 base {
     archivesName = "${rootProject.property('mod_id')}-fabric"
 }
 
-configurations {
-    commonJava { canBeResolved = true; canBeConsumed = false }
-    commonResources { canBeResolved = true; canBeConsumed = false }
-}
 
 loom {
     runs {
@@ -27,31 +25,39 @@ loom {
 }
 
 dependencies {
-    include(modImplementation("me.lucko:fabric-permissions-api:0.6.1"))
-    minecraft "com.mojang:minecraft:${rootProject.property('minecraft_version')}"
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${rootProject.property('fabric_loader_version')}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${rootProject.property('fabric_api_version')}"
-    commonJava project(path: ':common', configuration: 'commonJava')
-    commonResources project(path: ':common', configuration: 'commonResources')
-    implementation project(':common')
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    if (unobfuscated) {
+        // 26.x: Fabric API ships its own permission API (fabric-permission-api-v1)
+        implementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+        implementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
+    } else {
+        mappings loom.officialMojangMappings()
+        include(modImplementation("me.lucko:fabric-permissions-api:${fabric_permissions_api_version}"))
+        modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+        modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
+    }
 }
 
+// The last source dir of common's node is the copy Stonecutter processed for this version.
+def commonGenerate = commonNode.tasks.matching { it.name == 'stonecutterGenerate' }
 tasks.named('compileJava', JavaCompile) {
-    dependsOn configurations.commonJava
-    source configurations.commonJava
+    dependsOn commonGenerate
+    source commonNode.sourceSets.main.java.srcDirs.toList().last()
 }
 
 processResources {
-    dependsOn configurations.commonResources
-    from(configurations.commonResources)
+    dependsOn commonGenerate
+    from(commonNode.sourceSets.main.resources.srcDirs.toList().last())
     inputs.property 'version', project.version
-    inputs.property 'minecraft_version', rootProject.property('minecraft_version')
-    ['fabric_loader_version', 'mod_id', 'mod_name', 'mod_description', 'mod_author', 'mod_license'].each { key -> inputs.property key, rootProject.property(key) }
+    inputs.property 'minecraft_version', minecraft_version
+    inputs.property 'fabric_loader_version', fabric_loader_version
+    inputs.property 'java_version', java_version
+    ['mod_id', 'mod_name', 'mod_description', 'mod_author', 'mod_license'].each { key -> inputs.property key, rootProject.property(key) }
     filesMatching('fabric.mod.json') {
         expand version: project.version,
-                minecraft_version: rootProject.property('minecraft_version'),
-                fabric_loader_version: rootProject.property('fabric_loader_version'),
+                minecraft_version: minecraft_version,
+                fabric_loader_version: fabric_loader_version,
+                java_version: java_version,
                 mod_id: rootProject.property('mod_id'),
                 mod_name: rootProject.property('mod_name'),
                 mod_description: rootProject.property('mod_description'),
