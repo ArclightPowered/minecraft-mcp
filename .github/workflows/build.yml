@@ -1,12 +1,10 @@
 name: Build
 
-# One job builds every Minecraft version for both loaders (Stonecutter nodes) and runs the tests.
-# A pushed tag also publishes the jars as a GitHub release named after the tag.
+# One job builds every Minecraft version for both loaders (Stonecutter nodes), runs the tests and publishes
+# the jars as a GitHub release named after the pushed version tag. A manual run only builds and uploads them.
 on:
   push:
-    branches: ['**']
     tags: ['*']
-  pull_request:
   workflow_dispatch:
 
 permissions:
