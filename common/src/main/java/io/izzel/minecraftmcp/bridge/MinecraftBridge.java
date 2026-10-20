@@ -122,7 +122,7 @@ public interface MinecraftBridge {
 
     default Map<String, Object> schematicInfo(Map<String, Object> args) {
         try {
-            Path path = SchematicPathResolver.resolve(gameDirectory(), String.valueOf(args.getOrDefault("path", "")));
+            Path path = SchematicPathResolver.resolve(gameDirectory(), io.izzel.minecraftmcp.schematic.ServerSchematicTools.PATH.get(args));
             var info = SpongeSchematicV3.info(path);
             Map<String, Object> result = new LinkedHashMap<>();
             result.put("status", info.status());

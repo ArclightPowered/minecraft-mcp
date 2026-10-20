@@ -1,7 +1,9 @@
 package io.izzel.minecraftmcp.neoforge;
 
 import io.izzel.minecraftmcp.MinecraftMcpBootstrap;
+import io.izzel.minecraftmcp.chat.ChatLog;
 import io.izzel.minecraftmcp.compat.ClientCompat;
+import io.izzel.minecraftmcp.compat.ClientQueries;
 import io.izzel.minecraftmcp.compat.MinecraftCompat;
 import io.izzel.minecraftmcp.bridge.ClientSnapshot;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
@@ -19,6 +21,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.neoforge.client.event.ClientChatReceivedEvent;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.network.registration.NetworkRegistry;
@@ -65,6 +68,11 @@ public final class NeoForgeMinecraftMcpClientMod {
         //?} else {
         /*modBus.addListener(this::onClientSetup);
         *///?}
+        // Overlay (action bar) messages are left out: they repeat every tick while shown.
+        NeoForge.EVENT_BUS.addListener(ClientChatReceivedEvent.class, event -> {
+            if (event instanceof ClientChatReceivedEvent.System system && system.isOverlay()) return;
+            ChatLog.CLIENT.add(event instanceof ClientChatReceivedEvent.System ? "system" : "chat", event.getMessage().getString());
+        });
         NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut.class,
                 event -> RemoteMcpProxies.toServer().failPending());
     }
@@ -159,11 +167,10 @@ public final class NeoForgeMinecraftMcpClientMod {
         }
         public void shutdownClient() { mc.stop(); }
 
-        public Map<String, Object> takeScreenshot(Map<String, Object> args) {
+        public Map<String, Object> takeScreenshot(String requested) {
             requireOffGameThread("taking a screenshot");
-            String requested = String.valueOf(args.getOrDefault("name", ""));
             String filename;
-            if (requested.isBlank()) {
+            if (requested == null || requested.isBlank()) {
                 filename = "mcp-" + java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS").format(java.time.LocalDateTime.now()) + ".png";
             } else {
                 filename = Path.of(requested).getFileName().toString();
@@ -504,14 +511,12 @@ public final class NeoForgeMinecraftMcpClientMod {
             return Map.of("status", "interacted", "result", result.toString(), "consumesAction", result.consumesAction(), "x", x, "y", y, "z", z, "face", direction.getName(), "hand", interactionHand.name().toLowerCase(java.util.Locale.ROOT));
         }
 
-        public void createTestWorld(String name, Map<String, Object> options) {
+        public void createTestWorld(String name, long seed, boolean flat) {
             if (mc.level != null) {
                 return;
             }
             String levelName = name == null || name.isBlank() ? "minecraft_mcp_test_world" : name;
-            long seed = options.get("seed") instanceof Number n ? n.longValue() : 0L;
-            String preset = String.valueOf(options.getOrDefault("preset", options.getOrDefault("generator", "normal"))).trim().toLowerCase(java.util.Locale.ROOT);
-            ClientCompat.createTestWorld(mc, levelName, seed, preset.equals("flat") || preset.equals("superflat"));
+            ClientCompat.createTestWorld(mc, levelName, seed, flat);
         }
         public void openWorld(String name) {
             mc.createWorldOpenFlows().openWorld(name, () -> ClientCompat.setScreen(mc, null));
@@ -552,11 +557,11 @@ public final class NeoForgeMinecraftMcpClientMod {
             result.put("slots", slots);
             return result;
         }
-        public Map<String, Object> findInventoryItem(Map<String, Object> args) {
+        public Map<String, Object> nearbyEntities(double radius, String type, int limit) { return ClientQueries.nearbyEntities(mc, radius, type, limit); }
+        public Map<String, Object> crosshairTarget() { return ClientQueries.target(mc); }
+        public Map<String, Object> findBlocks(String block, int radius, int limit) { return ClientQueries.findBlocks(mc, block, radius, limit); }
+        public Map<String, Object> findInventoryItem(String item, String section, int limit) {
             if (mc.player == null) return Map.of("found", false, "totalCount", 0, "matches", java.util.List.of(), "inWorld", false);
-            String item = String.valueOf(args.get("item"));
-            String section = String.valueOf(args.getOrDefault("section", "all"));
-            int limit = ((Number) args.getOrDefault("limit", 50)).intValue();
             java.util.List<Map<String, Object>> matches = new java.util.ArrayList<>();
             int total = 0;
             for (Map<String, Object> slot : inventorySlots(mc.player)) {
@@ -568,8 +573,8 @@ public final class NeoForgeMinecraftMcpClientMod {
             }
             return Map.of("found", total > 0, "item", item, "totalCount", total, "matches", matches);
         }
-        public Map<String, Object> countInventoryItem(Map<String, Object> args) {
-            Map<String, Object> found = findInventoryItem(args);
+        public Map<String, Object> countInventoryItem(String item, String section) {
+            Map<String, Object> found = findInventoryItem(item, section, 0);
             return Map.of("item", found.get("item"), "count", found.get("totalCount"));
         }
         public Map<String, Object> selectedInventoryItem() {
@@ -694,8 +699,8 @@ public final class NeoForgeMinecraftMcpClientMod {
         }
 
         @Override
-        public Map<String, Object> startPacketRecording(Map<String, Object> args) {
-            Map<String, Object> result = MinecraftClientBridge.super.startPacketRecording(args);
+        public Map<String, Object> startPacketRecording(io.izzel.minecraftmcp.packet.PacketFilter filter, int maxPackets, boolean clear) {
+            Map<String, Object> result = MinecraftClientBridge.super.startPacketRecording(filter, maxPackets, clear);
             Map<String, Object> hook = mc.getConnection() == null ? Map.of("packetHandler", "not_connected") : PacketRecorderChannelInstaller.install(mc.getConnection().getConnection(), packetRecorder());
             java.util.Map<String, Object> merged = new java.util.LinkedHashMap<>(result);
             merged.putAll(hook);
@@ -748,11 +753,13 @@ public final class NeoForgeMinecraftMcpClientMod {
         }
 
         public ClientSnapshot snapshot() {
-            String screen = ClientCompat.screen(mc) == null ? null : ClientCompat.screen(mc).getClass().getName();
-            if (mc.player == null) return new ClientSnapshot(true, false, mc.level != null, screen, null, 0, 0, 0, 0, 0);
+            var open = ClientCompat.screen(mc);
+            String screen = open == null ? null : open.getClass().getName();
+            String title = open == null ? null : open.getTitle().getString();
+            if (mc.player == null) return new ClientSnapshot(true, false, mc.level != null, screen, title, null, 0, 0, 0, 0, 0);
             boolean rawInWorld = mc.level != null;
-            boolean playableInWorld = rawInWorld && ClientCompat.screen(mc) == null;
-            return new ClientSnapshot(true, playableInWorld, rawInWorld, screen, MinecraftCompat.profileName(mc.player), mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYRot(), mc.player.getXRot());
+            boolean playableInWorld = rawInWorld && open == null;
+            return new ClientSnapshot(true, playableInWorld, rawInWorld, screen, title, MinecraftCompat.profileName(mc.player), mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYRot(), mc.player.getXRot());
         }
     }
 }

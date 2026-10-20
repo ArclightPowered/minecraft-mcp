@@ -1,7 +1,10 @@
 package io.izzel.minecraftmcp.packet;
 
-import java.util.Map;
+import io.izzel.minecraftmcp.mcp.Param;
+
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public record PacketFilter(
         PacketDirection direction,
@@ -18,20 +21,27 @@ public record PacketFilter(
         return new PacketFilter(null, "", "", 0, 100, false, false, true, Map.of());
     }
 
+    public static final Param<String> DIRECTION = Param.string("direction", "serverbound or clientbound (default both)");
+    public static final Param<String> CLASS_CONTAINS = Param.string("classContains", "packet class name contains").or("");
+    public static final Param<String> NAME_CONTAINS = Param.string("nameContains",
+            "packet name contains (Fabric reports intermediary names such as class_2879)").or("").alias("packetContains");
+    public static final Param<Long> SINCE_SEQUENCE = Param.longInt("sinceSequence", "only packets after this sequence number").or(0L);
+    public static final Param<Integer> LIMIT = Param.integer("limit", "max packets returned, up to 1000").or(100);
+    public static final Param<Boolean> REVERSE = Param.bool("reverse", "newest first").or(false);
+    public static final Param<Boolean> CLEAR_AFTER_DUMP = Param.bool("clearAfterDump", "clear the recording afterwards").or(false);
+    public static final Param<Boolean> PARSE_BUNDLES = Param.bool("parseBundlePackets", "list packets inside bundles").or(true);
+    public static final Param<Map<String, Object>> FILTERS = Param.object("filters",
+            "named condition filters {name: expression}, see docs/packet-tools.md");
+    /** Everything {@link #from} reads. */
+    public static final List<Param<?>> PARAMS = List.of(DIRECTION, CLASS_CONTAINS, NAME_CONTAINS, SINCE_SEQUENCE, LIMIT,
+            REVERSE, CLEAR_AFTER_DUMP, PARSE_BUNDLES, FILTERS);
+
     public static PacketFilter from(Map<String, Object> args) {
         if (args == null) args = Map.of();
-        PacketDirection direction = PacketDirection.parse(args.get("direction"));
-        String classContains = String.valueOf(args.getOrDefault("classContains", ""));
-        String nameContains = String.valueOf(args.getOrDefault("nameContains", args.getOrDefault("packetContains", "")));
-        long sinceSequence = ((Number) args.getOrDefault("sinceSequence", 0)).longValue();
-        int limit = ((Number) args.getOrDefault("limit", 100)).intValue();
-        if (limit < 0) limit = 0;
-        if (limit > 1000) limit = 1000;
-        boolean reverse = Boolean.parseBoolean(String.valueOf(args.getOrDefault("reverse", false)));
-        boolean clearAfterDump = Boolean.parseBoolean(String.valueOf(args.getOrDefault("clearAfterDump", false)));
-        boolean parseBundlePackets = Boolean.parseBoolean(String.valueOf(args.getOrDefault("parseBundlePackets", true)));
-        Map<String, PacketNamedFilter> namedFilters = parseNamedFilters(args.get("filters"));
-        return new PacketFilter(direction, classContains, nameContains, sinceSequence, limit, reverse, clearAfterDump, parseBundlePackets, namedFilters);
+        PacketDirection direction = PacketDirection.parse(DIRECTION.get(args));
+        int limit = Math.min(1000, Math.max(0, LIMIT.get(args)));
+        return new PacketFilter(direction, CLASS_CONTAINS.get(args), NAME_CONTAINS.get(args), SINCE_SEQUENCE.get(args), limit,
+                REVERSE.get(args), CLEAR_AFTER_DUMP.get(args), PARSE_BUNDLES.get(args), parseNamedFilters(FILTERS.get(args)));
     }
 
     public boolean matches(RecordedPacket packet) {

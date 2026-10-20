@@ -1,6 +1,7 @@
 package io.izzel.minecraftmcp.server;
 
 import io.izzel.minecraftmcp.compat.MinecraftCompat;
+import io.izzel.minecraftmcp.mcp.Param;
 import io.izzel.minecraftmcp.command.CapturingCommandSource;
 import net.minecraft.commands.arguments.blocks.BlockStateParser;
 import net.minecraft.core.BlockPos;
@@ -180,13 +181,21 @@ public final class ServerWorldTools {
         return result;
     }
 
+    public static final Param<String> DIMENSION = Param.string("dimension", "dimension id").or("minecraft:overworld");
+    private static final Param<Map<String, Object>> QUERY_FROM = Param.object("from", "box corner {x,y,z}; without from/to the whole dimension");
+    private static final Param<Map<String, Object>> QUERY_TO = Param.object("to", "opposite box corner {x,y,z}");
+    private static final Param<String> QUERY_TYPE = Param.string("type", "only this entity type id, e.g. minecraft:zombie");
+    private static final Param<Integer> QUERY_LIMIT = Param.integer("limit", "max entities returned").or(100);
+    public static final List<Param<?>> ENTITY_QUERY_PARAMS = List.of(QUERY_FROM, QUERY_TO, QUERY_TYPE, QUERY_LIMIT, DIMENSION);
+
     public static Map<String, Object> entityQuery(MinecraftServer server, Map<String, Object> args) {
-        ServerLevel level = level(server, args.get("dimension") == null ? "minecraft:overworld" : String.valueOf(args.get("dimension")));
-        int limit = Math.max(1, ((Number) args.getOrDefault("limit", 100)).intValue());
-        String typeFilter = args.get("type") == null ? null : String.valueOf(args.get("type"));
+        ServerLevel level = level(server, DIMENSION.get(args));
+        int limit = Math.max(1, QUERY_LIMIT.get(args));
+        String typeFilter = QUERY_TYPE.get(args);
 
         Iterable<? extends Entity> found;
-        if (args.get("from") instanceof Map<?, ?> from && args.get("to") instanceof Map<?, ?> to) {
+        Map<String, Object> from = QUERY_FROM.get(args), to = QUERY_TO.get(args);
+        if (from != null && to != null) {
             // The AABB constructor already sorts its corners, so from/to can be given either way.
             AABB box = new AABB(coord(from, "x"), coord(from, "y"), coord(from, "z"),
                 coord(to, "x"), coord(to, "y"), coord(to, "z"));

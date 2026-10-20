@@ -17,8 +17,9 @@ class BuiltinServerToolsSchematicTest {
         BuiltinServerTools.register(registry, bridge, new ScenarioEngine(registry));
 
         Object info = registry.call("mc.schematic.info", Map.of("path", "a.schem"));
-        Object export = registry.call("mc.server.schematic.export", Map.of("path", "a.schem"));
-        Object paste = registry.call("mc.server.schematic.paste", Map.of("path", "a.schem"));
+        Object export = registry.call("mc.server.schematic.export", Map.of("path", "a.schem",
+            "from", Map.of("x", 0, "y", 0, "z", 0), "to", Map.of("x", 1, "y", 1, "z", 1)));
+        Object paste = registry.call("mc.server.schematic.paste", Map.of("path", "a.schem", "origin", Map.of("x", 0, "y", 0, "z", 0)));
 
         assertEquals(Map.of("status", "ok"), info);
         assertEquals(Map.of("status", "exported"), export);

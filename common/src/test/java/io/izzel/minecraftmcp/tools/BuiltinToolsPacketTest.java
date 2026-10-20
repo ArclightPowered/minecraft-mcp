@@ -1,5 +1,6 @@
 package io.izzel.minecraftmcp.tools;
 
+import io.izzel.minecraftmcp.packet.PacketFilter;
 import io.izzel.minecraftmcp.bridge.FakeClientBridge;
 import io.izzel.minecraftmcp.mcp.ToolRegistry;
 import org.junit.jupiter.api.Test;
@@ -38,12 +39,12 @@ class BuiltinToolsPacketTest {
         Map<String, Object> startArgs;
         Map<String, Object> dumpArgs;
         Map<String, Object> waitArgs;
-        @Override public Map<String, Object> startPacketRecording(Map<String, Object> args) { startArgs = args; return Map.of("status", "started", "maxPackets", ((Number) args.get("maxPackets")).intValue()); }
+        @Override public Map<String, Object> startPacketRecording(PacketFilter filter, int maxPackets, boolean clear) { startArgs = Map.of("direction", filter.direction().id()); return Map.of("status", "started", "maxPackets", maxPackets); }
         @Override public Map<String, Object> stopPacketRecording() { return Map.of("status", "stopped"); }
         @Override public Map<String, Object> clearPacketRecording() { return Map.of("status", "cleared"); }
         @Override public Map<String, Object> packetRecordingStatus() { return Map.of("recording", true, "count", 1); }
-        @Override public Map<String, Object> dumpPackets(Map<String, Object> args) { dumpArgs = args; return Map.of("returned", 1, "filter", args.get("nameContains")); }
-        @Override public Map<String, Object> waitForPackets(Map<String, Object> args) { waitArgs = args; return Map.of("matched", true, "count", 1, "required", ((Number) args.get("count")).intValue()); }
-        @Override public Map<String, Object> takeScreenshot(Map<String, Object> args) { return Map.of("status", "saved", "path", "screenshots/" + args.get("name"), "width", 800, "height", 600); }
+        @Override public Map<String, Object> dumpPackets(PacketFilter filter) { dumpArgs = Map.of("nameContains", filter.nameContains()); return Map.of("returned", 1, "filter", filter.nameContains()); }
+        @Override public Map<String, Object> waitForPackets(PacketFilter filter, int required, long timeoutMs) { waitArgs = Map.of("count", required); return Map.of("matched", true, "count", 1, "required", required); }
+        @Override public Map<String, Object> takeScreenshot(String name) { return Map.of("status", "saved", "path", "screenshots/" + name, "width", 800, "height", 600); }
     }
 }

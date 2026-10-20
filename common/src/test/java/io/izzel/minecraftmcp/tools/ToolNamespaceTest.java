@@ -88,6 +88,51 @@ class ToolNamespaceTest {
             + String.join("\n  ", unknown));
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void everyScenarioStepPassesItsToolsArgumentCheck() throws IOException {
+        ToolRegistry client = new ToolRegistry();
+        BuiltinCommonTools.register(client, new FakeClientBridge(), new ScenarioEngine(client));
+        BuiltinClientTools.register(client, new FakeClientBridge());
+        BuiltinRemoteTools.registerClient(client, new FakeClientBridge());
+        ToolRegistry server = new ToolRegistry();
+        BuiltinServerTools.register(server, new FakeServerBridge(), new ScenarioEngine(server));
+
+        Path root = scenarioRoot();
+        List<String> refused = new ArrayList<>();
+        try (Stream<Path> files = Files.walk(root)) {
+            for (Path file : files.filter(p -> p.getFileName().toString().endsWith(".json")).sorted().toList()) {
+                Object parsed = Json.parse(Files.readString(file));
+                if (parsed instanceof Map<?, ?> scenario && "fail".equals(scenario.get("expected"))) continue;
+                for (Map<?, ?> step : collectSteps(parsed)) {
+                    String name = (String) step.get("tool");
+                    var tool = client.find(name).or(() -> server.find(name));
+                    if (tool.isEmpty()) continue; // unknown names are the other test's business
+                    // a scenario step carries "args"; a tool named inside mc.remote.call carries "arguments"
+                    Object args = step.get("args") instanceof Map<?, ?> map ? map
+                        : step.get("arguments") instanceof Map<?, ?> nested ? nested : Map.of();
+                    try {
+                        tool.get().checkArguments((Map<String, Object>) args);
+                    } catch (IllegalArgumentException e) {
+                        refused.add(root.relativize(file) + ": " + name + ": " + e.getMessage());
+                    }
+                }
+            }
+        }
+        assertTrue(refused.isEmpty(), "scenario steps the tools would refuse:\n  " + String.join("\n  ", refused));
+    }
+
+    private static List<Map<?, ?>> collectSteps(Object node) {
+        List<Map<?, ?>> found = new ArrayList<>();
+        if (node instanceof Map<?, ?> map) {
+            if (map.get("tool") instanceof String name && name.startsWith("mc.")) found.add(map);
+            map.values().forEach(value -> found.addAll(collectSteps(value)));
+        } else if (node instanceof List<?> list) {
+            list.forEach(value -> found.addAll(collectSteps(value)));
+        }
+        return found;
+    }
+
     private static Set<String> collectToolNames(Object node) {
         Set<String> found = new LinkedHashSet<>();
         if (node instanceof Map<?, ?> map) {

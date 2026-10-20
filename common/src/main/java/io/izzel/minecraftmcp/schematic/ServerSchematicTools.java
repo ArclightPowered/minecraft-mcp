@@ -1,6 +1,7 @@
 package io.izzel.minecraftmcp.schematic;
 
 import io.izzel.minecraftmcp.compat.MinecraftCompat;
+import io.izzel.minecraftmcp.mcp.Param;
 import net.minecraft.commands.arguments.blocks.BlockStateParser;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -27,6 +28,19 @@ import java.util.List;
 import java.util.Map;
 
 public final class ServerSchematicTools {
+    public static final Param<String> PATH = Param.string("path", "file under schematics/, .schem").required();
+    private static final Param<Map<String, Object>> FROM = Param.object("from", "corner {x,y,z}").required();
+    private static final Param<Map<String, Object>> TO = Param.object("to", "opposite corner {x,y,z}").required();
+    private static final Param<Map<String, Object>> ORIGIN = Param.object("origin", "where the schematic's first corner goes {x,y,z}").required();
+    private static final Param<Integer> MAX_BLOCKS = Param.integer("maxBlocks", "refuse regions larger than this").or(32768);
+    private static final Param<Boolean> ENTITIES = Param.bool("entities", "include entities").or(true);
+    private static final Param<Boolean> BLOCK_ENTITIES = Param.bool("blockEntities", "restore block entities (chests, signs ...)").or(true);
+    private static final Param<Boolean> BIOMES = Param.bool("biomes", "restore biomes").or(true);
+    private static final Param<Boolean> IGNORE_AIR = Param.bool("ignoreAir", "keep existing blocks where the schematic has air").or(false);
+    private static final Param<Map<String, Object>> METADATA = Param.object("metadata", "extra metadata stored in the file");
+    public static final List<Param<?>> EXPORT_PARAMS = List.of(PATH, FROM, TO, ENTITIES, METADATA, MAX_BLOCKS);
+    public static final List<Param<?>> PASTE_PARAMS = List.of(PATH, ORIGIN, IGNORE_AIR, BLOCK_ENTITIES, ENTITIES, BIOMES, MAX_BLOCKS);
+
     private ServerSchematicTools() {}
 
     static String serializeBlockState(BlockState state) {
@@ -35,9 +49,9 @@ public final class ServerSchematicTools {
 
     public static Map<String, Object> exportSchematic(ServerLevel level, Path gameDirectory, Map<String, Object> args) {
         try {
-            Path path = SchematicPathResolver.resolve(gameDirectory, String.valueOf(args.getOrDefault("path", "")));
-            Map<?, ?> from = requiredMap(args, "from");
-            Map<?, ?> to = requiredMap(args, "to");
+            Path path = SchematicPathResolver.resolve(gameDirectory, PATH.get(args));
+            Map<?, ?> from = FROM.get(args);
+            Map<?, ?> to = TO.get(args);
             int x1 = coord(from, "x"), y1 = coord(from, "y"), z1 = coord(from, "z");
             int x2 = coord(to, "x"), y2 = coord(to, "y"), z2 = coord(to, "z");
             int minX = Math.min(x1, x2), minY = Math.min(y1, y2), minZ = Math.min(z1, z2);
@@ -73,7 +87,7 @@ public final class ServerSchematicTools {
                 }
             }
             ListTag entities = new ListTag();
-            if (booleanArg(args, "entities", true)) {
+            if (ENTITIES.get(args)) {
                 AABB box = new AABB(minX, minY, minZ, minX + width, minY + height, minZ + length);
                 for (Entity entity : level.getEntities((Entity) null, box, e -> !(e instanceof net.minecraft.world.entity.player.Player))) {
                     CompoundTag exported = exportEntity(entity, level, minX, minY, minZ);
@@ -81,7 +95,7 @@ public final class ServerSchematicTools {
                 }
             }
             Schematic schematic = new Schematic(width, height, length, new int[] {minX, minY, minZ}, palette, blockData,
-                    biomePalette, biomeData, metadata(args.get("metadata")), blockEntities, entities);
+                    biomePalette, biomeData, metadata(METADATA.get(args)), blockEntities, entities);
             SpongeSchematicV3.write(path, schematic, MinecraftCompat.dataVersion());
             Map<String, Object> result = baseResult("exported", path, schematic);
             result.put("blockEntities", blockEntities.size());
@@ -95,13 +109,13 @@ public final class ServerSchematicTools {
 
     public static Map<String, Object> pasteSchematic(ServerLevel level, Path gameDirectory, Map<String, Object> args) {
         try {
-            Path path = SchematicPathResolver.resolve(gameDirectory, String.valueOf(args.getOrDefault("path", "")));
+            Path path = SchematicPathResolver.resolve(gameDirectory, PATH.get(args));
             Schematic schematic = SpongeSchematicV3.read(path);
             int maxBlocks = maxBlocks(args);
             if (schematic.volume() > maxBlocks) throw new IllegalArgumentException("schematic volume " + schematic.volume() + " exceeds maxBlocks " + maxBlocks);
-            Map<?, ?> origin = requiredMap(args, "origin");
+            Map<?, ?> origin = ORIGIN.get(args);
             int originX = coord(origin, "x"), originY = coord(origin, "y"), originZ = coord(origin, "z");
-            boolean ignoreAir = booleanArg(args, "ignoreAir", false);
+            boolean ignoreAir = IGNORE_AIR.get(args);
             int placed = 0, skippedAir = 0;
             var blockLookup = level.holderLookup(Registries.BLOCK);
             for (int y = 0; y < schematic.height(); y++) {
@@ -116,7 +130,7 @@ public final class ServerSchematicTools {
                 }
             }
             int blockEntityCount = 0;
-            if (booleanArg(args, "blockEntities", true)) {
+            if (BLOCK_ENTITIES.get(args)) {
                 ListTag blockEntities = schematic.blockEntities();
                 for (int i = 0; i < blockEntities.size(); i++) {
                     CompoundTag tag = MinecraftCompat.compound(blockEntities, i).orElse(null);
@@ -130,7 +144,7 @@ public final class ServerSchematicTools {
                 }
             }
             int biomeCount = 0;
-            if (booleanArg(args, "biomes", true) && !schematic.biomePalette().isEmpty()) {
+            if (BIOMES.get(args) && !schematic.biomePalette().isEmpty()) {
                 Registry<Biome> biomeRegistry = MinecraftCompat.biomes(level);
                 Map<Long, BiomePlacement> biomePlacements = new LinkedHashMap<>();
                 int[] biomeData = schematic.biomeData();
@@ -154,7 +168,7 @@ public final class ServerSchematicTools {
                 }
             }
             int entityCount = 0;
-            if (booleanArg(args, "entities", true)) {
+            if (ENTITIES.get(args)) {
                 ListTag entities = schematic.entities();
                 for (int i = 0; i < entities.size(); i++) {
                     CompoundTag tag = MinecraftCompat.compound(entities, i).orElse(null);
@@ -293,17 +307,10 @@ public final class ServerSchematicTools {
         return result;
     }
 
-    private static Map<?, ?> requiredMap(Map<String, Object> args, String key) {
-        if (!(args.get(key) instanceof Map<?, ?> result)) throw new IllegalArgumentException(key + " is required");
-        return result;
-    }
 
-    private static boolean booleanArg(Map<String, Object> args, String key, boolean defaultValue) {
-        return Boolean.parseBoolean(String.valueOf(args.getOrDefault(key, defaultValue)));
-    }
 
     private static int maxBlocks(Map<String, Object> args) {
-        int maxBlocks = ((Number) args.getOrDefault("maxBlocks", 32768)).intValue();
+        int maxBlocks = MAX_BLOCKS.get(args);
         if (maxBlocks <= 0) throw new IllegalArgumentException("maxBlocks must be positive");
         return maxBlocks;
     }

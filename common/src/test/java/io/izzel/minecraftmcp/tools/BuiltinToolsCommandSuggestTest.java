@@ -28,11 +28,13 @@ class BuiltinToolsCommandSuggestTest {
         ToolRegistry registry = new ToolRegistry();
         BuiltinClientTools.register(registry, bridge);
 
-        Object result = registry.call("mc.client.connection.sync", Map.of("timeoutMs", 4321, "command", "/ignored"));
+        Object result = registry.call("mc.client.connection.sync", Map.of("timeoutMs", 4321));
 
         assertEquals(Map.of("status", "synced", "command", "/", "id", 42, "suggestions", 3), result);
         assertEquals("/", bridge.lastCommand);
         assertEquals(4321L, bridge.lastTimeoutMs);
+        // sync always completes "/": a command argument is a mistake, refused rather than silently ignored
+        assertThrows(IllegalArgumentException.class, () -> registry.call("mc.client.connection.sync", Map.of("command", "/ignored")));
     }
 
     static final class RecordingBridge extends FakeClientBridge {

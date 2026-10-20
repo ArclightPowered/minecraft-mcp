@@ -25,7 +25,7 @@ class BuiltinToolsInventoryContainerTest {
         assertEquals(Map.of("item", "minecraft:stone", "count", 64), count);
         assertEquals(Map.of("selected", 3, "item", "minecraft:stone", "count", 64), selected);
         assertEquals(Map.of("item", "minecraft:stone", "section", "hotbar", "limit", 2), bridge.findArgs);
-        assertEquals(Map.of("item", "minecraft:stone"), bridge.countArgs);
+        assertEquals(Map.of("item", "minecraft:stone", "section", "all"), bridge.countArgs);
     }
 
     @Test
@@ -68,13 +68,13 @@ class BuiltinToolsInventoryContainerTest {
         Map<String, Object> countArgs;
         List<Map<String, Object>> clicks = new java.util.ArrayList<>();
 
-        @Override public Map<String, Object> findInventoryItem(Map<String, Object> args) {
-            findArgs = new LinkedHashMap<>(args);
+        @Override public Map<String, Object> findInventoryItem(String item, String section, int limit) {
+            findArgs = Map.of("item", item, "section", section, "limit", limit);
             return Map.of("found", true, "totalCount", 64, "matches", List.of(Map.of("item", "minecraft:stone", "count", 64)));
         }
-        @Override public Map<String, Object> countInventoryItem(Map<String, Object> args) {
-            countArgs = new LinkedHashMap<>(args);
-            return Map.of("item", args.get("item"), "count", 64);
+        @Override public Map<String, Object> countInventoryItem(String item, String section) {
+            countArgs = Map.of("item", item, "section", section);
+            return Map.of("item", item, "count", 64);
         }
         @Override public Map<String, Object> selectedInventoryItem() { return Map.of("selected", 3, "item", "minecraft:stone", "count", 64); }
         @Override public Map<String, Object> containerState() { return Map.of("hasContainer", true, "containerId", 1, "slots", List.of()); }

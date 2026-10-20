@@ -41,6 +41,15 @@ public final class JsonRpcHandler {
         Map<String, Object> args = params.get("arguments") instanceof Map<?, ?> m ? (Map<String, Object>) m : Map.of();
         try {
             Object result = registry.call(name, args);
+            // A result with an "image" entry ({mimeType, data: base64}) carries it as MCP image content,
+            // so a vision-capable client sees the picture; the rest stays the usual JSON text.
+            if (result instanceof Map<?, ?> map && map.get("image") instanceof Map<?, ?> image) {
+                Map<Object, Object> rest = new java.util.LinkedHashMap<>(map);
+                rest.remove("image");
+                return Map.of("content", List.of(
+                        Map.of("type", "image", "mimeType", String.valueOf(image.get("mimeType")), "data", String.valueOf(image.get("data"))),
+                        Map.of("type", "text", "text", Json.stringify(rest))), "isError", false);
+            }
             return content(Json.stringify(result), false);
         } catch (ToolRegistry.UnknownToolException e) {
             throw new McpException(-32602, e.getMessage());

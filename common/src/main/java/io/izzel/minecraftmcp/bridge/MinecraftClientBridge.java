@@ -1,5 +1,6 @@
 package io.izzel.minecraftmcp.bridge;
 
+import io.izzel.minecraftmcp.chat.ChatLog;
 import io.izzel.minecraftmcp.config.McpConfigs;
 import io.izzel.minecraftmcp.packet.PacketFilter;
 import io.izzel.minecraftmcp.packet.PacketRecorder;
@@ -138,19 +139,19 @@ public interface MinecraftClientBridge extends MinecraftBridge {
         throw new UnsupportedOperationException("Block interaction is not implemented by " + loader());
     }
 
-    default boolean joinWorld(String name, Map<String, Object> options) {
+    default boolean joinWorld(String name, long seed, boolean flat) {
         boolean exists = java.nio.file.Files.isDirectory(gameDirectory().resolve("saves").resolve(name));
         execute(() -> {
             if (exists) {
                 openWorld(name);
             } else {
-                createTestWorld(name, options);
+                createTestWorld(name, seed, flat);
             }
         });
         return !exists;
     }
 
-    default void createTestWorld(String name, Map<String, Object> options) {
+    default void createTestWorld(String name, long seed, boolean flat) {
         throw new UnsupportedOperationException("World creation is not implemented by " + loader());
     }
 
@@ -170,11 +171,12 @@ public interface MinecraftClientBridge extends MinecraftBridge {
         throw new UnsupportedOperationException("Inventory snapshot is not implemented by " + loader());
     }
 
-    default Map<String, Object> findInventoryItem(Map<String, Object> args) {
+    /** Stacks of {@code item}; section is all, hotbar, main, armor or offhand. */
+    default Map<String, Object> findInventoryItem(String item, String section, int limit) {
         throw new UnsupportedOperationException("Inventory find is not implemented by " + loader());
     }
 
-    default Map<String, Object> countInventoryItem(Map<String, Object> args) {
+    default Map<String, Object> countInventoryItem(String item, String section) {
         throw new UnsupportedOperationException("Inventory count is not implemented by " + loader());
     }
 
@@ -206,10 +208,8 @@ public interface MinecraftClientBridge extends MinecraftBridge {
         throw new UnsupportedOperationException("Waypoint movement is not implemented by " + loader());
     }
 
-    default Map<String, Object> startPacketRecording(Map<String, Object> args) {
-        int maxPackets = ((Number) args.getOrDefault("maxPackets", 1000)).intValue();
-        boolean clear = Boolean.parseBoolean(String.valueOf(args.getOrDefault("clear", true)));
-        packetRecorder().start(PacketFilter.from(args), maxPackets, clear);
+    default Map<String, Object> startPacketRecording(PacketFilter filter, int maxPackets, boolean clear) {
+        packetRecorder().start(filter, maxPackets, clear);
         return Map.of("status", "started", "recording", true, "maxPackets", Math.max(1, maxPackets));
     }
 
@@ -227,15 +227,12 @@ public interface MinecraftClientBridge extends MinecraftBridge {
         return packetRecorder().status().toMap();
     }
 
-    default Map<String, Object> dumpPackets(Map<String, Object> args) {
-        return packetRecorder().dump(PacketFilter.from(args)).toMap();
+    default Map<String, Object> dumpPackets(PacketFilter filter) {
+        return packetRecorder().dump(filter).toMap();
     }
 
-    default Map<String, Object> waitForPackets(Map<String, Object> args) {
-        PacketFilter filter = PacketFilter.from(args);
-        int required = ((Number) args.getOrDefault("count", args.getOrDefault("required", 1))).intValue();
+    default Map<String, Object> waitForPackets(PacketFilter filter, int required, long timeoutMs) {
         if (required < 1) required = 1;
-        long timeoutMs = ((Number) args.getOrDefault("timeoutMs", 30000)).longValue();
         long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(Math.max(0, timeoutMs));
         int count;
         do {
@@ -249,7 +246,25 @@ public interface MinecraftClientBridge extends MinecraftBridge {
         return Map.of("matched", false, "count", count, "required", required);
     }
 
-    default Map<String, Object> takeScreenshot(Map<String, Object> args) {
+    /** Chat and system messages received by this client; the loaders feed {@link ChatLog#CLIENT}. */
+    default ChatLog chatLog() {
+        return ChatLog.CLIENT;
+    }
+
+    default Map<String, Object> nearbyEntities(double radius, String type, int limit) {
+        throw new UnsupportedOperationException("Entity queries are not implemented by " + loader());
+    }
+
+    default Map<String, Object> crosshairTarget() {
+        throw new UnsupportedOperationException("Crosshair target is not implemented by " + loader());
+    }
+
+    default Map<String, Object> findBlocks(String block, int radius, int limit) {
+        throw new UnsupportedOperationException("Block search is not implemented by " + loader());
+    }
+
+    /** Saves a PNG under screenshots/; a blank name means a timestamped one. */
+    default Map<String, Object> takeScreenshot(String name) {
         throw new UnsupportedOperationException("Screenshot capture is not implemented by " + loader());
     }
 

@@ -16,6 +16,6 @@ class ClientScreenCurrentTest {
         assertInstanceOf(Map.class, result);
         assertTrue(((Map<?, ?>) result).containsKey("screen"));
         assertNull(((Map<?, ?>) result).get("screen"));
-        assertEquals("{\"screen\":null}", Json.stringify(result));
+        assertEquals("{\"screen\":null,\"title\":null}", Json.stringify(result));
     }
 }

@@ -44,7 +44,7 @@ class BuiltinToolsWorldTest {
 
         assertEquals("mcp_world", bridge.createdWorldName);
         assertEquals("flat", bridge.createdWorldOptions.get("preset"));
-        assertEquals(123, bridge.createdWorldOptions.get("seed"));
+        assertEquals(123L, bridge.createdWorldOptions.get("seed"));
         assertEquals(Map.of("status", "joining", "created", true, "name", "mcp_world"), join);
         assertEquals(Map.of("condition", "client.inWorld == true", "matched", true, "intervalTicks", 1L), wait);
         assertTrue(((Map<?, ?>) snapshot).containsKey("dimension"));
@@ -95,9 +95,9 @@ class BuiltinToolsWorldTest {
         @Override public ClientSnapshot snapshot() {
             return new ClientSnapshot(true, inWorld, null, inWorld ? "Player" : null, inWorld ? 1 : 0, inWorld ? 64 : 0, inWorld ? 1 : 0, 0, 0);
         }
-        @Override public void createTestWorld(String name, Map<String, Object> options) {
+        @Override public void createTestWorld(String name, long seed, boolean flat) {
             createdWorldName = name;
-            createdWorldOptions = options;
+            createdWorldOptions = Map.of("seed", seed, "preset", flat ? "flat" : "normal");
             inWorld = true;
         }
         @Override public void leaveWorldToTitle() {
