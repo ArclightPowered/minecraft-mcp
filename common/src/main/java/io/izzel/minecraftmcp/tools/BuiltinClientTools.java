@@ -45,7 +45,7 @@ public final class BuiltinClientTools {
 
     public static void register(ToolRegistry registry, MinecraftClientBridge bridge) {
         // --- state and screens
-        registry.register(tool("mc.client.state", "Get Minecraft client state: in world, screen class and title, player and position",
+        registry.register(tool("mc.client.state", "Get Minecraft client state: in world, screen class and title, whether resources are still loading, player and position",
             args -> bridge.submit(() -> bridge.snapshot().toMap()).get(10, TimeUnit.SECONDS)));
         registry.register(tool("mc.client.screen.current", "Get current screen class and title", args -> {
             var snapshot = bridge.submit(bridge::snapshot).get(10, TimeUnit.SECONDS);

@@ -39,7 +39,7 @@ malformed argument is refused with the list of valid ones. Some that save an age
   return chat and system messages, which is where command feedback arrives.
 - `mc.client.screenshot.take` with `inline: true` returns the picture as MCP image content.
 - `mc.client.state` reports the screen title, which also names the screen on Fabric (its class names
-  are intermediary there).
+  are intermediary there), and `loading` while the resource loading overlay still covers the screen.
 - `mc.client.entities.nearby`, `mc.client.target` (what the crosshair hits) and `mc.client.blocks.find`
   describe what the client sees, on any server.
 

@@ -689,10 +689,11 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             var open = ClientCompat.screen(mc);
             String screen = open == null ? null : open.getClass().getName();
             String title = open == null ? null : open.getTitle().getString();
-            if (mc.player == null) return new ClientSnapshot(true, false, mc.level != null, screen, title, null, 0, 0, 0, 0, 0);
+            boolean loading = ClientCompat.loading(mc);
+            if (mc.player == null) return new ClientSnapshot(true, false, mc.level != null, screen, title, loading, null, 0, 0, 0, 0, 0);
             boolean rawInWorld = mc.level != null;
             boolean playableInWorld = rawInWorld && open == null;
-            return new ClientSnapshot(true, playableInWorld, rawInWorld, screen, title, MinecraftCompat.profileName(mc.player), mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYRot(), mc.player.getXRot());
+            return new ClientSnapshot(true, playableInWorld, rawInWorld, screen, title, loading, MinecraftCompat.profileName(mc.player), mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYRot(), mc.player.getXRot());
         }
     }
 }

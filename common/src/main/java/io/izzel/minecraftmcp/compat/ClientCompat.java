@@ -41,6 +41,15 @@ public final class ClientCompat {
         //?}
     }
 
+    /** True while an overlay (the resource loading screen) covers the game and input does not reach the screen. */
+    public static boolean loading(Minecraft mc) {
+        //? if >=26.2 {
+        /*return mc.gui.overlay() != null;
+        *///?} else {
+        return mc.getOverlay() != null;
+        //?}
+    }
+
     public static void setScreen(Minecraft mc, Screen screen) {
         //? if >=26.2 {
         /*mc.gui.setScreen(screen);
