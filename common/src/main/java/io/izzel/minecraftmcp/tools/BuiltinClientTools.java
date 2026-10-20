@@ -118,7 +118,7 @@ public final class BuiltinClientTools {
         }));
 
         // --- player actions
-        registry.register(tool("mc.client.player.swing", "Swing player hand and send the normal client interaction packet", List.of(HAND), args -> {
+        registry.register(tool("mc.client.player.swing", "Swing player hand through the normal client path (before 26.3 this also sends the swing packet; 26.3 removed it from the protocol)", List.of(HAND), args -> {
             String hand = HAND.get(args);
             bridge.submit(() -> {
                 bridge.swing(hand);
