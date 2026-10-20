@@ -1,6 +1,6 @@
 package io.izzel.minecraftmcp.schematic;
 
-import net.minecraft.SharedConstants;
+import io.izzel.minecraftmcp.compat.MinecraftCompat;
 import net.minecraft.commands.arguments.blocks.BlockStateParser;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -11,17 +11,13 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.resources.Identifier;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.storage.TagValueInput;
-import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.phys.AABB;
 
 import java.nio.file.Path;
@@ -59,7 +55,7 @@ public final class ServerSchematicTools {
             List<String> biomePalette = new ArrayList<>();
             int[] biomeData = new int[volume];
             ListTag blockEntities = new ListTag();
-            Registry<Biome> biomeRegistry = level.registryAccess().lookupOrThrow(Registries.BIOME);
+            Registry<Biome> biomeRegistry = MinecraftCompat.biomes(level);
             for (int y = 0; y < height; y++) {
                 for (int z = 0; z < length; z++) {
                     for (int x = 0; x < width; x++) {
@@ -68,7 +64,7 @@ public final class ServerSchematicTools {
                         String state = serializeBlockState(level.getBlockState(pos));
                         blockData[index] = paletteIndex.computeIfAbsent(state, key -> { palette.add(key); return palette.size() - 1; });
                         Holder<Biome> biome = level.getNoiseBiome(QuartPos.fromBlock(pos.getX()), QuartPos.fromBlock(pos.getY()), QuartPos.fromBlock(pos.getZ()));
-                        String biomeId = biome.unwrapKey().map(key -> key.identifier().toString())
+                        String biomeId = biome.unwrapKey().map(MinecraftCompat::id)
                                 .orElseGet(() -> biomeRegistry.getKey(biome.value()).toString());
                         biomeData[index] = biomePaletteIndex.computeIfAbsent(biomeId, key -> { biomePalette.add(key); return biomePalette.size() - 1; });
                         BlockEntity blockEntity = level.getBlockEntity(pos);
@@ -86,7 +82,7 @@ public final class ServerSchematicTools {
             }
             Schematic schematic = new Schematic(width, height, length, new int[] {minX, minY, minZ}, palette, blockData,
                     biomePalette, biomeData, metadata(args.get("metadata")), blockEntities, entities);
-            SpongeSchematicV3.write(path, schematic, SharedConstants.getCurrentVersion().dataVersion().version());
+            SpongeSchematicV3.write(path, schematic, MinecraftCompat.dataVersion());
             Map<String, Object> result = baseResult("exported", path, schematic);
             result.put("blockEntities", blockEntities.size());
             result.put("entities", entities.size());
@@ -123,7 +119,7 @@ public final class ServerSchematicTools {
             if (booleanArg(args, "blockEntities", true)) {
                 ListTag blockEntities = schematic.blockEntities();
                 for (int i = 0; i < blockEntities.size(); i++) {
-                    CompoundTag tag = blockEntities.getCompound(i).orElse(null);
+                    CompoundTag tag = MinecraftCompat.compound(blockEntities, i).orElse(null);
                     if (tag == null) throw new IllegalArgumentException("BlockEntities entry " + i + " must be a compound");
                     BlockEntity blockEntity = importBlockEntity(tag, level, originX, originY, originZ);
                     if (blockEntity != null) {
@@ -135,14 +131,14 @@ public final class ServerSchematicTools {
             }
             int biomeCount = 0;
             if (booleanArg(args, "biomes", true) && !schematic.biomePalette().isEmpty()) {
-                Registry<Biome> biomeRegistry = level.registryAccess().lookupOrThrow(Registries.BIOME);
+                Registry<Biome> biomeRegistry = MinecraftCompat.biomes(level);
                 Map<Long, BiomePlacement> biomePlacements = new LinkedHashMap<>();
                 int[] biomeData = schematic.biomeData();
                 for (int y = 0; y < schematic.height(); y++) {
                     for (int z = 0; z < schematic.length(); z++) {
                         for (int x = 0; x < schematic.width(); x++) {
-                            Identifier biomeId = Identifier.parse(schematic.biomePalette().get(biomeData[schematic.index(x, y, z)]));
-                            Holder<Biome> holder = biomeRegistry.get(biomeId).orElseThrow(() -> new IllegalArgumentException("unknown biome " + biomeId));
+                            String biomeId = schematic.biomePalette().get(biomeData[schematic.index(x, y, z)]);
+                            Holder<Biome> holder = MinecraftCompat.biome(biomeRegistry, biomeId).orElseThrow(() -> new IllegalArgumentException("unknown biome " + biomeId));
                             int worldX = originX + x, worldY = originY + y, worldZ = originZ + z;
                             long quartKey = BlockPos.asLong(QuartPos.fromBlock(worldX), QuartPos.fromBlock(worldY), QuartPos.fromBlock(worldZ));
                             BiomePlacement existing = biomePlacements.putIfAbsent(quartKey, new BiomePlacement(worldX, worldY, worldZ, biomeId, holder));
@@ -161,7 +157,7 @@ public final class ServerSchematicTools {
             if (booleanArg(args, "entities", true)) {
                 ListTag entities = schematic.entities();
                 for (int i = 0; i < entities.size(); i++) {
-                    CompoundTag tag = entities.getCompound(i).orElse(null);
+                    CompoundTag tag = MinecraftCompat.compound(entities, i).orElse(null);
                     if (tag == null) throw new IllegalArgumentException("Entities entry " + i + " must be a compound");
                     Entity entity = importEntity(tag, level, originX, originY, originZ);
                     if (entity == null || !level.addFreshEntity(entity)) {
@@ -187,17 +183,17 @@ public final class ServerSchematicTools {
         CompoundTag saved = blockEntity.saveWithFullMetadata(level.registryAccess());
         CompoundTag entry = new CompoundTag();
         entry.putIntArray("Pos", new int[] {x, y, z});
-        entry.putString("Id", blockEntity.getType().builtInRegistryHolder().key().identifier().toString());
+        entry.putString("Id", MinecraftCompat.id(blockEntity.getType().builtInRegistryHolder().key()));
         entry.put("Data", saved);
         return entry;
     }
 
     private static BlockEntity importBlockEntity(CompoundTag entry, ServerLevel level, int originX, int originY, int originZ) {
-        int[] relative = entry.getIntArray("Pos").orElseThrow(() -> new IllegalArgumentException("BlockEntity is missing Pos"));
+        int[] relative = MinecraftCompat.intArray(entry, "Pos").orElseThrow(() -> new IllegalArgumentException("BlockEntity is missing Pos"));
         if (relative.length != 3) throw new IllegalArgumentException("BlockEntity Pos must contain exactly 3 integers");
-        String id = entry.getString("Id").orElseThrow(() -> new IllegalArgumentException("BlockEntity is missing Id"));
+        String id = MinecraftCompat.string(entry, "Id").orElseThrow(() -> new IllegalArgumentException("BlockEntity is missing Id"));
         BlockPos pos = new BlockPos(originX + relative[0], originY + relative[1], originZ + relative[2]);
-        CompoundTag saved = entry.getCompound("Data").orElseGet(CompoundTag::new).copy();
+        CompoundTag saved = MinecraftCompat.compound(entry, "Data").orElseGet(CompoundTag::new).copy();
         saved.putString("id", id);
         saved.putInt("x", pos.getX());
         saved.putInt("y", pos.getY());
@@ -206,8 +202,8 @@ public final class ServerSchematicTools {
     }
 
     private static CompoundTag exportEntity(Entity entity, ServerLevel level, int minX, int minY, int minZ) {
-        TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, level.registryAccess());
-        return exportIfSaved(entity.save(output), () -> {
+        CompoundTag data = MinecraftCompat.saveEntity(entity, level);
+        return exportIfSaved(data != null, () -> {
             CompoundTag entry = new CompoundTag();
             ListTag pos = new ListTag();
             pos.add(DoubleTag.valueOf(entity.getX() - minX));
@@ -215,7 +211,7 @@ public final class ServerSchematicTools {
             pos.add(DoubleTag.valueOf(entity.getZ() - minZ));
             entry.put("Pos", pos);
             entry.putString("Id", EntityType.getKey(entity.getType()).toString());
-            entry.put("Data", output.buildResult());
+            entry.put("Data", data);
             return entry;
         });
     }
@@ -229,9 +225,9 @@ public final class ServerSchematicTools {
         copy.remove("UUID");
         copy.remove("UUIDMost");
         copy.remove("UUIDLeast");
-        copy.getList("Passengers").ifPresent(passengers -> {
+        MinecraftCompat.list(copy, "Passengers", Tag.TAG_COMPOUND).ifPresent(passengers -> {
             for (int i = 0; i < passengers.size(); i++) {
-                CompoundTag passenger = passengers.getCompound(i).orElseThrow();
+                CompoundTag passenger = MinecraftCompat.compound(passengers, i).orElseThrow();
                 passengers.set(i, copyForEntityPlacement(passenger));
             }
         });
@@ -239,17 +235,17 @@ public final class ServerSchematicTools {
     }
 
     private static Entity importEntity(CompoundTag entry, ServerLevel level, int originX, int originY, int originZ) {
-        ListTag relative = entry.getList("Pos").orElseThrow(() -> new IllegalArgumentException("Entity is missing Pos"));
+        ListTag relative = MinecraftCompat.list(entry, "Pos", Tag.TAG_DOUBLE).orElseThrow(() -> new IllegalArgumentException("Entity is missing Pos"));
         if (relative.size() != 3) throw new IllegalArgumentException("Entity Pos must contain exactly 3 doubles");
-        String id = entry.getString("Id").orElseThrow(() -> new IllegalArgumentException("Entity is missing Id"));
-        CompoundTag saved = copyForEntityPlacement(entry.getCompound("Data").orElseGet(CompoundTag::new));
+        String id = MinecraftCompat.string(entry, "Id").orElseThrow(() -> new IllegalArgumentException("Entity is missing Id"));
+        CompoundTag saved = copyForEntityPlacement(MinecraftCompat.compound(entry, "Data").orElseGet(CompoundTag::new));
         saved.putString("id", id);
         ListTag absolute = new ListTag();
-        absolute.add(DoubleTag.valueOf(relative.getDoubleOr(0, 0.0D) + originX));
-        absolute.add(DoubleTag.valueOf(relative.getDoubleOr(1, 0.0D) + originY));
-        absolute.add(DoubleTag.valueOf(relative.getDoubleOr(2, 0.0D) + originZ));
+        absolute.add(DoubleTag.valueOf(MinecraftCompat.doubleAt(relative, 0) + originX));
+        absolute.add(DoubleTag.valueOf(MinecraftCompat.doubleAt(relative, 1) + originY));
+        absolute.add(DoubleTag.valueOf(MinecraftCompat.doubleAt(relative, 2) + originZ));
         saved.put("Pos", absolute);
-        return EntityType.create(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), saved), level, EntitySpawnReason.LOAD).orElse(null);
+        return MinecraftCompat.loadEntity(saved, level).orElse(null);
     }
 
     private static void setBiome(ServerLevel level, int x, int y, int z, Holder<Biome> biome) {
@@ -264,13 +260,18 @@ public final class ServerSchematicTools {
         int baseQx = QuartPos.fromSection(sectionX);
         int baseQy = QuartPos.fromBlock(level.getSectionYFromSectionIndex(sectionIndex) << 4);
         int baseQz = QuartPos.fromSection(sectionZ);
+        //? if >=26.3 {
+        /*section.fillBiomesFromNoise((qx, qy, qz) -> qx == targetQx && qy == targetQy && qz == targetQz
+                ? biome : section.getNoiseBiome(qx - baseQx, qy - baseQy, qz - baseQz), baseQx, baseQy, baseQz);
+        *///?} else {
         section.fillBiomesFromNoise((qx, qy, qz, sampler) -> qx == targetQx && qy == targetQy && qz == targetQz
                 ? biome : section.getNoiseBiome(qx - baseQx, qy - baseQy, qz - baseQz),
                 level.getChunkSource().randomState().sampler(), baseQx, baseQy, baseQz);
-        chunk.markUnsaved();
+        //?}
+        MinecraftCompat.markUnsaved(chunk);
     }
 
-    private record BiomePlacement(int x, int y, int z, Identifier id, Holder<Biome> holder) {}
+    private record BiomePlacement(int x, int y, int z, String id, Holder<Biome> holder) {}
 
     private static Map<String, Object> baseResult(String status, Path path, Schematic schematic) {
         Map<String, Object> result = new LinkedHashMap<>();

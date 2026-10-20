@@ -1,5 +1,6 @@
 package io.izzel.minecraftmcp.neoforge;
 
+import io.izzel.minecraftmcp.compat.MinecraftCompat;
 import io.izzel.minecraftmcp.MinecraftMcpBootstrap;
 import io.izzel.minecraftmcp.bridge.MinecraftServerBridge;
 import io.izzel.minecraftmcp.config.McpConfigs;
@@ -46,7 +47,7 @@ public final class NeoForgeMinecraftMcpMod {
             if (!(event.getEntity() instanceof ServerPlayer player)) {
                 return;
             }
-            RemoteMcpProxies.rememberClientName(player.getUUID(), player.getGameProfile().name());
+            RemoteMcpProxies.rememberClientName(player.getUUID(), MinecraftCompat.profileName(player));
         });
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedOutEvent.class,
             event -> RemoteMcpProxies.forgetClient(event.getEntity().getUUID()));
@@ -82,7 +83,7 @@ public final class NeoForgeMinecraftMcpMod {
     }
 
     private static ChannelCaller.Player callerFor(ServerPlayer player) {
-        return new ChannelCaller.Player(player.getUUID(), player.getGameProfile().name(),
+        return new ChannelCaller.Player(player.getUUID(), MinecraftCompat.profileName(player),
                 NeoForgeMcpConfig.mayRemoteCall(player), McpPermissions.REMOTE_CALL_NEOFORGE);
     }
 
@@ -113,7 +114,7 @@ public final class NeoForgeMinecraftMcpMod {
                                         NeoForgeStringPayload.CLIENT_REQUEST.id()));
                     });
             event.getServer().getPlayerList().getPlayers().forEach(player ->
-                    RemoteMcpProxies.rememberClientName(player.getUUID(), player.getGameProfile().name()));
+                    RemoteMcpProxies.rememberClientName(player.getUUID(), MinecraftCompat.profileName(player)));
             System.out.println("[Minecraft MCP] NeoForge dedicated MCP server started on port " + serverEndpoint.port());
         } catch (Exception e) {
             throw new RuntimeException("Failed to start Minecraft MCP dedicated server", e);

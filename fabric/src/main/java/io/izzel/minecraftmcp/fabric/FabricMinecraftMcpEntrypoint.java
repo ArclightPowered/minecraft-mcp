@@ -1,6 +1,8 @@
 package io.izzel.minecraftmcp.fabric;
 
 import io.izzel.minecraftmcp.MinecraftMcpBootstrap;
+import io.izzel.minecraftmcp.compat.ClientCompat;
+import io.izzel.minecraftmcp.compat.MinecraftCompat;
 import io.izzel.minecraftmcp.bridge.ClientSnapshot;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
 import io.izzel.minecraftmcp.config.McpConfigs;
@@ -14,7 +16,6 @@ import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.SharedConstants;
 import net.minecraft.client.Minecraft;
 
 import java.nio.file.Path;
@@ -27,15 +28,10 @@ import net.minecraft.client.gui.screens.DisconnectedScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraft.client.input.CharacterEvent;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket;
-import net.minecraft.world.Difficulty;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -44,18 +40,11 @@ import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.GameType;
-import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.level.levelgen.WorldOptions;
-import net.minecraft.world.level.levelgen.presets.WorldPresets;
-import net.minecraft.world.level.LevelSettings;
-import net.minecraft.world.level.WorldDataConfiguration;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 
 public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer {
     private static volatile MinecraftMcpBootstrap.McpEndpoint clientEndpoint;
@@ -71,10 +60,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
         } catch (Exception e) { throw new RuntimeException("Failed to start Minecraft MCP", e); }
     }
     private static void registerRemoteMcpPluginMessages() {
-        PayloadTypeRegistry.playS2C().register(FabricStringPayload.RESPONSE, FabricStringPayload.codec(FabricStringPayload.RESPONSE));
-        PayloadTypeRegistry.playC2S().register(FabricStringPayload.REQUEST, FabricStringPayload.codec(FabricStringPayload.REQUEST));
-        PayloadTypeRegistry.playS2C().register(FabricStringPayload.CLIENT_REQUEST, FabricStringPayload.codec(FabricStringPayload.CLIENT_REQUEST));
-        PayloadTypeRegistry.playC2S().register(FabricStringPayload.CLIENT_RESPONSE, FabricStringPayload.codec(FabricStringPayload.CLIENT_RESPONSE));
+        FabricStringPayload.registerTypes();
         ClientPlayNetworking.registerGlobalReceiver(FabricStringPayload.CLIENT_REQUEST, (payload, context) -> {
             if (clientPluginHandler == null) {
                 return;
@@ -94,14 +80,14 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
     static final class FabricBridge implements MinecraftClientBridge {
         private final Minecraft mc = Minecraft.getInstance();
         public String loader() { return "fabric"; }
-        public String minecraftVersion() { return SharedConstants.getCurrentVersion().name(); }
+        public String minecraftVersion() { return MinecraftCompat.gameVersion(); }
         public Path gameDirectory() { return FabricLoader.getInstance().getGameDir(); }
         public boolean isOnClientThread() { return mc.isSameThread(); }
         public void execute(Runnable runnable) { mc.execute(runnable); }
         public void pressKey(String key) {
             var keyMapping = InputConstants.getKey(KeyAliases.normalize(key));
-            if (mc.screen != null) {
-                mc.screen.keyPressed(new KeyEvent(keyMapping.getValue(), 0, 0));
+            if (ClientCompat.screen(mc) != null) {
+                ClientCompat.keyPressed(ClientCompat.screen(mc), keyMapping.getValue());
             } else {
                 KeyMapping.set(keyMapping, true);
                 KeyMapping.click(keyMapping);
@@ -129,12 +115,11 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             if (!target.startsWith(dir)) throw new IllegalArgumentException("invalid screenshot path");
             try {
                 java.nio.file.Files.createDirectories(dir);
-                // 26.1: takeScreenshot is callback-based (async GPU readback). Wait on the MCP
-                // thread; blocking the client thread here would stall the frame that delivers it.
+                // From 1.21.5 the read-back is asynchronous: wait on the MCP thread, never on the client thread.
                 CompletableFuture<Map<String, Object>> pending = new CompletableFuture<>();
                 execute(() -> {
                     try {
-                        net.minecraft.client.Screenshot.takeScreenshot(mc.getMainRenderTarget(), image -> {
+                        ClientCompat.takeScreenshot(mc, image -> {
                             try (image) {
                                 image.writeToFile(target);
                                 pending.complete(Map.of(
@@ -162,7 +147,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
         public void swing(String hand) {
             if (mc.player == null) return;
             InteractionHand interactionHand = "off".equalsIgnoreCase(hand) || "offhand".equalsIgnoreCase(hand) ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
-            mc.player.swing(interactionHand);
+            ClientCompat.swing(mc, interactionHand);
         }
         public FutureResult<Map<String, Object>> look(float yaw, float pitch) {
             return action(() -> {
@@ -198,7 +183,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
                 if (mc.player == null || mc.gameMode == null) return Map.of("status", "not_in_world", "hand", hand);
                 InteractionHand interactionHand = "off".equalsIgnoreCase(hand) || "offhand".equalsIgnoreCase(hand) ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
                 var result = mc.gameMode.useItem(mc.player, interactionHand);
-                if (result.consumesAction()) mc.player.swing(interactionHand);
+                if (result.consumesAction()) ClientCompat.swing(mc, interactionHand);
                 return Map.of("status", "used", "hand", interactionHand.name().toLowerCase(java.util.Locale.ROOT), "result", result.toString(), "consumesAction", result.consumesAction());
             });
         }
@@ -210,7 +195,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
                 catch (IllegalArgumentException e) { return Map.of("status", "rejected", "reason", "invalid face", "face", face == null ? "" : face); }
                 BlockPos pos = new BlockPos(x, y, z);
                 boolean started = mc.gameMode.startDestroyBlock(pos, direction);
-                mc.player.swing(InteractionHand.MAIN_HAND);
+                ClientCompat.swing(mc, InteractionHand.MAIN_HAND);
                 return Map.of("status", "attacked_block", "x", x, "y", y, "z", z, "face", direction.getName(), "started", started);
             });
         }
@@ -233,7 +218,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
                             if (attempts.get() == 0) mc.gameMode.startDestroyBlock(pos, direction);
                             boolean continued = mc.gameMode.continueDestroyBlock(pos, direction);
                             attempts.incrementAndGet();
-                            mc.player.swing(InteractionHand.MAIN_HAND);
+                            ClientCompat.swing(mc, InteractionHand.MAIN_HAND);
                             return Map.<String, Object>of("status", "destroying", "continued", continued, "block", net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString());
                         }).join();
                         if (!"destroying".equals(tick.get("status"))) { result.complete(tick); return; }
@@ -256,7 +241,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
         public FutureResult<Map<String, Object>> dropSelected(boolean all) {
             return action(() -> {
                 if (mc.player == null) return Map.of("status", "not_in_world", "all", all);
-                boolean dropped = mc.player.drop(all);
+                boolean dropped = ClientCompat.dropSelected(mc, all);
                 return Map.of("status", "dropped", "all", all, "dropped", dropped);
             });
         }
@@ -293,11 +278,8 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             String target = address == null ? "" : address.trim();
             if (target.isEmpty()) return Map.of("status", "rejected", "reason", "empty address");
             String displayName = (name == null || name.isBlank()) ? target : name;
-            if (mc.level != null) {
-                mc.level.disconnect(Component.translatable("menu.disconnect"));
-                mc.disconnect(new GenericMessageScreen(Component.translatable("menu.disconnect")), false);
-            } else if (mc.getConnection() != null) {
-                mc.disconnect(new GenericMessageScreen(Component.translatable("menu.disconnect")), false);
+            if (mc.level != null || mc.getConnection() != null) {
+                ClientCompat.disconnect(mc);
             }
             ServerData data = new ServerData(displayName, target, ServerData.Type.OTHER);
             ConnectScreen.startConnecting(new TitleScreen(), mc, ServerAddress.parseString(target), data, false, null);
@@ -353,7 +335,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             return CommandSuggestionSync.toMap(id, text, packet, latencyMs);
         }
         public Map<String, Object> screenState() {
-            Screen screen = mc.screen;
+            Screen screen = ClientCompat.screen(mc);
             if (screen == null) return Map.of("hasScreen", false);
             java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
             result.put("hasScreen", true);
@@ -386,30 +368,30 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             return result;
         }
         public Map<String, Object> typeText(String text, boolean submit) {
-            Screen screen = mc.screen;
+            Screen screen = ClientCompat.screen(mc);
             if (screen == null) return Map.of("status", "no_screen");
             String value = text == null ? "" : text;
             int typed = 0;
             for (int offset = 0; offset < value.length(); ) {
                 int cp = value.codePointAt(offset);
-                if (screen.charTyped(new CharacterEvent(cp, 0))) typed++;
+                if (ClientCompat.charTyped(screen, cp)) typed++;
                 offset += Character.charCount(cp);
             }
             boolean submitted = false;
             if (submit) {
-                submitted = screen.keyPressed(new KeyEvent(InputConstants.KEY_RETURN, 0, 0));
-                if (!submitted) submitted = screen.keyPressed(new KeyEvent(InputConstants.KEY_NUMPADENTER, 0, 0));
+                submitted = ClientCompat.keyPressed(screen, InputConstants.KEY_RETURN);
+                if (!submitted) submitted = ClientCompat.keyPressed(screen, InputConstants.KEY_NUMPADENTER);
             }
             return Map.of("status", "typed", "chars", typed, "submitted", submitted, "screen", screen.getClass().getName());
         }
         public Map<String, Object> clickScreen(double x, double y, int button) {
-            Screen screen = mc.screen;
+            Screen screen = ClientCompat.screen(mc);
             if (screen == null) return Map.of("status", "no_screen", "x", x, "y", y, "button", button);
-            boolean handled = screen.mouseClicked(new MouseButtonEvent(x, y, new MouseButtonInfo(button, 0)), false);
+            boolean handled = ClientCompat.mouseClicked(screen, x, y, button);
             return Map.of("status", "clicked", "handled", handled, "x", x, "y", y, "button", button, "screen", screen.getClass().getName());
         }
         public Map<String, Object> clickWidget(String id, String message, int button) {
-            Screen screen = mc.screen;
+            Screen screen = ClientCompat.screen(mc);
             if (screen == null) return Map.of("status", "no_screen", "id", id == null ? "" : id, "message", message == null ? "" : message);
             String wantedId = id == null ? "" : id.trim();
             String wantedMessage = message == null ? "" : message;
@@ -423,7 +405,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
                     if (idMatches || messageMatches) {
                         double x = widget.getX() + widget.getWidth() / 2.0;
                         double y = widget.getY() + widget.getHeight() / 2.0;
-                        boolean handled = screen.mouseClicked(new MouseButtonEvent(x, y, new MouseButtonInfo(button, 0)), false);
+                        boolean handled = ClientCompat.mouseClicked(screen, x, y, button);
                         return Map.of("status", "clicked", "handled", handled, "id", widgetId, "index", index, "message", widgetMessage, "x", x, "y", y, "button", button, "screen", screen.getClass().getName());
                     }
                 }
@@ -432,7 +414,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             return Map.of("status", "not_found", "id", wantedId, "message", wantedMessage, "screen", screen.getClass().getName());
         }
         public Map<String, Object> disconnectState() {
-            Screen screen = mc.screen;
+            Screen screen = ClientCompat.screen(mc);
             java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
             result.put("disconnected", screen instanceof DisconnectedScreen);
             result.put("screen", screen == null ? null : screen.getClass().getName());
@@ -452,7 +434,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             Vec3 hit = Vec3.atCenterOf(pos);
             BlockHitResult hitResult = new BlockHitResult(hit, direction, pos, false);
             var result = mc.gameMode.useItemOn(mc.player, interactionHand, hitResult);
-            if (result.consumesAction()) mc.player.swing(interactionHand);
+            if (result.consumesAction()) ClientCompat.swing(mc, interactionHand);
             return Map.of("status", "interacted", "result", result.toString(), "consumesAction", result.consumesAction(), "x", x, "y", y, "z", z, "face", direction.getName(), "hand", interactionHand.name().toLowerCase(java.util.Locale.ROOT));
         }
 
@@ -461,32 +443,23 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
                 return;
             }
             String levelName = name == null || name.isBlank() ? "minecraft_mcp_test_world" : name;
-            LevelSettings settings = new LevelSettings(levelName, GameType.CREATIVE, false, Difficulty.PEACEFUL, true,
-                    new GameRules(WorldDataConfiguration.DEFAULT.enabledFeatures()), WorldDataConfiguration.DEFAULT);
             long seed = options.get("seed") instanceof Number n ? n.longValue() : 0L;
-            WorldOptions worldOptions = new WorldOptions(seed, false, false);
-            java.util.function.Function<net.minecraft.core.HolderLookup.Provider, net.minecraft.world.level.levelgen.WorldDimensions> dimensions = registries -> {
-                String preset = String.valueOf(options.getOrDefault("preset", options.getOrDefault("generator", "normal"))).trim().toLowerCase(java.util.Locale.ROOT);
-                if (preset.equals("flat") || preset.equals("superflat")) {
-                    return WorldPresets.createFlatWorldDimensions(registries);
-                }
-                return WorldPresets.createNormalWorldDimensions(registries);
-            };
-            mc.createWorldOpenFlows().createFreshLevel(levelName, settings, worldOptions, dimensions, mc.screen == null ? new GenericMessageScreen(Component.literal("Minecraft MCP")) : mc.screen);
+            String preset = String.valueOf(options.getOrDefault("preset", options.getOrDefault("generator", "normal"))).trim().toLowerCase(java.util.Locale.ROOT);
+            ClientCompat.createTestWorld(mc, levelName, seed, preset.equals("flat") || preset.equals("superflat"));
         }
         public void openWorld(String name) {
-            mc.createWorldOpenFlows().openWorld(name, () -> mc.setScreen(null));
+            mc.createWorldOpenFlows().openWorld(name, () -> ClientCompat.setScreen(mc, null));
         }
         public void leaveWorldToTitle() {
             if (mc.level != null) {
-                mc.disconnectFromWorld(Component.translatable("menu.savingLevel"));
+                ClientCompat.leaveWorld(mc);
             }
         }
         public Map<String, Object> worldSnapshot() {
             if (mc.level == null) return Map.of("inWorld", false);
             return Map.of(
                 "inWorld", true,
-                "dimension", mc.level.dimension().identifier().toString(),
+                "dimension", MinecraftCompat.id(mc.level.dimension()),
                 "gameTime", mc.level.getGameTime(),
                 "difficulty", mc.level.getDifficulty().getSerializedName(),
                 "entityCount", mc.level.entitiesForRendering().spliterator().getExactSizeIfKnown()
@@ -495,7 +468,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
         public Map<String, Object> inventorySnapshot() {
             if (mc.player == null) return Map.of("inWorld", false, "hotbar", java.util.List.of(), "main", java.util.List.of(), "armor", java.util.List.of(), "offhand", java.util.List.of(), "slots", java.util.List.of());
             Inventory inventory = mc.player.getInventory();
-            java.util.List<ItemStack> items = inventory.getNonEquipmentItems();
+            java.util.List<ItemStack> items = MinecraftCompat.inventoryItems(inventory);
             java.util.List<Map<String, Object>> hotbar = inventorySection(items, "hotbar", 0, 0, 9);
             java.util.List<Map<String, Object>> main = inventorySection(items, "main", 9, 9, items.size() - 9);
             java.util.List<Map<String, Object>> armor = inventorySection(armorItems(mc.player), "armor", 36, 0, 4);
@@ -504,7 +477,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             slots.addAll(hotbar); slots.addAll(main); slots.addAll(armor); slots.addAll(offhand);
             java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
             result.put("inWorld", true);
-            result.put("selected", inventory.getSelectedSlot());
+            result.put("selected", MinecraftCompat.selectedSlot(inventory));
             result.put("carried", mc.player.containerMenu == null ? stackSummary(ItemStack.EMPTY) : stackSummary(mc.player.containerMenu.getCarried()));
             result.put("hotbar", hotbar);
             result.put("main", main);
@@ -536,22 +509,22 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
         public Map<String, Object> selectedInventoryItem() {
             if (mc.player == null) return Map.of("inWorld", false, "selected", -1, "item", "minecraft:air", "count", 0, "empty", true);
             Inventory inventory = mc.player.getInventory();
-            java.util.Map<String, Object> result = new java.util.LinkedHashMap<>(stackSummary(inventory.getSelectedItem()));
+            java.util.Map<String, Object> result = new java.util.LinkedHashMap<>(stackSummary(MinecraftCompat.selectedItem(inventory)));
             result.put("inWorld", true);
-            result.put("selected", inventory.getSelectedSlot());
-            result.put("slot", inventory.getSelectedSlot());
+            result.put("selected", MinecraftCompat.selectedSlot(inventory));
+            result.put("slot", MinecraftCompat.selectedSlot(inventory));
             return result;
         }
         public Map<String, Object> containerState() {
-            if (mc.player == null) return Map.of("inWorld", false, "hasContainer", false, "hasScreen", mc.screen != null);
-            boolean hasContainerScreen = mc.screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>;
+            if (mc.player == null) return Map.of("inWorld", false, "hasContainer", false, "hasScreen", ClientCompat.screen(mc) != null);
+            boolean hasContainerScreen = ClientCompat.screen(mc) instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>;
             boolean hasContainer = hasContainerScreen || mc.player.containerMenu != mc.player.inventoryMenu;
             java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
             result.put("inWorld", true);
             result.put("hasContainer", hasContainer);
-            result.put("hasScreen", mc.screen != null);
-            result.put("screen", mc.screen == null ? null : mc.screen.getClass().getName());
-            result.put("title", mc.screen == null ? null : mc.screen.getTitle().getString());
+            result.put("hasScreen", ClientCompat.screen(mc) != null);
+            result.put("screen", ClientCompat.screen(mc) == null ? null : ClientCompat.screen(mc).getClass().getName());
+            result.put("title", ClientCompat.screen(mc) == null ? null : ClientCompat.screen(mc).getTitle().getString());
             if (!hasContainer || mc.player.containerMenu == null) {
                 result.put("reason", "no container screen");
                 result.put("slots", java.util.List.of());
@@ -574,8 +547,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
             var menu = mc.player.containerMenu;
             if (menu == null) return Map.of("status", "rejected", "reason", "no container", "slot", slot, "button", button, "clickType", clickType);
             if (slot >= menu.slots.size()) return Map.of("status", "rejected", "reason", "slot out of range", "slot", slot, "button", button, "clickType", clickType, "containerId", menu.containerId);
-            net.minecraft.world.inventory.ClickType type = net.minecraft.world.inventory.ClickType.valueOf(clickType);
-            mc.gameMode.handleInventoryMouseClick(menu.containerId, slot, button, type, mc.player);
+            ClientCompat.clickSlot(mc, menu.containerId, slot, button, clickType);
             return Map.of("status", "clicked", "slot", slot, "button", button, "clickType", clickType, "containerId", menu.containerId);
         }
         public Map<String, Object> closeContainer() {
@@ -589,7 +561,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
                 return Map.of("status", "rejected", "reason", "slot out of range", "slot", slot);
             }
             Inventory inventory = mc.player.getInventory();
-            inventory.setSelectedSlot(slot);
+            MinecraftCompat.selectSlot(inventory, slot);
             return Map.of("status", "selected", "slot", slot, "item", stackMap(slot, inventory.getItem(slot)));
         }
         private static java.util.List<ItemStack> armorItems(net.minecraft.world.entity.player.Player player) {
@@ -600,7 +572,7 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
                     player.getItemBySlot(EquipmentSlot.HEAD));
         }
         private static java.util.List<Map<String, Object>> inventorySlots(net.minecraft.world.entity.player.Player player) {
-            java.util.List<ItemStack> items = player.getInventory().getNonEquipmentItems();
+            java.util.List<ItemStack> items = MinecraftCompat.inventoryItems(player.getInventory());
             java.util.List<Map<String, Object>> slots = new java.util.ArrayList<>();
             slots.addAll(inventorySection(items, "hotbar", 0, 0, 9));
             slots.addAll(inventorySection(items, "main", 9, 9, items.size() - 9));
@@ -711,11 +683,11 @@ public final class FabricMinecraftMcpEntrypoint implements ClientModInitializer 
         }
 
         public ClientSnapshot snapshot() {
-            String screen = mc.screen == null ? null : mc.screen.getClass().getName();
+            String screen = ClientCompat.screen(mc) == null ? null : ClientCompat.screen(mc).getClass().getName();
             if (mc.player == null) return new ClientSnapshot(true, false, mc.level != null, screen, null, 0, 0, 0, 0, 0);
             boolean rawInWorld = mc.level != null;
-            boolean playableInWorld = rawInWorld && mc.screen == null;
-            return new ClientSnapshot(true, playableInWorld, rawInWorld, screen, mc.player.getGameProfile().name(), mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYRot(), mc.player.getXRot());
+            boolean playableInWorld = rawInWorld && ClientCompat.screen(mc) == null;
+            return new ClientSnapshot(true, playableInWorld, rawInWorld, screen, MinecraftCompat.profileName(mc.player), mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYRot(), mc.player.getXRot());
         }
     }
 }

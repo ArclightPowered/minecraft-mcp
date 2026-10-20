@@ -1,5 +1,6 @@
 package io.izzel.minecraftmcp.neoforge;
 
+import io.izzel.minecraftmcp.compat.MinecraftCompat;
 import io.izzel.minecraftmcp.config.DefaultOptions;
 import io.izzel.minecraftmcp.config.McpConfig;
 import io.izzel.minecraftmcp.config.McpConfigs;
@@ -7,7 +8,6 @@ import io.izzel.minecraftmcp.config.McpOptions;
 import io.izzel.minecraftmcp.config.McpPermissions;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.permissions.Permissions;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
@@ -30,7 +30,7 @@ final class NeoForgeMcpConfig {
 
     static final PermissionNode<Boolean> REMOTE_CALL = new PermissionNode<>(
         McpPermissions.NAMESPACE, McpPermissions.REMOTE_CALL_PATH, PermissionTypes.BOOLEAN,
-        (player, uuid, context) -> player != null && player.permissions().hasPermission(Permissions.COMMANDS_OWNER))
+        (player, uuid, context) -> player != null && MinecraftCompat.isOwner(player))
         .setInformation(
             Component.literal("Minecraft MCP remote call"),
             Component.literal("Exchange MCP tool calls with this server over the plugin channel, "
@@ -139,7 +139,12 @@ final class NeoForgeMcpConfig {
 
     static void register(IEventBus modBus, ModContainer container) {
         verifyCoversEveryOption();
+        // FML 12 (26.3) renamed the per-instance, never-synced config type from COMMON to LOCAL.
+        //? if >=26.3 {
+        /*container.registerConfig(ModConfig.Type.LOCAL, SPEC, FILE_NAME);
+        *///?} else {
         container.registerConfig(ModConfig.Type.COMMON, SPEC, FILE_NAME);
+        //?}
         McpConfigs.install(new McpConfig(new SpecOptions(), "config/" + FILE_NAME));
         modBus.addListener(ModConfigEvent.Loading.class, NeoForgeMcpConfig::reportFor);
         modBus.addListener(ModConfigEvent.Reloading.class, NeoForgeMcpConfig::reportFor);
@@ -157,7 +162,7 @@ final class NeoForgeMcpConfig {
             return PermissionAPI.getPermission(player, REMOTE_CALL);
         } catch (RuntimeException e) {
             System.err.println("[Minecraft MCP] could not resolve " + McpPermissions.REMOTE_CALL_NEOFORGE
-                + " for " + player.getGameProfile().name() + ", refusing: " + e);
+                + " for " + MinecraftCompat.profileName(player) + ", refusing: " + e);
             return false;
         }
     }

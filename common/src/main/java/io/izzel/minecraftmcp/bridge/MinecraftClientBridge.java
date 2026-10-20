@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import net.minecraft.util.Util;
 import net.minecraft.world.phys.Vec3;
 
 public interface MinecraftClientBridge extends MinecraftBridge {
@@ -237,7 +236,7 @@ public interface MinecraftClientBridge extends MinecraftBridge {
         int required = ((Number) args.getOrDefault("count", args.getOrDefault("required", 1))).intValue();
         if (required < 1) required = 1;
         long timeoutMs = ((Number) args.getOrDefault("timeoutMs", 30000)).longValue();
-        long deadline = Util.getNanos() + TimeUnit.MILLISECONDS.toNanos(Math.max(0, timeoutMs));
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(Math.max(0, timeoutMs));
         int count;
         do {
             count = packetRecorder().dump(filter).total();
@@ -245,7 +244,7 @@ public interface MinecraftClientBridge extends MinecraftBridge {
                 return Map.of("matched", true, "count", count, "required", required);
             }
             waitTicks(1);
-        } while (deadline - Util.getNanos() > 0);
+        } while (deadline - System.nanoTime() > 0);
         count = packetRecorder().dump(filter).total();
         return Map.of("matched", false, "count", count, "required", required);
     }

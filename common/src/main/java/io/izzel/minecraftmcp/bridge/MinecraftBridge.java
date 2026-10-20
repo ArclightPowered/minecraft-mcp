@@ -16,7 +16,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import net.minecraft.util.Util;
 
 public interface MinecraftBridge {
     long MAX_WAIT_TICKS = 24_000;
@@ -84,7 +83,7 @@ public interface MinecraftBridge {
         String normalized = condition == null ? "" : condition.trim();
         ConditionExpression expression = ConditionParser.parse(normalized);
         ConditionValidator.validate(expression, ConditionPropertyProviders.registryFor(side()), " on side=" + side());
-        long deadline = Util.getNanos() + TimeUnit.MILLISECONDS.toNanos(Math.max(0, timeoutMs));
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(Math.max(0, timeoutMs));
         long intervalMs = Math.max(1, intervalTicks) * 50L;
         boolean everEvaluated = false;
         long attempts = 0;
@@ -100,7 +99,7 @@ public interface MinecraftBridge {
             } catch (RuntimeException e) {
                 lastError = e;
             }
-            long remainingMs = TimeUnit.NANOSECONDS.toMillis(deadline - Util.getNanos());
+            long remainingMs = TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime());
             if (remainingMs <= 0) {
                 break;
             }

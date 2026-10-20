@@ -32,4 +32,3 @@ tasks.withType(Test).configureEach {
     useJUnitPlatform()
 }
 
-apply from: rootProject.file('gradle/replacements.gradle')

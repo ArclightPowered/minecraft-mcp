@@ -1,11 +1,11 @@
 package io.izzel.minecraftmcp.server;
 
+import io.izzel.minecraftmcp.compat.MinecraftCompat;
 import io.izzel.minecraftmcp.command.CapturingCommandSource;
 import net.minecraft.commands.arguments.blocks.BlockStateParser;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -71,7 +71,7 @@ public final class ServerWorldTools {
         result.put("found", true);
         result.put("onGround", player.onGround());
         result.put("rotation", Map.of("yaw", player.getYRot(), "pitch", player.getXRot()));
-        result.put("selectedSlot", player.getInventory().getSelectedSlot());
+        result.put("selectedSlot", MinecraftCompat.selectedSlot(player.getInventory()));
         return result;
     }
 
@@ -81,7 +81,7 @@ public final class ServerWorldTools {
             return Map.of("found", false, "player", nameOrUuid, "slots", List.of());
         }
         Inventory inventory = player.getInventory();
-        List<ItemStack> items = inventory.getNonEquipmentItems();
+        List<ItemStack> items = MinecraftCompat.inventoryItems(inventory);
         List<Map<String, Object>> slots = new ArrayList<>();
         for (int i = 0; i < items.size(); i++) {
             slots.add(slot(i, i < 9 ? "hotbar" : "main", items.get(i)));
@@ -93,8 +93,8 @@ public final class ServerWorldTools {
         slots.add(slot(40, "offhand", player.getItemBySlot(EquipmentSlot.OFFHAND)));
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("found", true);
-        result.put("player", player.getGameProfile().name());
-        result.put("selectedSlot", inventory.getSelectedSlot());
+        result.put("player", MinecraftCompat.profileName(player));
+        result.put("selectedSlot", MinecraftCompat.selectedSlot(inventory));
         result.put("slots", slots);
         return result;
     }
@@ -103,7 +103,7 @@ public final class ServerWorldTools {
         List<Map<String, Object>> list = new ArrayList<>();
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             Map<String, Object> entry = new LinkedHashMap<>();
-            entry.put("name", player.getGameProfile().name());
+            entry.put("name", MinecraftCompat.profileName(player));
             entry.put("uuid", player.getUUID().toString());
             var connection = player.connection;
             entry.put("address", connection == null ? null : String.valueOf(connection.getRemoteAddress()));
@@ -118,7 +118,7 @@ public final class ServerWorldTools {
         List<Map<String, Object>> list = new ArrayList<>();
         for (ServerLevel level : server.getAllLevels()) {
             Map<String, Object> entry = new LinkedHashMap<>();
-            entry.put("dimension", level.dimension().identifier().toString());
+            entry.put("dimension", MinecraftCompat.id(level.dimension()));
             entry.put("players", level.players().size());
             entry.put("loadedChunks", level.getChunkSource().getLoadedChunksCount());
             list.add(entry);
@@ -130,7 +130,7 @@ public final class ServerWorldTools {
         ServerLevel level = level(server, dimension);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("inWorld", true);
-        result.put("dimension", level.dimension().identifier().toString());
+        result.put("dimension", MinecraftCompat.id(level.dimension()));
         result.put("gameTime", level.getGameTime());
         result.put("difficulty", level.getDifficulty().getSerializedName());
         result.put("players", level.players().size());
@@ -150,7 +150,7 @@ public final class ServerWorldTools {
         BlockPos pos = new BlockPos(x, y, z);
         BlockState state = level.getBlockState(pos);
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("dimension", level.dimension().identifier().toString());
+        result.put("dimension", MinecraftCompat.id(level.dimension()));
         result.put("x", x);
         result.put("y", y);
         result.put("z", z);
@@ -172,7 +172,7 @@ public final class ServerWorldTools {
         boolean placed = level.setBlock(new BlockPos(x, y, z), parsed, 3);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("status", placed ? "set" : "unchanged");
-        result.put("dimension", level.dimension().identifier().toString());
+        result.put("dimension", MinecraftCompat.id(level.dimension()));
         result.put("x", x);
         result.put("y", y);
         result.put("z", z);
@@ -217,7 +217,7 @@ public final class ServerWorldTools {
             entities.add(entry);
         }
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("dimension", level.dimension().identifier().toString());
+        result.put("dimension", MinecraftCompat.id(level.dimension()));
         result.put("total", total);
         result.put("returned", entities.size());
         result.put("limit", limit);
@@ -233,14 +233,14 @@ public final class ServerWorldTools {
         var source = level.getChunkSource();
         ChunkPos pos = new ChunkPos(chunkX, chunkZ);
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("dimension", level.dimension().identifier().toString());
+        result.put("dimension", MinecraftCompat.id(level.dimension()));
         result.put("chunkX", chunkX);
         result.put("chunkZ", chunkZ);
         result.put("loaded", source.hasChunk(chunkX, chunkZ));
         result.put("present", source.getChunkNow(chunkX, chunkZ) != null);
-        result.put("ticking", source.isPositionTicking(pos.toLong()));
+        result.put("ticking", source.isPositionTicking(MinecraftCompat.chunkKey(pos)));
         result.put("loadedChunks", source.getLoadedChunksCount());
-        result.put("hasActiveTickets", source.hasActiveTickets());
+        result.put("hasActiveTickets", source.chunkMap.getDistanceManager().hasTickets());
         return result;
     }
 
@@ -280,13 +280,13 @@ public final class ServerWorldTools {
 
     private static Map<String, Object> playerSummary(ServerPlayer player) {
         Map<String, Object> entry = new LinkedHashMap<>();
-        entry.put("name", player.getGameProfile().name());
+        entry.put("name", MinecraftCompat.profileName(player));
         entry.put("uuid", player.getUUID().toString());
-        entry.put("dimension", player.level().dimension().identifier().toString());
+        entry.put("dimension", MinecraftCompat.id(player.level().dimension()));
         entry.put("position", Map.of("x", player.getX(), "y", player.getY(), "z", player.getZ()));
         entry.put("health", player.getHealth());
         entry.put("maxHealth", player.getMaxHealth());
-        entry.put("gameMode", player.gameMode().getName());
+        entry.put("gameMode", MinecraftCompat.gameMode(player).getName());
         return entry;
     }
 
@@ -302,16 +302,13 @@ public final class ServerWorldTools {
     }
 
     private static ServerLevel level(MinecraftServer server, String dimension) {
-        Identifier id = Identifier.parse(dimension);
-        ServerLevel level = server.getLevel(ResourceKey.create(Registries.DIMENSION, id));
-        if (level == null) {
-            List<String> known = new ArrayList<>();
-            for (ServerLevel candidate : server.getAllLevels()) {
-                known.add(candidate.dimension().identifier().toString());
-            }
-            throw new IllegalArgumentException("no such dimension: " + dimension + "; known: " + known);
+        String id = dimension.contains(":") ? dimension : "minecraft:" + dimension;
+        List<String> known = new ArrayList<>();
+        for (ServerLevel candidate : server.getAllLevels()) {
+            if (MinecraftCompat.id(candidate.dimension()).equals(id)) return candidate;
+            known.add(MinecraftCompat.id(candidate.dimension()));
         }
-        return level;
+        throw new IllegalArgumentException("no such dimension: " + dimension + "; known: " + known);
     }
 
     private static ServerPlayer requirePlayer(MinecraftServer server, String nameOrUuid) {

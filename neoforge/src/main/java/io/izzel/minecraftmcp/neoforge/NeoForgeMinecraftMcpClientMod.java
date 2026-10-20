@@ -1,6 +1,8 @@
 package io.izzel.minecraftmcp.neoforge;
 
 import io.izzel.minecraftmcp.MinecraftMcpBootstrap;
+import io.izzel.minecraftmcp.compat.ClientCompat;
+import io.izzel.minecraftmcp.compat.MinecraftCompat;
 import io.izzel.minecraftmcp.bridge.ClientSnapshot;
 import io.izzel.minecraftmcp.bridge.MinecraftClientBridge;
 import io.izzel.minecraftmcp.config.McpConfigs;
@@ -12,15 +14,12 @@ import io.izzel.minecraftmcp.packet.CommandSuggestionSync;
 import io.izzel.minecraftmcp.packet.PacketRecorderChannelInstaller;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.SharedConstants;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.neoforge.client.event.lifecycle.ClientStartedEvent;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.network.registration.NetworkRegistry;
 
@@ -34,17 +33,11 @@ import net.minecraft.client.gui.screens.DisconnectedScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraft.client.input.CharacterEvent;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.input.MouseButtonInfo;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.ConnectionProtocol;
 import net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket;
-import net.minecraft.world.Difficulty;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -53,15 +46,9 @@ import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.level.levelgen.WorldOptions;
-import net.minecraft.world.level.levelgen.presets.WorldPresets;
-import net.minecraft.world.level.LevelSettings;
-import net.minecraft.world.level.WorldDataConfiguration;
-import net.minecraft.world.level.gamerules.GameRules;
 
 @Mod(value = "minecraft_mcp", dist = {Dist.CLIENT})
 public final class NeoForgeMinecraftMcpClientMod {
@@ -72,14 +59,29 @@ public final class NeoForgeMinecraftMcpClientMod {
         // The earlier mod-lifecycle setup phase runs before Minecraft has constructed its singleton on 1.21.11.
         // Starting there gives NeoForgeBridge a permanently cached null client. ClientStartedEvent
         // is posted on the game bus after construction and supplies the live instance directly.
+        // NeoForge before 1.21.6 has no ClientStartedEvent, and its client setup already runs after construction.
+        //? if >=1.21.6 {
         NeoForge.EVENT_BUS.addListener(this::onClientStarted);
+        //?} else {
+        /*modBus.addListener(this::onClientSetup);
+        *///?}
         NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut.class,
                 event -> RemoteMcpProxies.toServer().failPending());
     }
 
-    private void onClientStarted(ClientStartedEvent event) {
+    //? if >=1.21.6 {
+    private void onClientStarted(net.neoforged.neoforge.client.event.lifecycle.ClientStartedEvent event) {
+        start(event.getClient());
+    }
+    //?} else {
+    /*private void onClientSetup(net.neoforged.fml.event.lifecycle.FMLClientSetupEvent event) {
+        start(Minecraft.getInstance());
+    }
+    *///?}
+
+    private void start(Minecraft mc) {
         try {
-            clientEndpoint = MinecraftMcpBootstrap.start(new NeoForgeBridge(event.getClient()));
+            clientEndpoint = MinecraftMcpBootstrap.start(new NeoForgeBridge(mc));
             clientPluginHandler = new McpPluginMessageHandler(clientEndpoint.registry(),
                     McpConfigs::current, clientEndpoint.workers());
             ClientPayloadRouter.set(
@@ -96,10 +98,10 @@ public final class NeoForgeMinecraftMcpClientMod {
         private final Minecraft mc;
 
         NeoForgeBridge(Minecraft mc) {
-            this.mc = java.util.Objects.requireNonNull(mc, "Minecraft client must be available at ClientStartedEvent");
+            this.mc = java.util.Objects.requireNonNull(mc, "Minecraft client must be available when the MCP endpoint starts");
         }
         public String loader() { return "neoforge"; }
-        public String minecraftVersion() { return SharedConstants.getCurrentVersion().name(); }
+        public String minecraftVersion() { return MinecraftCompat.gameVersion(); }
         public Path gameDirectory() { return FMLPaths.GAMEDIR.get(); }
         public boolean isOnClientThread() { return mc.isSameThread(); }
         public void execute(Runnable runnable) { mc.execute(runnable); }
@@ -115,11 +117,18 @@ public final class NeoForgeMinecraftMcpClientMod {
         }
         private void dispatchNativeMousePress(InputConstants.Key key, int action) {
             try {
+                //? if >=1.21.9 {
                 var method = mc.mouseHandler.getClass().getDeclaredMethod(
-                        "onButton", long.class, MouseButtonInfo.class, int.class);
+                        "onButton", long.class, net.minecraft.client.input.MouseButtonInfo.class, int.class);
                 method.setAccessible(true);
                 method.invoke(mc.mouseHandler, mc.getWindow().handle(),
-                        new MouseButtonInfo(key.getValue(), 0), action);
+                        new net.minecraft.client.input.MouseButtonInfo(key.getValue(), 0), action);
+                //?} else {
+                /*var method = mc.mouseHandler.getClass().getDeclaredMethod(
+                        "onPress", long.class, int.class, int.class, int.class);
+                method.setAccessible(true);
+                method.invoke(mc.mouseHandler, mc.getWindow().getWindow(), key.getValue(), action, 0);
+                *///?}
             } catch (ReflectiveOperationException e) {
                 throw new IllegalStateException("Failed to dispatch native mouse input", e);
             }
@@ -129,11 +138,18 @@ public final class NeoForgeMinecraftMcpClientMod {
                 // NeoForge's KeyMapping lookup filters by the active conflict context and modifier.
                 // Go through the vanilla keyboard handler so press/release use that same lookup and
                 // run the normal NeoForge screen/input hooks before Minecraft consumes the click.
+                //? if >=1.21.9 {
                 var method = mc.keyboardHandler.getClass().getDeclaredMethod(
-                        "keyPress", long.class, int.class, KeyEvent.class);
+                        "keyPress", long.class, int.class, net.minecraft.client.input.KeyEvent.class);
                 method.setAccessible(true);
                 method.invoke(mc.keyboardHandler, mc.getWindow().handle(), action,
-                        new KeyEvent(key.getValue(), 0, 0));
+                        new net.minecraft.client.input.KeyEvent(key.getValue(), 0, 0));
+                //?} else {
+                /*var method = mc.keyboardHandler.getClass().getDeclaredMethod(
+                        "keyPress", long.class, int.class, int.class, int.class, int.class);
+                method.setAccessible(true);
+                method.invoke(mc.keyboardHandler, mc.getWindow().getWindow(), key.getValue(), 0, action, 0);
+                *///?}
             } catch (ReflectiveOperationException e) {
                 throw new IllegalStateException("Failed to dispatch native key input", e);
             }
@@ -159,12 +175,11 @@ public final class NeoForgeMinecraftMcpClientMod {
             if (!target.startsWith(dir)) throw new IllegalArgumentException("invalid screenshot path");
             try {
                 java.nio.file.Files.createDirectories(dir);
-                // 26.1: takeScreenshot is callback-based (async GPU readback). Wait on the MCP
-                // thread; blocking the client thread here would stall the frame that delivers it.
+                // From 1.21.5 the read-back is asynchronous: wait on the MCP thread, never on the client thread.
                 CompletableFuture<Map<String, Object>> pending = new CompletableFuture<>();
                 execute(() -> {
                     try {
-                        net.minecraft.client.Screenshot.takeScreenshot(mc.getMainRenderTarget(), image -> {
+                        ClientCompat.takeScreenshot(mc, image -> {
                             try (image) {
                                 image.writeToFile(target);
                                 pending.complete(Map.of(
@@ -192,7 +207,7 @@ public final class NeoForgeMinecraftMcpClientMod {
         public void swing(String hand) {
             if (mc.player == null) return;
             InteractionHand interactionHand = "off".equalsIgnoreCase(hand) || "offhand".equalsIgnoreCase(hand) ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
-            mc.player.swing(interactionHand);
+            ClientCompat.swing(mc, interactionHand);
         }
         public FutureResult<Map<String, Object>> look(float yaw, float pitch) {
             return action(() -> {
@@ -228,7 +243,7 @@ public final class NeoForgeMinecraftMcpClientMod {
                 if (mc.player == null || mc.gameMode == null) return Map.of("status", "not_in_world", "hand", hand);
                 InteractionHand interactionHand = "off".equalsIgnoreCase(hand) || "offhand".equalsIgnoreCase(hand) ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
                 var result = mc.gameMode.useItem(mc.player, interactionHand);
-                if (result.consumesAction()) mc.player.swing(interactionHand);
+                if (result.consumesAction()) ClientCompat.swing(mc, interactionHand);
                 return Map.of("status", "used", "hand", interactionHand.name().toLowerCase(java.util.Locale.ROOT), "result", result.toString(), "consumesAction", result.consumesAction());
             });
         }
@@ -240,7 +255,7 @@ public final class NeoForgeMinecraftMcpClientMod {
                 catch (IllegalArgumentException e) { return Map.of("status", "rejected", "reason", "invalid face", "face", face == null ? "" : face); }
                 BlockPos pos = new BlockPos(x, y, z);
                 boolean started = mc.gameMode.startDestroyBlock(pos, direction);
-                mc.player.swing(InteractionHand.MAIN_HAND);
+                ClientCompat.swing(mc, InteractionHand.MAIN_HAND);
                 return Map.of("status", "attacked_block", "x", x, "y", y, "z", z, "face", direction.getName(), "started", started);
             });
         }
@@ -263,7 +278,7 @@ public final class NeoForgeMinecraftMcpClientMod {
                             if (attempts.get() == 0) mc.gameMode.startDestroyBlock(pos, direction);
                             boolean continued = mc.gameMode.continueDestroyBlock(pos, direction);
                             attempts.incrementAndGet();
-                            mc.player.swing(InteractionHand.MAIN_HAND);
+                            ClientCompat.swing(mc, InteractionHand.MAIN_HAND);
                             return Map.<String, Object>of("status", "destroying", "continued", continued, "block", net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString());
                         }).join();
                         if (!"destroying".equals(tick.get("status"))) { result.complete(tick); return; }
@@ -286,7 +301,7 @@ public final class NeoForgeMinecraftMcpClientMod {
         public FutureResult<Map<String, Object>> dropSelected(boolean all) {
             return action(() -> {
                 if (mc.player == null) return Map.of("status", "not_in_world", "all", all);
-                boolean dropped = mc.player.drop(all);
+                boolean dropped = ClientCompat.dropSelected(mc, all);
                 return Map.of("status", "dropped", "all", all, "dropped", dropped);
             });
         }
@@ -323,11 +338,8 @@ public final class NeoForgeMinecraftMcpClientMod {
             String target = address == null ? "" : address.trim();
             if (target.isEmpty()) return Map.of("status", "rejected", "reason", "empty address");
             String displayName = (name == null || name.isBlank()) ? target : name;
-            if (mc.level != null) {
-                mc.level.disconnect(ClientLevel.DEFAULT_QUIT_MESSAGE);
-                mc.disconnectWithProgressScreen();
-            } else if (mc.getConnection() != null) {
-                mc.disconnectWithProgressScreen();
+            if (mc.level != null || mc.getConnection() != null) {
+                ClientCompat.disconnect(mc);
             }
             ServerData data = new ServerData(displayName, target, ServerData.Type.OTHER);
             ConnectScreen.startConnecting(new TitleScreen(), mc, ServerAddress.parseString(target), data, false, null);
@@ -357,7 +369,11 @@ public final class NeoForgeMinecraftMcpClientMod {
             if (!config.trusts(peer)) {
                 throw new IllegalStateException(config.refusal(peer));
             }
-            return RemoteMcpProxies.toServer().call(tool, arguments, text -> ClientPacketDistributor.sendToServer(new NeoForgeStringPayload(NeoForgeStringPayload.REQUEST, text)), timeoutMs);
+            //? if >=1.21.6 {
+            return RemoteMcpProxies.toServer().call(tool, arguments, text -> net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(new NeoForgeStringPayload(NeoForgeStringPayload.REQUEST, text)), timeoutMs);
+            //?} else {
+            /*return RemoteMcpProxies.toServer().call(tool, arguments, text -> net.neoforged.neoforge.network.PacketDistributor.sendToServer(new NeoForgeStringPayload(NeoForgeStringPayload.REQUEST, text)), timeoutMs);
+            *///?}
         }
 
         public Map<String, Object> sendChat(String message) {
@@ -385,7 +401,7 @@ public final class NeoForgeMinecraftMcpClientMod {
             return CommandSuggestionSync.toMap(id, text, packet, latencyMs);
         }
         public Map<String, Object> screenState() {
-            Screen screen = mc.screen;
+            Screen screen = ClientCompat.screen(mc);
             if (screen == null) return Map.of("hasScreen", false);
             java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
             result.put("hasScreen", true);
@@ -418,30 +434,30 @@ public final class NeoForgeMinecraftMcpClientMod {
             return result;
         }
         public Map<String, Object> typeText(String text, boolean submit) {
-            Screen screen = mc.screen;
+            Screen screen = ClientCompat.screen(mc);
             if (screen == null) return Map.of("status", "no_screen");
             String value = text == null ? "" : text;
             int typed = 0;
             for (int offset = 0; offset < value.length(); ) {
                 int cp = value.codePointAt(offset);
-                if (screen.charTyped(new CharacterEvent(cp, 0))) typed++;
+                if (ClientCompat.charTyped(screen, cp)) typed++;
                 offset += Character.charCount(cp);
             }
             boolean submitted = false;
             if (submit) {
-                submitted = screen.keyPressed(new KeyEvent(InputConstants.KEY_RETURN, 0, 0));
-                if (!submitted) submitted = screen.keyPressed(new KeyEvent(InputConstants.KEY_NUMPADENTER, 0, 0));
+                submitted = ClientCompat.keyPressed(screen, InputConstants.KEY_RETURN);
+                if (!submitted) submitted = ClientCompat.keyPressed(screen, InputConstants.KEY_NUMPADENTER);
             }
             return Map.of("status", "typed", "chars", typed, "submitted", submitted, "screen", screen.getClass().getName());
         }
         public Map<String, Object> clickScreen(double x, double y, int button) {
-            Screen screen = mc.screen;
+            Screen screen = ClientCompat.screen(mc);
             if (screen == null) return Map.of("status", "no_screen", "x", x, "y", y, "button", button);
-            boolean handled = screen.mouseClicked(new MouseButtonEvent(x, y, new MouseButtonInfo(button, 0)), false);
+            boolean handled = ClientCompat.mouseClicked(screen, x, y, button);
             return Map.of("status", "clicked", "handled", handled, "x", x, "y", y, "button", button, "screen", screen.getClass().getName());
         }
         public Map<String, Object> clickWidget(String id, String message, int button) {
-            Screen screen = mc.screen;
+            Screen screen = ClientCompat.screen(mc);
             if (screen == null) return Map.of("status", "no_screen", "id", id == null ? "" : id, "message", message == null ? "" : message);
             String wantedId = id == null ? "" : id.trim();
             String wantedMessage = message == null ? "" : message;
@@ -455,7 +471,7 @@ public final class NeoForgeMinecraftMcpClientMod {
                     if (idMatches || messageMatches) {
                         double x = widget.getX() + widget.getWidth() / 2.0;
                         double y = widget.getY() + widget.getHeight() / 2.0;
-                        boolean handled = screen.mouseClicked(new MouseButtonEvent(x, y, new MouseButtonInfo(button, 0)), false);
+                        boolean handled = ClientCompat.mouseClicked(screen, x, y, button);
                         return Map.of("status", "clicked", "handled", handled, "id", widgetId, "index", index, "message", widgetMessage, "x", x, "y", y, "button", button, "screen", screen.getClass().getName());
                     }
                 }
@@ -464,7 +480,7 @@ public final class NeoForgeMinecraftMcpClientMod {
             return Map.of("status", "not_found", "id", wantedId, "message", wantedMessage, "screen", screen.getClass().getName());
         }
         public Map<String, Object> disconnectState() {
-            Screen screen = mc.screen;
+            Screen screen = ClientCompat.screen(mc);
             java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
             result.put("disconnected", screen instanceof DisconnectedScreen);
             result.put("screen", screen == null ? null : screen.getClass().getName());
@@ -484,7 +500,7 @@ public final class NeoForgeMinecraftMcpClientMod {
             Vec3 hit = Vec3.atCenterOf(pos);
             BlockHitResult hitResult = new BlockHitResult(hit, direction, pos, false);
             var result = mc.gameMode.useItemOn(mc.player, interactionHand, hitResult);
-            if (result.consumesAction()) mc.player.swing(interactionHand);
+            if (result.consumesAction()) ClientCompat.swing(mc, interactionHand);
             return Map.of("status", "interacted", "result", result.toString(), "consumesAction", result.consumesAction(), "x", x, "y", y, "z", z, "face", direction.getName(), "hand", interactionHand.name().toLowerCase(java.util.Locale.ROOT));
         }
 
@@ -493,32 +509,23 @@ public final class NeoForgeMinecraftMcpClientMod {
                 return;
             }
             String levelName = name == null || name.isBlank() ? "minecraft_mcp_test_world" : name;
-            LevelSettings settings = new LevelSettings(levelName, GameType.CREATIVE, false, Difficulty.PEACEFUL,
-                    true, new GameRules(net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS), WorldDataConfiguration.DEFAULT);
             long seed = options.get("seed") instanceof Number n ? n.longValue() : 0L;
-            WorldOptions worldOptions = new WorldOptions(seed, false, false);
-            java.util.function.Function<net.minecraft.core.HolderLookup.Provider, net.minecraft.world.level.levelgen.WorldDimensions> dimensions = registries -> {
-                String preset = String.valueOf(options.getOrDefault("preset", options.getOrDefault("generator", "normal"))).trim().toLowerCase(java.util.Locale.ROOT);
-                if (preset.equals("flat") || preset.equals("superflat")) {
-                    return registries.lookupOrThrow(net.minecraft.core.registries.Registries.WORLD_PRESET).getOrThrow(WorldPresets.FLAT).value().createWorldDimensions();
-                }
-                return WorldPresets.createNormalWorldDimensions(registries);
-            };
-            mc.createWorldOpenFlows().createFreshLevel(levelName, settings, worldOptions, dimensions, mc.screen == null ? new GenericMessageScreen(Component.literal("Minecraft MCP")) : mc.screen);
+            String preset = String.valueOf(options.getOrDefault("preset", options.getOrDefault("generator", "normal"))).trim().toLowerCase(java.util.Locale.ROOT);
+            ClientCompat.createTestWorld(mc, levelName, seed, preset.equals("flat") || preset.equals("superflat"));
         }
         public void openWorld(String name) {
-            mc.createWorldOpenFlows().openWorld(name, () -> mc.setScreen(null));
+            mc.createWorldOpenFlows().openWorld(name, () -> ClientCompat.setScreen(mc, null));
         }
         public void leaveWorldToTitle() {
             if (mc.level != null) {
-                mc.disconnectWithSavingScreen();
+                ClientCompat.leaveWorld(mc);
             }
         }
         public Map<String, Object> worldSnapshot() {
             if (mc.level == null) return Map.of("inWorld", false);
             return Map.of(
                 "inWorld", true,
-                "dimension", mc.level.dimension().identifier().toString(),
+                "dimension", MinecraftCompat.id(mc.level.dimension()),
                 "gameTime", mc.level.getGameTime(),
                 "difficulty", mc.level.getDifficulty().getSerializedName(),
                 "entityCount", mc.level.entitiesForRendering().spliterator().getExactSizeIfKnown()
@@ -527,7 +534,7 @@ public final class NeoForgeMinecraftMcpClientMod {
         public Map<String, Object> inventorySnapshot() {
             if (mc.player == null) return Map.of("inWorld", false, "hotbar", java.util.List.of(), "main", java.util.List.of(), "armor", java.util.List.of(), "offhand", java.util.List.of(), "slots", java.util.List.of());
             Inventory inventory = mc.player.getInventory();
-            java.util.List<ItemStack> items = inventory.getNonEquipmentItems();
+            java.util.List<ItemStack> items = MinecraftCompat.inventoryItems(inventory);
             java.util.List<Map<String, Object>> hotbar = inventorySection(items, "hotbar", 0, 0, 9);
             java.util.List<Map<String, Object>> main = inventorySection(items, "main", 9, 9, items.size() - 9);
             java.util.List<Map<String, Object>> armor = inventorySection(armorItems(mc.player), "armor", 36, 0, 4);
@@ -536,7 +543,7 @@ public final class NeoForgeMinecraftMcpClientMod {
             slots.addAll(hotbar); slots.addAll(main); slots.addAll(armor); slots.addAll(offhand);
             java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
             result.put("inWorld", true);
-            result.put("selected", inventory.getSelectedSlot());
+            result.put("selected", MinecraftCompat.selectedSlot(inventory));
             result.put("carried", mc.player.containerMenu == null ? stackSummary(ItemStack.EMPTY) : stackSummary(mc.player.containerMenu.getCarried()));
             result.put("hotbar", hotbar);
             result.put("main", main);
@@ -568,22 +575,22 @@ public final class NeoForgeMinecraftMcpClientMod {
         public Map<String, Object> selectedInventoryItem() {
             if (mc.player == null) return Map.of("inWorld", false, "selected", -1, "item", "minecraft:air", "count", 0, "empty", true);
             Inventory inventory = mc.player.getInventory();
-            java.util.Map<String, Object> result = new java.util.LinkedHashMap<>(stackSummary(inventory.getSelectedItem()));
+            java.util.Map<String, Object> result = new java.util.LinkedHashMap<>(stackSummary(MinecraftCompat.selectedItem(inventory)));
             result.put("inWorld", true);
-            result.put("selected", inventory.getSelectedSlot());
-            result.put("slot", inventory.getSelectedSlot());
+            result.put("selected", MinecraftCompat.selectedSlot(inventory));
+            result.put("slot", MinecraftCompat.selectedSlot(inventory));
             return result;
         }
         public Map<String, Object> containerState() {
-            if (mc.player == null) return Map.of("inWorld", false, "hasContainer", false, "hasScreen", mc.screen != null);
-            boolean hasContainerScreen = mc.screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>;
+            if (mc.player == null) return Map.of("inWorld", false, "hasContainer", false, "hasScreen", ClientCompat.screen(mc) != null);
+            boolean hasContainerScreen = ClientCompat.screen(mc) instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>;
             boolean hasContainer = hasContainerScreen || mc.player.containerMenu != mc.player.inventoryMenu;
             java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
             result.put("inWorld", true);
             result.put("hasContainer", hasContainer);
-            result.put("hasScreen", mc.screen != null);
-            result.put("screen", mc.screen == null ? null : mc.screen.getClass().getName());
-            result.put("title", mc.screen == null ? null : mc.screen.getTitle().getString());
+            result.put("hasScreen", ClientCompat.screen(mc) != null);
+            result.put("screen", ClientCompat.screen(mc) == null ? null : ClientCompat.screen(mc).getClass().getName());
+            result.put("title", ClientCompat.screen(mc) == null ? null : ClientCompat.screen(mc).getTitle().getString());
             if (!hasContainer || mc.player.containerMenu == null) {
                 result.put("reason", "no container screen");
                 result.put("slots", java.util.List.of());
@@ -606,8 +613,7 @@ public final class NeoForgeMinecraftMcpClientMod {
             var menu = mc.player.containerMenu;
             if (menu == null) return Map.of("status", "rejected", "reason", "no container", "slot", slot, "button", button, "clickType", clickType);
             if (slot >= menu.slots.size()) return Map.of("status", "rejected", "reason", "slot out of range", "slot", slot, "button", button, "clickType", clickType, "containerId", menu.containerId);
-            net.minecraft.world.inventory.ClickType type = net.minecraft.world.inventory.ClickType.valueOf(clickType);
-            mc.gameMode.handleInventoryMouseClick(menu.containerId, slot, button, type, mc.player);
+            ClientCompat.clickSlot(mc, menu.containerId, slot, button, clickType);
             return Map.of("status", "clicked", "slot", slot, "button", button, "clickType", clickType, "containerId", menu.containerId);
         }
         public Map<String, Object> closeContainer() {
@@ -621,7 +627,7 @@ public final class NeoForgeMinecraftMcpClientMod {
                 return Map.of("status", "rejected", "reason", "slot out of range", "slot", slot);
             }
             Inventory inventory = mc.player.getInventory();
-            inventory.setSelectedSlot(slot);
+            MinecraftCompat.selectSlot(inventory, slot);
             return Map.of("status", "selected", "slot", slot, "item", stackMap(slot, inventory.getItem(slot)));
         }
         private static java.util.List<ItemStack> armorItems(net.minecraft.world.entity.player.Player player) {
@@ -632,7 +638,7 @@ public final class NeoForgeMinecraftMcpClientMod {
                     player.getItemBySlot(EquipmentSlot.HEAD));
         }
         private static java.util.List<Map<String, Object>> inventorySlots(net.minecraft.world.entity.player.Player player) {
-            java.util.List<ItemStack> items = player.getInventory().getNonEquipmentItems();
+            java.util.List<ItemStack> items = MinecraftCompat.inventoryItems(player.getInventory());
             java.util.List<Map<String, Object>> slots = new java.util.ArrayList<>();
             slots.addAll(inventorySection(items, "hotbar", 0, 0, 9));
             slots.addAll(inventorySection(items, "main", 9, 9, items.size() - 9));
@@ -742,11 +748,11 @@ public final class NeoForgeMinecraftMcpClientMod {
         }
 
         public ClientSnapshot snapshot() {
-            String screen = mc.screen == null ? null : mc.screen.getClass().getName();
+            String screen = ClientCompat.screen(mc) == null ? null : ClientCompat.screen(mc).getClass().getName();
             if (mc.player == null) return new ClientSnapshot(true, false, mc.level != null, screen, null, 0, 0, 0, 0, 0);
             boolean rawInWorld = mc.level != null;
-            boolean playableInWorld = rawInWorld && mc.screen == null;
-            return new ClientSnapshot(true, playableInWorld, rawInWorld, screen, mc.player.getGameProfile().name(), mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYRot(), mc.player.getXRot());
+            boolean playableInWorld = rawInWorld && ClientCompat.screen(mc) == null;
+            return new ClientSnapshot(true, playableInWorld, rawInWorld, screen, MinecraftCompat.profileName(mc.player), mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYRot(), mc.player.getXRot());
         }
     }
 }

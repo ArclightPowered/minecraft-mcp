@@ -19,7 +19,11 @@ class SchematicBlockStateTest {
             var state = block.defaultBlockState();
             var serialized = (String) method.invoke(null, state);
             assertTrue(serialized.startsWith("minecraft:"));
+            //? if >=1.21.2 {
             assertEquals(state, BlockStateParser.parseForBlock(BuiltInRegistries.BLOCK, serialized, true).blockState());
+            //?} else {
+            /*assertEquals(state, BlockStateParser.parseForBlock(BuiltInRegistries.BLOCK.asLookup(), serialized, true).blockState());
+            *///?}
         }
     }
 }

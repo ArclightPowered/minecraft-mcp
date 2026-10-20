@@ -1,5 +1,6 @@
 package io.izzel.minecraftmcp.fabric;
 
+import io.izzel.minecraftmcp.compat.MinecraftCompat;
 import io.izzel.minecraftmcp.MinecraftMcpBootstrap;
 import io.izzel.minecraftmcp.bridge.MinecraftServerBridge;
 import io.izzel.minecraftmcp.config.McpConfigs;
@@ -12,7 +13,6 @@ import io.izzel.minecraftmcp.schematic.ServerSchematicTools;
 import io.izzel.minecraftmcp.server.ServerWorldTools;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.MinecraftServer;
@@ -29,10 +29,7 @@ public final class FabricMinecraftMcpServerEntrypoint implements DedicatedServer
     @Override
     public void onInitializeServer() {
         FabricMcpConfig.bootstrap();
-        PayloadTypeRegistry.playC2S().register(FabricStringPayload.REQUEST, FabricStringPayload.codec(FabricStringPayload.REQUEST));
-        PayloadTypeRegistry.playS2C().register(FabricStringPayload.RESPONSE, FabricStringPayload.codec(FabricStringPayload.RESPONSE));
-        PayloadTypeRegistry.playS2C().register(FabricStringPayload.CLIENT_REQUEST, FabricStringPayload.codec(FabricStringPayload.CLIENT_REQUEST));
-        PayloadTypeRegistry.playC2S().register(FabricStringPayload.CLIENT_RESPONSE, FabricStringPayload.codec(FabricStringPayload.CLIENT_RESPONSE));
+        FabricStringPayload.registerTypes();
 
         ServerPlayNetworking.registerGlobalReceiver(FabricStringPayload.REQUEST, (payload, context) -> {
             if (pluginHandler == null) {
@@ -49,7 +46,7 @@ public final class FabricMinecraftMcpServerEntrypoint implements DedicatedServer
             pluginHandler.receiveResponse(payload.text(), callerFor(context.player()));
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
-                RemoteMcpProxies.rememberClientName(handler.player.getUUID(), handler.player.getGameProfile().name()));
+                RemoteMcpProxies.rememberClientName(handler.player.getUUID(), MinecraftCompat.profileName(handler.player)));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
                 RemoteMcpProxies.forgetClient(handler.player.getUUID()));
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
@@ -74,7 +71,7 @@ public final class FabricMinecraftMcpServerEntrypoint implements DedicatedServer
                                     ServerPlayNetworking.canSend(target, FabricStringPayload.CLIENT_REQUEST));
                         });
                 server.getPlayerList().getPlayers().forEach(player ->
-                        RemoteMcpProxies.rememberClientName(player.getUUID(), player.getGameProfile().name()));
+                        RemoteMcpProxies.rememberClientName(player.getUUID(), MinecraftCompat.profileName(player)));
                 System.out.println("[Minecraft MCP] Fabric dedicated MCP server started on port " + endpoint.port());
             } catch (Exception e) {
                 throw new RuntimeException("Failed to start Minecraft MCP dedicated server", e);
@@ -90,7 +87,7 @@ public final class FabricMinecraftMcpServerEntrypoint implements DedicatedServer
     }
 
     private static ChannelCaller.Player callerFor(ServerPlayer player) {
-        return new ChannelCaller.Player(player.getUUID(), player.getGameProfile().name(),
+        return new ChannelCaller.Player(player.getUUID(), MinecraftCompat.profileName(player),
                 FabricMcpConfig.mayRemoteCall(player), McpPermissions.REMOTE_CALL_FABRIC);
     }
 

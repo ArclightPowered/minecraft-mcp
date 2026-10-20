@@ -1,15 +1,13 @@
 package io.izzel.minecraftmcp.fabric;
 
+import io.izzel.minecraftmcp.compat.MinecraftCompat;
 import io.izzel.minecraftmcp.config.McpConfig;
 import io.izzel.minecraftmcp.config.McpConfigDocument;
 import io.izzel.minecraftmcp.config.McpConfigs;
 import io.izzel.minecraftmcp.config.McpOptions;
 import io.izzel.minecraftmcp.config.McpPermissions;
-import me.lucko.fabric.api.permissions.v0.Permissions;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.permissions.PermissionLevel;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -20,11 +18,19 @@ import java.util.function.Predicate;
 final class FabricMcpConfig {
     static final String FILE_NAME = "minecraft-mcp.json";
 
-    static final Identifier REMOTE_CALL_ID =
-        Identifier.fromNamespaceAndPath(McpPermissions.NAMESPACE, McpPermissions.REMOTE_CALL_PATH);
+    // 26.1 brought a permission API into Fabric API; before that fabric-permissions-api (bundled) provides it.
+    //? if >=26.1 {
+    /*static final net.fabricmc.fabric.api.permission.v1.PermissionNode<Boolean> REMOTE_CALL =
+        net.fabricmc.fabric.api.permission.v1.PermissionNode.of(net.minecraft.resources.Identifier.fromNamespaceAndPath(
+            McpPermissions.NAMESPACE, McpPermissions.REMOTE_CALL_PATH));
 
     private static final Predicate<ServerPlayer> MAY_REMOTE_CALL =
-        player -> Permissions.check(player, McpPermissions.REMOTE_CALL_FABRIC, 4);
+        net.fabricmc.fabric.api.permission.v1.PermissionPredicates.require(REMOTE_CALL,
+            net.minecraft.server.permissions.PermissionLevel.OWNERS);
+    *///?} else {
+    private static final Predicate<ServerPlayer> MAY_REMOTE_CALL =
+        player -> me.lucko.fabric.api.permissions.v0.Permissions.check(player, McpPermissions.REMOTE_CALL_FABRIC, 4);
+    //?}
 
     private static boolean loaded;
 
@@ -76,7 +82,7 @@ final class FabricMcpConfig {
             return MAY_REMOTE_CALL.test(player);
         } catch (RuntimeException e) {
             System.err.println("[Minecraft MCP] could not resolve " + McpPermissions.REMOTE_CALL_FABRIC
-                + " for " + player.getGameProfile().name() + ", refusing: " + e);
+                + " for " + MinecraftCompat.profileName(player) + ", refusing: " + e);
             return false;
         }
     }

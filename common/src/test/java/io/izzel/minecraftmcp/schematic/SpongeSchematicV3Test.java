@@ -129,9 +129,9 @@ class SpongeSchematicV3Test {
         SpongeSchematicV3.write(roundTrip, schematic, 4550);
         CompoundTag written = NbtIo.readCompressed(roundTrip, NbtAccounter.unlimitedHeap());
 
-        assertEquals(metadata, written.getCompoundOrEmpty("Metadata"));
-        assertEquals(blockEntities, written.getListOrEmpty("BlockEntities"));
-        assertEquals(entities, written.getListOrEmpty("Entities"));
+        assertEquals(metadata, io.izzel.minecraftmcp.compat.MinecraftCompat.compound(written, "Metadata").orElseThrow());
+        assertEquals(blockEntities, io.izzel.minecraftmcp.compat.MinecraftCompat.list(written, "BlockEntities", net.minecraft.nbt.Tag.TAG_COMPOUND).orElseThrow());
+        assertEquals(entities, io.izzel.minecraftmcp.compat.MinecraftCompat.list(written, "Entities", net.minecraft.nbt.Tag.TAG_COMPOUND).orElseThrow());
     }
 
     private static CompoundTag palette(String state) {

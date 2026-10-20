@@ -1,5 +1,6 @@
 package io.izzel.minecraftmcp.schematic;
 
+import io.izzel.minecraftmcp.compat.MinecraftCompat;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtAccounter;
@@ -47,12 +48,12 @@ public final class SpongeSchematicV3 {
     public static Schematic read(Path path) throws IOException {
         CompoundTag tag = readRoot(path);
         validateV3(tag);
-        int width = Short.toUnsignedInt(tag.getShortOr("Width", (short) 0));
-        int height = Short.toUnsignedInt(tag.getShortOr("Height", (short) 0));
-        int length = Short.toUnsignedInt(tag.getShortOr("Length", (short) 0));
+        int width = Short.toUnsignedInt(MinecraftCompat.shortValue(tag, "Width").orElse((short) 0));
+        int height = Short.toUnsignedInt(MinecraftCompat.shortValue(tag, "Height").orElse((short) 0));
+        int length = Short.toUnsignedInt(MinecraftCompat.shortValue(tag, "Length").orElse((short) 0));
         int volume = volume(width, height, length);
-        List<String> palette = readPalette(tag.getCompoundOrEmpty("BlockPalette"), "BlockPalette");
-        int[] blockData = VarIntBlockData.decode(tag.getByteArray("BlockData").orElseThrow(() -> new IllegalArgumentException("Sponge v3 schematic is missing BlockData")), volume);
+        List<String> palette = readPalette(MinecraftCompat.compound(tag, "BlockPalette").orElseGet(CompoundTag::new), "BlockPalette");
+        int[] blockData = VarIntBlockData.decode(MinecraftCompat.byteArray(tag, "BlockData").orElseThrow(() -> new IllegalArgumentException("Sponge v3 schematic is missing BlockData")), volume);
         validatePaletteIndexes(blockData, palette.size(), "block data");
 
         List<String> biomePalette = List.of();
@@ -61,15 +62,15 @@ public final class SpongeSchematicV3 {
         boolean hasBiomeData = tag.contains("BiomeData");
         if (hasBiomePalette != hasBiomeData) throw new IllegalArgumentException("Sponge v3 schematic must contain both BiomePalette and BiomeData");
         if (hasBiomePalette) {
-            biomePalette = readPalette(tag.getCompoundOrEmpty("BiomePalette"), "BiomePalette");
-            biomeData = VarIntBlockData.decode(tag.getByteArray("BiomeData").orElseThrow(), volume);
+            biomePalette = readPalette(MinecraftCompat.compound(tag, "BiomePalette").orElseGet(CompoundTag::new), "BiomePalette");
+            biomeData = VarIntBlockData.decode(MinecraftCompat.byteArray(tag, "BiomeData").orElseThrow(), volume);
             validatePaletteIndexes(biomeData, biomePalette.size(), "biome data");
         }
-        int[] offset = tag.getIntArray("Offset").orElse(new int[] {0, 0, 0});
+        int[] offset = MinecraftCompat.intArray(tag, "Offset").orElse(new int[] {0, 0, 0});
         if (offset.length != 3) throw new IllegalArgumentException("Sponge v3 Offset must contain exactly 3 integers");
-        ListTag blockEntities = tag.getList("BlockEntities").orElseGet(ListTag::new).copy();
-        ListTag entities = tag.getList("Entities").orElseGet(ListTag::new).copy();
-        CompoundTag metadataNbt = tag.getCompound("Metadata").orElseGet(CompoundTag::new).copy();
+        ListTag blockEntities = MinecraftCompat.list(tag, "BlockEntities", Tag.TAG_COMPOUND).orElseGet(ListTag::new).copy();
+        ListTag entities = MinecraftCompat.list(tag, "Entities", Tag.TAG_COMPOUND).orElseGet(ListTag::new).copy();
+        CompoundTag metadataNbt = MinecraftCompat.compound(tag, "Metadata").orElseGet(CompoundTag::new).copy();
         return new Schematic(width, height, length, offset, palette, blockData, biomePalette, biomeData,
                 metadata(metadataNbt), metadataNbt, blockEntities, entities);
     }
@@ -77,14 +78,14 @@ public final class SpongeSchematicV3 {
     public static SchematicInfo info(Path path) throws IOException {
         CompoundTag tag = readRoot(path);
         validateV3(tag);
-        int width = Short.toUnsignedInt(tag.getShortOr("Width", (short) 0));
-        int height = Short.toUnsignedInt(tag.getShortOr("Height", (short) 0));
-        int length = Short.toUnsignedInt(tag.getShortOr("Length", (short) 0));
+        int width = Short.toUnsignedInt(MinecraftCompat.shortValue(tag, "Width").orElse((short) 0));
+        int height = Short.toUnsignedInt(MinecraftCompat.shortValue(tag, "Height").orElse((short) 0));
+        int length = Short.toUnsignedInt(MinecraftCompat.shortValue(tag, "Length").orElse((short) 0));
         return new SchematicInfo("ok", path.toAbsolutePath().normalize().toString(), "sponge-v3",
-                tag.getIntOr("Version", 0), tag.getIntOr("DataVersion", 0), width, height, length,
-                volume(width, height, length), tag.getCompoundOrEmpty("BlockPalette").size(),
+                MinecraftCompat.intValue(tag, "Version").orElse(0), MinecraftCompat.intValue(tag, "DataVersion").orElse(0), width, height, length,
+                volume(width, height, length), MinecraftCompat.compound(tag, "BlockPalette").orElseGet(CompoundTag::new).size(),
                 tag.contains("BlockEntities"), tag.contains("Entities"),
-                tag.contains("BiomePalette") && tag.contains("BiomeData"), metadata(tag.getCompoundOrEmpty("Metadata")));
+                tag.contains("BiomePalette") && tag.contains("BiomeData"), metadata(MinecraftCompat.compound(tag, "Metadata").orElseGet(CompoundTag::new)));
     }
 
     public static void forceVersionForTest(Path path, int version) throws IOException {
@@ -108,19 +109,19 @@ public final class SpongeSchematicV3 {
     }
 
     private static void validateV3(CompoundTag tag) {
-        if (tag.getIntOr("Version", -1) != 3) throw new IllegalArgumentException("only Sponge schematic v3 is supported");
-        if (tag.getCompound("BlockPalette").isEmpty()) throw new IllegalArgumentException("Sponge v3 schematic is missing BlockPalette");
-        if (tag.getByteArray("BlockData").isEmpty()) throw new IllegalArgumentException("Sponge v3 schematic is missing BlockData");
-        if (tag.getShort("Width").isEmpty() || tag.getShort("Height").isEmpty() || tag.getShort("Length").isEmpty()) {
+        if (MinecraftCompat.intValue(tag, "Version").orElse(-1) != 3) throw new IllegalArgumentException("only Sponge schematic v3 is supported");
+        if (MinecraftCompat.compound(tag, "BlockPalette").isEmpty()) throw new IllegalArgumentException("Sponge v3 schematic is missing BlockPalette");
+        if (MinecraftCompat.byteArray(tag, "BlockData").isEmpty()) throw new IllegalArgumentException("Sponge v3 schematic is missing BlockData");
+        if (MinecraftCompat.shortValue(tag, "Width").isEmpty() || MinecraftCompat.shortValue(tag, "Height").isEmpty() || MinecraftCompat.shortValue(tag, "Length").isEmpty()) {
             throw new IllegalArgumentException("Sponge v3 schematic is missing dimensions");
         }
-        volume(Short.toUnsignedInt(tag.getShortOr("Width", (short) 0)), Short.toUnsignedInt(tag.getShortOr("Height", (short) 0)), Short.toUnsignedInt(tag.getShortOr("Length", (short) 0)));
+        volume(Short.toUnsignedInt(MinecraftCompat.shortValue(tag, "Width").orElse((short) 0)), Short.toUnsignedInt(MinecraftCompat.shortValue(tag, "Height").orElse((short) 0)), Short.toUnsignedInt(MinecraftCompat.shortValue(tag, "Length").orElse((short) 0)));
     }
 
     private static List<String> readPalette(CompoundTag paletteTag, String field) {
         if (paletteTag.isEmpty()) throw new IllegalArgumentException("Sponge v3 schematic has an empty " + field);
         List<Map.Entry<String, Integer>> entries = new ArrayList<>();
-        for (String key : paletteTag.keySet()) entries.add(Map.entry(key, paletteTag.getIntOr(key, -1)));
+        for (String key : MinecraftCompat.keys(paletteTag)) entries.add(Map.entry(key, MinecraftCompat.intValue(paletteTag, key).orElse(-1)));
         entries.sort(Comparator.comparingInt(Map.Entry::getValue));
         for (int i = 0; i < entries.size(); i++) {
             if (entries.get(i).getValue() != i) throw new IllegalArgumentException(field + " must use contiguous indexes starting at zero");
@@ -158,7 +159,7 @@ public final class SpongeSchematicV3 {
 
     private static Map<String, Object> metadata(CompoundTag metadata) {
         Map<String, Object> result = new LinkedHashMap<>();
-        for (Map.Entry<String, Tag> entry : metadata.entrySet()) result.put(entry.getKey(), entry.getValue().copy());
+        for (String key : MinecraftCompat.keys(metadata)) result.put(key, metadata.get(key).copy());
         return result;
     }
 }
